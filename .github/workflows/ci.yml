@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test ./...
+      - run: mkdir -p bin
+      - run: go build -o bin/taxmate-au-refresh ./cmd/taxmate-au-refresh
+      - run: go build -o bin/taxmate-au-validate ./cmd/taxmate-au-validate
+      - run: go build -o bin/taxmate-au-finance ./cmd/taxmate-au-finance
+      - run: go build -o bin/taxmate-au-calc ./cmd/taxmate-au-calc
+      - run: bin/taxmate-au-validate
+      - run: scripts/check-publication-ready.sh
+      - run: bin/taxmate-au-calc payg --gross-pay 1500 --periods 52 --tax-free-threshold
+      - run: |
+          cat > /tmp/taxmate-finance-sample.csv <<'CSV'
+          date,description,amount,gst,owner,purpose,evidence,category,type
+          2026-04-15,OpenAI Codex subscription,33.00,3.00,owner,ABN app development,invoice,software,expense
+          2026-05-10,Private health premium,220.00,0.00,joint,private health statement,statement,private_health,record
+          CSV
+          bin/taxmate-au-finance --input /tmp/taxmate-finance-sample.csv --format json >/tmp/taxmate-finance-review.json
+
+  plugin-package:
+    name: Plugin Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: test -f .codex-plugin/plugin.json
+      - run: test -f skills/research/SKILL.md
+      - run: test -f skills/finance-review/SKILL.md
+      - run: test -f skills/calculators/SKILL.md
+      - run: test -f skills/workbook/SKILL.md
+      - run: test -f skills/taxpack/SKILL.md
+      - run: "! git grep -nE 'public[-]work|taxmate-au-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'"
+      - run: "! git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md .codex-plugin agents skills docs"
+      - run: "! git ls-files 'bin/*' | grep -q ."
+
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

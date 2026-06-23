@@ -1,0 +1,3 @@
+interface:
+  display_name: "TaxMate AU Workbook"
+  short_description: "Create accountant-facing Excel workbook outputs from reviewed data"

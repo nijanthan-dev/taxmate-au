@@ -1,0 +1,8 @@
+title = "TaxMate AU Gitleaks config"
+
+[allowlist]
+description = "ATO source snapshots can contain public website scripts and identifiers."
+paths = [
+  '''data/ato_knowledge_base/raw/.*''',
+  '''data/ato_knowledge_base/text/.*'''
+]

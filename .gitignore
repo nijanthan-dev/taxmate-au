@@ -1,0 +1,24 @@
+# Build output
+/bin/
+
+# Local runtime/cache output
+/.cache/
+/.tmp/
+/dist/
+/coverage/
+
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Go
+*.test
+*.out
