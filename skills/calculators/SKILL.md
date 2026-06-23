@@ -20,8 +20,8 @@ Use this skill for bounded tax-prep calculations. It is not professional advice,
 Run:
 
 ```bash
-export TAXMATE_AU_ROOT="${TAXMATE_AU_ROOT:-$(pwd)}"
-"$TAXMATE_AU_ROOT/bin/taxmate-au-calc" <bas|super|fbt|cgt|payg|stamp-duty> [flags]
+export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-calc" <bas|super|fbt|cgt|payg|stamp-duty> [flags]
 ```
 
 ## Rules

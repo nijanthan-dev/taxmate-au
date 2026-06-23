@@ -22,14 +22,14 @@ Use this skill to review structured financial records before workbook or account
 Run:
 
 ```bash
-export TAXMATE_AU_ROOT="${TAXMATE_AU_ROOT:-$(pwd)}"
-"$TAXMATE_AU_ROOT/bin/taxmate-au-finance" --input "<records.csv>" --format markdown --output "<review.md>"
+export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-finance" --input "<records.csv>" --format markdown --output "<review.md>"
 ```
 
 For machine-readable output:
 
 ```bash
-"$TAXMATE_AU_ROOT/bin/taxmate-au-finance" --input "<records.csv>" --format json --output "<review.json>"
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-finance" --input "<records.csv>" --format json --output "<review.json>"
 ```
 
 Accepted headers include `date`, `description`, `amount`, `gst`, `owner`, `purpose`, `evidence`, `abn`, `category`, `account`, `asset`, `units`, and `type`.

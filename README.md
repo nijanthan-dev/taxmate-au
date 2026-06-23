@@ -58,7 +58,7 @@ A representative minimal shape:
     "longDescription": "Converts messy tax inputs into ATO-sourced review-ready recommendations.",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
-    "developerName": "TaxMate AU Maintainers",
+    "developerName": "TaxMate Australia Maintainers",
     "websiteURL": "https://www.ato.gov.au/",
     "defaultPrompt": [
       "Review these tax expenses conservatively for my accountant.",
@@ -144,22 +144,22 @@ For both cases:
 1. Set plugin root:
 
 ```bash
-export TAXMATE_AU_ROOT="/path/to/taxmate-au"
-cd "$TAXMATE_AU_ROOT"
+export TAXMATE_AUSTRALIA_ROOT="/path/to/taxmate-australia"
+cd "$TAXMATE_AUSTRALIA_ROOT"
 ```
 
 2. (Optional) Build once to warm the runtime:
 
 ```bash
 go test ./...
-go build -o bin/taxmate-au-validate ./cmd/taxmate-au-validate
-go build -o bin/taxmate-au-finance ./cmd/taxmate-au-finance
+go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
+go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
 ```
 
 3. Validate plugin manifest:
 
 ```bash
-"$TAXMATE_AU_ROOT/bin/taxmate-au-validate"
+"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
 ```
 
 4. Add a local marketplace entry (Codex reads JSON marketplaces from `~/.agents/plugins/marketplace.json`).
@@ -203,6 +203,6 @@ The bundled source pack is ATO-first. Stamp duty is source-routed to official st
 ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.
 No official tax filing is performed by this plugin.
 - `go test ./...`
-- build required binaries (`go build -o bin/taxmate-au-refresh ./cmd/taxmate-au-refresh`, etc.)
+- build required binaries (`go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh`, etc.)
 - `scripts/check-publication-ready.sh`
 - run a local secret scan before publish
