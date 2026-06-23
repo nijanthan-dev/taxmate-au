@@ -6,6 +6,7 @@
 /.tmp/
 /dist/
 /coverage/
+*.log
 
 # OS/editor noise
 .DS_Store

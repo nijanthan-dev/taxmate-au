@@ -1,11 +1,11 @@
 ---
-name: taxmate-au
-description: Compatibility wrapper for TaxMate AU Research. Use for Australian ATO tax-prep research, source refresh, conservative treatment, and accountant-review flags.
+name: taxmate-australia
+description: Compatibility wrapper for TaxMate Australia Research. Use for Australian ATO tax-prep research, source refresh, conservative treatment, and accountant-review flags.
 ---
 
-# TaxMate AU
+# TaxMate Australia
 
-Use the plugin skill `$taxmate-au:research` when available.
+Use the plugin skill `$taxmate-australia:research` when available.
 
 Resolve the local plugin root from `TAXMATE_AU_ROOT`, or from a colocated checkout when this wrapper is copied into a larger plugin bundle:
 

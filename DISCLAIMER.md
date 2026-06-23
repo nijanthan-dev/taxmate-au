@@ -1,15 +1,15 @@
 # Disclaimer
 
-TaxMate AU is a tax-preparation aid for Australian tax workflows. It is not tax, legal, accounting, financial, investment, BAS-agent, or registered-tax-agent advice.
+TaxMate Australia is a tax-preparation aid for Australian tax workflows. It is not tax, legal, accounting, financial, investment, BAS-agent, or registered-tax-agent advice.
 
-TaxMate AU is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office, the Commonwealth of Australia, any state or territory revenue office, any insurer, any super fund, or any financial institution.
+TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office, the Commonwealth of Australia, any state or territory revenue office, any insurer, any super fund, or any financial institution.
 
-TaxMate AU can be wrong, incomplete, stale, or unsuitable for a user's facts. Tax law, ATO guidance, rates, thresholds, forms, and administrative practice can change. Users are responsible for verifying all outputs against current official sources and seeking advice from a qualified professional before lodging returns, BAS, statements, forms, or making financial decisions.
+TaxMate Australia can be wrong, incomplete, stale, or unsuitable for a user's facts. Tax law, ATO guidance, rates, thresholds, forms, and administrative practice can change. Users are responsible for verifying all outputs against current official sources and seeking advice from a qualified professional before lodging returns, BAS, statements, forms, or making financial decisions.
 
-TaxMate AU does not lodge tax returns, BAS, FBT returns, TPAR, STP reports, or other official forms. Any workbook, PDF, checklist, calculation, or form-like output is a draft preparation artifact only.
+TaxMate Australia does not lodge tax returns, BAS, FBT returns, TPAR, STP reports, or other official forms. Any workbook, PDF, checklist, calculation, or form-like output is a draft preparation artifact only.
 
-TaxMate AU may identify claim candidates, GST candidates, or record gaps, but it must not be treated as confirming entitlement. Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, PSI, non-commercial-loss, and business-versus-hobby items should remain `Accountant review` unless the facts and current official guidance clearly resolve them.
+TaxMate Australia may identify claim candidates, GST candidates, or record gaps, but it must not be treated as confirming entitlement. Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, PSI, non-commercial-loss, and business-versus-hobby items should remain `Accountant review` unless the facts and current official guidance clearly resolve them.
 
 Do not publish private tax records, TFNs, Medicare numbers, bank details, identity documents, client files, or other sensitive personal information in issues, pull requests, examples, tests, or repository content.
 
-The bundled ATO source cache is included to support source-backed workflows. ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate AU must not imply official endorsement.
+The bundled ATO source cache is included to support source-backed workflows. ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.

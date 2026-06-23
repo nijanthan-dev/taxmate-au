@@ -1,8 +1,8 @@
 # Contributing
 
-TaxMate AU is conservative by design. Contributions must preserve source-backed behaviour and clear accountant-review boundaries.
+TaxMate Australia is conservative by design. Contributions must preserve source-backed behaviour and clear accountant-review boundaries.
 
-Do not present TaxMate AU output as tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. TaxMate AU is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
+Do not present TaxMate Australia output as tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. TaxMate Australia is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
 ## Before Opening A PR
 

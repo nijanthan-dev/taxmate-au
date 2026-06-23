@@ -1,6 +1,6 @@
 ---
 name: taxpack
-description: Prepare accountant handoff packs and future PDF/form outputs from reviewed TaxMate AU data. Use for summary PDFs, checklists, source bundles, and later tax-form drafts from accountant-reviewed structured data.
+description: Prepare accountant handoff packs and future PDF/form outputs from reviewed TaxMate Australia data. Use for summary PDFs, checklists, source bundles, and later tax-form drafts from accountant-reviewed structured data.
 metadata:
   priority: 3
   promptSignals:
@@ -12,7 +12,7 @@ metadata:
       - "tax summary PDF"
 ---
 
-# TaxMate AU Taxpack
+# TaxMate Australia Taxpack
 
 Use this skill for final handoff packaging only. It creates draft preparation artifacts, not official lodgment forms or professional advice. It consumes reviewed data from research, finance review, calculators, and workbook outputs.
 
@@ -26,4 +26,4 @@ Use this skill for final handoff packaging only. It creates draft preparation ar
 
 ## Invocation
 
-Use `$taxmate-au:taxpack`.
+Use `$taxmate-australia:taxpack`.

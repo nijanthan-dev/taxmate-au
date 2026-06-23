@@ -1,8 +1,8 @@
-# TaxMate AU
+# TaxMate Australia
 
-TaxMate AU is an Australian tax-prep plugin for Codex. It combines official ATO source refresh, conservative tax treatment rules, transaction review, calculation scaffolds, and accountant-facing output workflows.
+TaxMate Australia is an Australian tax-prep plugin for Codex. It combines official ATO source refresh, conservative tax treatment rules, transaction review, calculation scaffolds, and accountant-facing output workflows.
 
-TaxMate AU is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md) before using it.
+TaxMate Australia is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency. Read [DISCLAIMER.md](DISCLAIMER.md) before using it.
 
 Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items should stay marked `Accountant review` unless the facts and current official guidance clearly resolve them.
 
@@ -35,7 +35,7 @@ Codex is the first supported runtime. The skill files are plain Markdown with fr
 Set `TAXMATE_AU_ROOT` to the plugin root:
 
 ```bash
-export TAXMATE_AU_ROOT="/path/to/taxmate-au"
+export TAXMATE_AU_ROOT="/path/to/taxmate-australia"
 ```
 
 Build:
@@ -63,4 +63,4 @@ Tax treatment belongs in `research`, `finance-review`, and `calculators`. Output
 
 The bundled source pack is ATO-first. Stamp duty is source-routed to official state or territory revenue offices. Non-ATO commercial sources are out of scope unless a user explicitly asks for them.
 
-ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate AU must not imply official endorsement.
+ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.

@@ -1,6 +1,6 @@
 ---
 name: finance-review
-description: Review Australian tax records and transaction CSVs for accountant handoff using TaxMate AU. Use for receipts, invoices, bank exports, ETF records, super statements, private-health statements, GST candidates, claim percentages, evidence health, and accountant-review queues.
+description: Review Australian tax records and transaction CSVs for accountant handoff using TaxMate Australia. Use for receipts, invoices, bank exports, ETF records, super statements, private-health statements, GST candidates, claim percentages, evidence health, and accountant-review queues.
 metadata:
   priority: 5
   promptSignals:
@@ -15,9 +15,9 @@ metadata:
       - "tax spreadsheet"
 ---
 
-# TaxMate AU Finance Review
+# TaxMate Australia Finance Review
 
-Use this skill to review structured financial records before workbook or accountant output. It is a preparation aid, not professional advice or official lodgment support. It does not replace TaxMate AU research; refresh ATO pages before final tax treatment.
+Use this skill to review structured financial records before workbook or accountant output. It is a preparation aid, not professional advice or official lodgment support. It does not replace TaxMate Australia research; refresh ATO pages before final tax treatment.
 
 Run:
 
@@ -45,4 +45,4 @@ Accepted headers include `date`, `description`, `amount`, `gst`, `owner`, `purpo
 
 ## Invocation
 
-Use `$taxmate-au:finance-review`.
+Use `$taxmate-australia:finance-review`.

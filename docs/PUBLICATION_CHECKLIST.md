@@ -1,6 +1,6 @@
 # Publication Checklist
 
-Use this before publishing TaxMate AU outside a local install.
+Use this before publishing TaxMate Australia outside a local install.
 
 - Confirm legal license and repository URL.
 - Confirm `DISCLAIMER.md` is present and linked from README.
