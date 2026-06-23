@@ -1,3 +1,3 @@
 interface:
-  display_name: "TaxMate AU Calculators"
+  display_name: "TaxMate Australia Calculators"
   short_description: "PAYG, BAS, CGT, FBT, super, and stamp-duty source-routing scaffolds"

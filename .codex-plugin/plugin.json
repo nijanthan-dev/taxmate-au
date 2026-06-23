@@ -1,8 +1,8 @@
 {
   "author": {
-    "name": "TaxMate AU Maintainers"
+    "name": "TaxMate Australia Maintainers"
   },
-  "description": "TaxMate AU provides conservative Australian tax-prep support, official ATO source refresh, finance review, calculation scaffolds, and accountant-facing output workflows. It is not professional advice or an ATO-endorsed product.",
+  "description": "TaxMate Australia provides conservative Australian tax-prep support, official ATO source refresh, finance review, calculation scaffolds, and accountant-facing output workflows. It is not professional advice or an ATO-endorsed product.",
   "homepage": "https://www.ato.gov.au/",
   "interface": {
     "brandColor": "#1B5E20",
@@ -16,10 +16,10 @@
       "Review these tax expenses conservatively for my accountant."
     ],
     "developerName": "TaxMate AU Maintainers",
-    "displayName": "TaxMate AU",
+    "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "longDescription": "TaxMate AU is an Australian tax-prep plugin for Codex. It keeps source-backed ATO research, finance review, calculators, workbook generation, and future taxpack output as separate skills over a shared Go backend and official ATO source pack. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "longDescription": "TaxMate Australia is an Australian tax-prep plugin for Codex. It keeps source-backed ATO research, finance review, calculators, workbook generation, and future taxpack output as separate skills over a shared Go backend and official ATO source pack. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
     "shortDescription": "Australian ATO tax prep workflows",
     "websiteURL": "https://www.ato.gov.au/"
   },
@@ -36,7 +36,7 @@
     "accountant"
   ],
   "license": "Apache-2.0",
-  "name": "taxmate-au",
+  "name": "taxmate-australia",
   "repository": "https://github.com/nijanthan-dev/taxmate-au",
   "skills": "./skills/",
   "version": "0.1.0"

@@ -1,6 +1,6 @@
 ---
 name: workbook
-description: Create accountant-facing Excel workbook outputs from reviewed TaxMate AU data. Use for taxpayer/spouse-separated and combined tax expense workbooks, BAS/GST summaries, ETF/super/private-health tabs, evidence checklists, and accountant-review queues.
+description: Create accountant-facing Excel workbook outputs from reviewed TaxMate Australia data. Use for taxpayer/spouse-separated and combined tax expense workbooks, BAS/GST summaries, ETF/super/private-health tabs, evidence checklists, and accountant-review queues.
 metadata:
   priority: 4
   promptSignals:
@@ -13,9 +13,9 @@ metadata:
       - "combined summary"
 ---
 
-# TaxMate AU Workbook
+# TaxMate Australia Workbook
 
-Use this skill for output rendering only. It creates draft accountant-facing artifacts, not lodgment-ready advice. It must consume reviewed data from `$taxmate-au:finance-review` and tax treatment from `$taxmate-au:research`; it must not create new tax logic.
+Use this skill for output rendering only. It creates draft accountant-facing artifacts, not lodgment-ready advice. It must consume reviewed data from `$taxmate-australia:finance-review` and tax treatment from `$taxmate-australia:research`; it must not create new tax logic.
 
 ## Workbook Shape
 
@@ -47,4 +47,4 @@ Default tabs:
 
 ## Invocation
 
-Use `$taxmate-au:workbook`.
+Use `$taxmate-australia:workbook`.

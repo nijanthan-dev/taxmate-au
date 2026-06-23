@@ -1,6 +1,6 @@
 ---
 name: calculators
-description: Run TaxMate AU bounded calculator scaffolds for PAYG estimates, BAS arithmetic, CGT gains, FBT gross-up arithmetic, super guarantee minimums, and stamp-duty source routing. Use only for estimates and accountant-review workflows.
+description: Run TaxMate Australia bounded calculator scaffolds for PAYG estimates, BAS arithmetic, CGT gains, FBT gross-up arithmetic, super guarantee minimums, and stamp-duty source routing. Use only for estimates and accountant-review workflows.
 metadata:
   priority: 4
   promptSignals:
@@ -13,7 +13,7 @@ metadata:
       - "stamp duty"
 ---
 
-# TaxMate AU Calculators
+# TaxMate Australia Calculators
 
 Use this skill for bounded tax-prep calculations. It is not professional advice, payroll advice, lodgment support, or confirmation of entitlement. Keep outputs labelled as estimates or scaffolds where applicable.
 
@@ -36,4 +36,4 @@ export TAXMATE_AU_ROOT="${TAXMATE_AU_ROOT:-$(pwd)}"
 
 ## Invocation
 
-Use `$taxmate-au:calculators`.
+Use `$taxmate-australia:calculators`.

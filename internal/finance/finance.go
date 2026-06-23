@@ -181,7 +181,7 @@ func WriteJSON(w io.Writer, report *Report) error {
 
 func WriteMarkdown(w io.Writer, report *Report) error {
 	var b bytes.Buffer
-	fmt.Fprintf(&b, "# TaxMate AU Finance Review\n\n")
+	fmt.Fprintf(&b, "# TaxMate Australia Finance Review\n\n")
 	fmt.Fprintf(&b, "- Mode: `%s`\n", report.Mode)
 	fmt.Fprintf(&b, "- Source: `%s`\n", report.Source)
 	fmt.Fprintf(&b, "- Generated UTC: `%s`\n\n", report.GeneratedAt)
