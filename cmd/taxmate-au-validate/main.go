@@ -94,7 +94,8 @@ func validate(root string) (map[string]any, bool) {
 	add("invocation_documented", strings.Contains(skillText, "$taxmate-au:research") && strings.Contains(skillText, "$taxmate-au:finance-review") && strings.Contains(skillText, "$taxmate-au:workbook"), "")
 	add("go_binaries_documented", strings.Contains(skillText, "bin/taxmate-au-refresh") && strings.Contains(skillText, "bin/taxmate-au-validate") && strings.Contains(skillText, "bin/taxmate-au-finance") && strings.Contains(skillText, "bin/taxmate-au-calc"), "")
 	add("portable_root_documented", strings.Contains(skillText, "TAXMATE_AU_ROOT") && strings.Contains(readText(filepath.Join(root, "README.md")), "TAXMATE_AU_ROOT"), "")
-	add("public_docs_no_private_paths", noPrivatePaths(publicDocFiles(root)), strings.Join(firstN(privatePathHits(publicDocFiles(root)), 5), "; "))
+	publicDocs := publicDocFiles(root)
+	add("public_docs_no_private_paths", noPrivatePaths(root, publicDocs), strings.Join(firstN(privatePathHits(root, publicDocs), 5), "; "))
 	add("wrappers_mark_local_fallback", wrappersMarkLocalFallback(root), "")
 	disclaimerText := readText(filepath.Join(root, "DISCLAIMER.md"))
 	add("public_disclaimer_documented", hasPublicDisclaimers(readText(filepath.Join(root, "README.md"))+disclaimerText+skillText+manifestText), "")
@@ -157,9 +158,14 @@ func validate(root string) (map[string]any, bool) {
 	pyFiles := findBySuffix(root, ".py")
 	pycFiles := findBySuffix(root, ".pyc")
 	dotGoFiles := findBySuffix(root, ".go")
-	add("no_python_backend", len(pyFiles) == 0 && len(pycFiles) == 0 && len(generated) == 0, strings.Join(firstN(append(pyFiles, pycFiles...), 5), "; "))
+	add("no_python_backend", len(pyFiles) == 0 && len(pycFiles) == 0 && len(generated) == 0, strings.Join(firstN(relativePaths(root, append(pyFiles, pycFiles...)), 5), "; "))
 	isWrapperRuntime := strings.Contains(root, string(filepath.Separator)+".agents"+string(filepath.Separator)+"skills"+string(filepath.Separator))
-	add("wrapper_runtime_no_go_source", len(dotGoFiles) == 0 || !isWrapperRuntime, strings.Join(firstN(dotGoFiles, 5), "; "))
+	wrapperRuntimeClean := len(dotGoFiles) == 0 || !isWrapperRuntime
+	wrapperRuntimeDetail := ""
+	if !wrapperRuntimeClean {
+		wrapperRuntimeDetail = strings.Join(firstN(relativePaths(root, dotGoFiles), 5), "; ")
+	}
+	add("wrapper_runtime_no_go_source", wrapperRuntimeClean, wrapperRuntimeDetail)
 
 	return finish(root, checks, idx, true)
 }
@@ -270,18 +276,18 @@ func publicDocFiles(root string) []string {
 	return files
 }
 
-func noPrivatePaths(paths []string) bool {
-	return len(privatePathHits(paths)) == 0
+func noPrivatePaths(root string, paths []string) bool {
+	return len(privatePathHits(root, paths)) == 0
 }
 
-func privatePathHits(paths []string) []string {
+func privatePathHits(root string, paths []string) []string {
 	var hits []string
 	needles := []string{"/Users/", "custom" + "_apps/skills" + "_and" + "_plugins", "Developer/custom" + "_apps"}
 	for _, path := range paths {
 		text := readText(path)
 		for _, needle := range needles {
 			if strings.Contains(text, needle) {
-				hits = append(hits, path+":"+needle)
+				hits = append(hits, relativePath(root, path)+":"+needle)
 				break
 			}
 		}
@@ -409,6 +415,22 @@ func firstN(values []string, n int) []string {
 		return values
 	}
 	return values[:n]
+}
+
+func relativePaths(root string, paths []string) []string {
+	out := make([]string, 0, len(paths))
+	for _, path := range paths {
+		out = append(out, relativePath(root, path))
+	}
+	return out
+}
+
+func relativePath(root, path string) string {
+	rel, err := filepath.Rel(root, path)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return path
+	}
+	return rel
 }
 
 func findBySuffix(root, suffix string) []string {
