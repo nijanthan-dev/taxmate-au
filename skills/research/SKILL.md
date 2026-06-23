@@ -20,7 +20,7 @@ metadata:
       - "super"
 ---
 
-# TaxMate AU Research
+# TaxMate Australia Research
 
 Use this skill for Australian tax-prep research and treatment decisions. It is not tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and it is not affiliated with or endorsed by the ATO. Be conservative, do not help overclaim, and mark ambiguous items as `Accountant review`.
 
@@ -85,4 +85,4 @@ Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh re
 
 ## Invocation
 
-Use `$taxmate-au:research` when plugin skills are available, or `$taxmate-au` for the compatibility wrapper.
+Use `$taxmate-australia:research` when plugin skills are available.

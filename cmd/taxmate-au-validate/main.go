@@ -80,8 +80,8 @@ func validate(root string) (map[string]any, bool) {
 	manifest, manifestErr := readPluginManifest(root)
 	manifestText := readText(filepath.Join(root, ".codex-plugin", "plugin.json"))
 	add("codex_plugin_manifest_exists", manifestErr == nil, fmt.Sprint(manifestErr))
-	add("codex_plugin_manifest_required_keys", manifest["name"] == "taxmate-au" && manifest["version"] != "" && manifest["skills"] == "./skills/", "")
-	add("public_manifest_polished", strings.Contains(manifestText, "TaxMate AU Maintainers") && !strings.Contains(manifestText, `"Local"`) && !strings.Contains(manifestText, `"Private"`) && !strings.Contains(manifestText, `"repository": "local"`), "")
+	add("codex_plugin_manifest_required_keys", manifest["name"] == "taxmate-australia" && manifest["version"] != "" && manifest["skills"] == "./skills/", "")
+	add("public_manifest_polished", strings.Contains(manifestText, "TaxMate Australia Maintainers") && !strings.Contains(manifestText, `"Local"`) && !strings.Contains(manifestText, `"Private"`) && !strings.Contains(manifestText, `"repository": "local"`), "")
 	add("plugin_icon_declared", strings.Contains(manifestText, `"composerIcon": "./assets/icon.png"`) && strings.Contains(manifestText, `"logo": "./assets/icon.png"`) && fileExists(filepath.Join(root, "assets", "icon.png")), "")
 	add("codex_plugin_no_root_monolith", !fileExists(filepath.Join(root, "SKILL.md")), "")
 	add("open_plugin_backend_dirs", fileExists(filepath.Join(root, "bin")) && fileExists(filepath.Join(root, "cmd")) && fileExists(filepath.Join(root, "internal")) && fileExists(filepath.Join(root, "data")) && fileExists(filepath.Join(root, "skills")), "")
@@ -92,12 +92,14 @@ func validate(root string) (map[string]any, bool) {
 	add("codex_plugin_required_skills_exist", len(missingSkills) == 0, strings.Join(missingSkills, ", "))
 	add("skill_frontmatter_valid", len(badFrontmatter) == 0, strings.Join(badFrontmatter, ", "))
 	add("description_nonempty", allSkillDescriptionsLong(root, requiredSkills), "")
-	add("invocation_documented", strings.Contains(skillText, "$taxmate-au:research") && strings.Contains(skillText, "$taxmate-au:finance-review") && strings.Contains(skillText, "$taxmate-au:workbook"), "")
+	add("invocation_documented", strings.Contains(skillText, "$taxmate-australia:research") && strings.Contains(skillText, "$taxmate-australia:finance-review") && strings.Contains(skillText, "$taxmate-australia:workbook"), "")
 	add("go_binaries_documented", strings.Contains(skillText, "bin/taxmate-au-refresh") && strings.Contains(skillText, "bin/taxmate-au-validate") && strings.Contains(skillText, "bin/taxmate-au-finance") && strings.Contains(skillText, "bin/taxmate-au-calc"), "")
 	add("portable_root_documented", strings.Contains(skillText, "TAXMATE_AU_ROOT") && strings.Contains(readText(filepath.Join(root, "README.md")), "TAXMATE_AU_ROOT"), "")
 	publicDocs := publicDocFiles(root)
 	add("public_docs_no_private_paths", noPrivatePaths(root, publicDocs), strings.Join(firstN(privatePathHits(root, publicDocs), 5), "; "))
 	add("wrappers_mark_local_fallback", wrappersMarkLocalFallback(root), "")
+	add("wrapper_frontmatter_names", wrapperFrontmatterNamesMatchPath(root), "")
+	add("wrapper_invocation_paths", wrapperInvocationsUseAustraliaPrefix(root), "")
 	disclaimerText := readText(filepath.Join(root, "DISCLAIMER.md"))
 	add("public_disclaimer_documented", hasPublicDisclaimers(readText(filepath.Join(root, "README.md"))+disclaimerText+skillText+manifestText), "")
 	add("output_layer_separated", strings.Contains(skillText, "must not create new tax logic") && strings.Contains(skillText, "consumes reviewed data"), "")
@@ -305,6 +307,36 @@ func wrappersMarkLocalFallback(root string) bool {
 	for _, path := range wrappers {
 		text := readText(path)
 		if !strings.Contains(text, "TAXMATE_AU_ROOT") || !strings.Contains(text, "when available") {
+			return false
+		}
+	}
+	return true
+}
+
+func wrapperFrontmatterNamesMatchPath(root string) bool {
+	wrapperDir := filepath.Join(root, "wrappers")
+	wrappers := findBySuffix(wrapperDir, "SKILL.md")
+	if len(wrappers) == 0 {
+		return false
+	}
+	for _, path := range wrappers {
+		wrapperName := filepath.Base(filepath.Dir(path))
+		if !strings.HasPrefix(wrapperName, "taxmate-australia") {
+			return false
+		}
+		frontmatter := parseFrontmatter(readText(path))
+		if frontmatter == nil || frontmatter["name"] != wrapperName {
+			return false
+		}
+	}
+	return true
+}
+
+func wrapperInvocationsUseAustraliaPrefix(root string) bool {
+	wrapperDir := filepath.Join(root, "wrappers")
+	for _, path := range findBySuffix(wrapperDir, "SKILL.md") {
+		text := readText(path)
+		if strings.Contains(text, "$taxmate-au") || !strings.Contains(text, "$taxmate-australia:") {
 			return false
 		}
 	}
