@@ -2,7 +2,7 @@
   "lockVersion": 1,
   "pluginId": "com.github.nijanthan-dev.taxmate-australia",
   "pluginVersion": "0.1.0",
-  "generatedBy": "taxmate-au maintainers",
+  "generatedBy": "TaxMate Australia Maintainers",
   "generatedAt": "2026-06-23T00:00:00Z",
   "skills": [
     {
@@ -12,7 +12,7 @@
         "type": "local",
         "path": "skills/calculators"
       },
-      "integrity": "sha256:e1a071b2eb9eb2c1350b8f6966235278c00e87f0981292233f6b3de6e8df6336"
+      "integrity": "sha256:a7c4ae285bc80bd4fbcfedd5d2be38c5081317f85ad61c6d48adc0e9272bed92"
     },
     {
       "id": "finance-review",
@@ -21,7 +21,7 @@
         "type": "local",
         "path": "skills/finance-review"
       },
-      "integrity": "sha256:98576a35895bf1aa834c5350dbdf5139c84d6df48476c66af59c022faa571c72"
+      "integrity": "sha256:d4fffe9307c53f2d2fb5584abe26b2c7557c060306413b1004cb548d08d55e80"
     },
     {
       "id": "research",
@@ -30,7 +30,7 @@
         "type": "local",
         "path": "skills/research"
       },
-      "integrity": "sha256:267faff00e1c64827ee23e7235af988188b68e843d762145b1f01a622f787ad7"
+      "integrity": "sha256:3783c2d0ec3d0b8f602668da0a88f6fe5ced8ca304e215a85f2bbaad4479bcd3"
     },
     {
       "id": "taxpack",
@@ -39,7 +39,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:3f721477a72654a79b21c038829748e1ec840d06f1e28b758f4c39970b0af662"
+      "integrity": "sha256:a7acad61300f4af3ca0902d52529a934d6b6422102a0013ecee57037d957558d"
     },
     {
       "id": "workbook",
@@ -48,7 +48,7 @@
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:224ac909b5b725032930dda02c9732b55604af4f2ce695fcc2bbaf5b842de744"
+      "integrity": "sha256:526d5af3e9f025797c86466fe3c990ee141415abad94a4f60d8e45eaa4b5600d"
     }
   ]
 }

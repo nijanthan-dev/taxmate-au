@@ -22,7 +22,7 @@ if git ls-files 'bin/*' | grep -q .; then
   fail "built binaries are tracked"
 fi
 
-if git grep -nE 'public[-]work|taxmate-au-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
+if git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
   fail "temporary staging name leaked"
 fi
 
@@ -30,21 +30,25 @@ if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Dev
   fail "private machine path leaked into public docs"
 fi
 
+if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
+  fail "legacy public identity leaked"
+fi
+
 git grep -Eq 'not (professional )?tax, legal, accounting, financial' -- README.md DISCLAIMER.md .codex-plugin skills || fail "missing professional-advice disclaimer"
 git grep -q 'not affiliated with' -- README.md DISCLAIMER.md .codex-plugin skills || fail "missing affiliation disclaimer"
 git grep -q 'does not lodge' -- DISCLAIMER.md || fail "missing lodgment disclaimer"
 git grep -q 'Accountant review' -- DISCLAIMER.md skills || fail "missing accountant-review boundary"
 
-if git grep -nE 'taxmate-au-re[d]act|internal/pri[v]acy|cmd/taxmate-au-re[d]act|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
+if git grep -nE 'taxmate-australia-re[d]act|internal/pri[v]acy|cmd/taxmate-australia-re[d]act|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
   fail "legacy file-sanitisation artifact found"
 fi
 
 go test ./...
 mkdir -p bin
-go build -o bin/taxmate-au-refresh ./cmd/taxmate-au-refresh
-go build -o bin/taxmate-au-validate ./cmd/taxmate-au-validate
-go build -o bin/taxmate-au-finance ./cmd/taxmate-au-finance
-go build -o bin/taxmate-au-calc ./cmd/taxmate-au-calc
-bin/taxmate-au-validate >/tmp/taxmate-au-validate.json
+go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
+go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
+go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
+go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
+bin/taxmate-australia-validate >/tmp/taxmate-australia-validate.json
 
 echo "publication checks passed"

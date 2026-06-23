@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible TaxMate AU issue
+description: Report a reproducible TaxMate Australia issue
 title: "Bug: "
 labels: ["bug"]
 body:

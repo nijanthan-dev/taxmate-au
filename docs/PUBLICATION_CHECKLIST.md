@@ -13,7 +13,7 @@ Use this before publishing TaxMate Australia outside a local install.
 - if publishing, add `.agents/plugins/marketplace.json` sample and point `source.path` to an actual path for this repository.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
 - Run `go test ./...`.
-- Run `bin/taxmate-au-validate` and require `100/100`.
+- Run `bin/taxmate-australia-validate` and require `100/100`.
 - Refresh or recrawl ATO sources near release date.
 - Confirm source pack contains only official ATO pages and expected state revenue routing notes.
 - Confirm plugin lock/scan posture if the release process requires artifact trust:

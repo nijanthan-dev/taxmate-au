@@ -11,11 +11,11 @@ Run:
 ```bash
 go test ./...
 mkdir -p bin
-go build -o bin/taxmate-au-refresh ./cmd/taxmate-au-refresh
-go build -o bin/taxmate-au-validate ./cmd/taxmate-au-validate
-go build -o bin/taxmate-au-finance ./cmd/taxmate-au-finance
-go build -o bin/taxmate-au-calc ./cmd/taxmate-au-calc
-bin/taxmate-au-validate
+go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
+go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
+go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
+go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
+bin/taxmate-australia-validate
 scripts/check-publication-ready.sh
 ```
 

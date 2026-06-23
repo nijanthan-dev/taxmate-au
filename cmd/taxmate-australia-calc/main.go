@@ -74,5 +74,5 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: taxmate-au-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]")
+	fmt.Fprintln(os.Stderr, "usage: taxmate-australia-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]")
 }

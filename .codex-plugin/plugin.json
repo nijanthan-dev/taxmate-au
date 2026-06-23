@@ -3,7 +3,7 @@
     "name": "TaxMate Australia Maintainers"
   },
   "description": "TaxMate Australia helps Australian users move from records to accountant-ready tax prep outputs with ATO-backed research, conservative treatment rules, and clear review flags for ambiguous items.",
-  "homepage": "https://github.com/nijanthan-dev/taxmate-au",
+  "homepage": "https://github.com/nijanthan-dev/taxmate-australia",
   "interface": {
     "brandColor": "#1B5E20",
     "brandColorDark": "#81C784",
@@ -15,7 +15,7 @@
     "defaultPrompt": [
       "Review these tax expenses conservatively for my accountant."
     ],
-    "developerName": "TaxMate AU Maintainers",
+    "developerName": "TaxMate Australia Maintainers",
     "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
@@ -42,7 +42,7 @@
   ],
   "license": "Apache-2.0",
   "name": "taxmate-australia",
-  "repository": "https://github.com/nijanthan-dev/taxmate-au",
+  "repository": "https://github.com/nijanthan-dev/taxmate-australia",
   "skills": "./skills/",
   "version": "0.1.0"
 }

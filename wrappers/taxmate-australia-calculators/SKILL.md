@@ -10,6 +10,6 @@ Use the plugin skill `$taxmate-australia:calculators` when available.
 Read and follow:
 
 ```bash
-export TAXMATE_AU_ROOT="${TAXMATE_AU_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
-"$TAXMATE_AU_ROOT/skills/calculators/SKILL.md"
+export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+"$TAXMATE_AUSTRALIA_ROOT/skills/calculators/SKILL.md"
 ```

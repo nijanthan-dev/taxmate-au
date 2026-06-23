@@ -5,7 +5,7 @@
 
 - [ ] `go test ./...`
 - [ ] build all binaries
-- [ ] `bin/taxmate-au-validate`
+- [ ] `bin/taxmate-australia-validate`
 - [ ] `scripts/check-publication-ready.sh`
 - [ ] secret scan
 
