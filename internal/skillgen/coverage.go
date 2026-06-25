@@ -77,20 +77,14 @@ func BuildSourceCoverage(report *GenerationReport) SourceCoverage {
 	coverageByCanonical := map[string]string{}
 	coverage := SourceCoverage{}
 	for _, src := range report.Sources {
-		canonical := canonicalURL(src.FinalURL)
-		if canonical == "" {
-			canonical = canonicalURL(src.URL)
-		}
+		canonical := coverageCanonicalURL(src.URL, src.FinalURL)
 		sourceIDValue := sourceID(src.URL, canonical)
 		if src.Status != StatusDuplicate && src.Status != StatusNeedsReview {
 			coverageByCanonical[canonical] = sourceIDValue
 		}
 	}
 	for _, src := range report.Sources {
-		canonical := canonicalURL(src.FinalURL)
-		if canonical == "" {
-			canonical = canonicalURL(src.URL)
-		}
+		canonical := coverageCanonicalURL(src.URL, src.FinalURL)
 		entry := SourceCoverageEntry{
 			SourceID:        sourceID(src.URL, canonical),
 			OriginalURL:     src.URL,
@@ -146,6 +140,17 @@ func LoadSourceCoverage(root string) (SourceCoverage, error) {
 		return SourceCoverage{}, err
 	}
 	return out, nil
+}
+
+func coverageCanonicalURL(primaryURL, fallbackURL string) string {
+	canonical := canonicalURL(fallbackURL)
+	if canonical == "" {
+		canonical = canonicalURL(primaryURL)
+	}
+	if canonical == "" {
+		return primaryURL
+	}
+	return canonical
 }
 
 func WriteCoverageReport(root string, format string) ([]byte, error) {
@@ -386,7 +391,7 @@ func ValidateSourceCoverage(root string) error {
 
 	expected := map[string]atodata.SourceRecord{}
 	for _, rec := range registry.Records {
-		canonical := canonicalURL(firstNonEmpty(rec.FinalURL, rec.URL))
+		canonical := coverageCanonicalURL(rec.URL, rec.FinalURL)
 		expected[sourceID(rec.URL, canonical)] = *rec
 	}
 
@@ -409,7 +414,7 @@ func ValidateSourceCoverage(root string) error {
 		if !ok {
 			return fmt.Errorf("coverage has unknown source_id %s", sourceIDValue)
 		}
-		canonical := canonicalURL(firstNonEmpty(rec.FinalURL, rec.URL))
+		canonical := coverageCanonicalURL(rec.URL, rec.FinalURL)
 		if strings.TrimSpace(entry.CanonicalURL) != canonical {
 			return fmt.Errorf("coverage canonical URL mismatch %s: expected %s got %s", sourceIDValue, canonical, entry.CanonicalURL)
 		}

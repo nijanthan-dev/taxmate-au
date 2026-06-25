@@ -531,61 +531,15 @@ func sourceCoverageMatchesSkillFiles(root string, coverage skillgen.SourceCovera
 		coverageByID[entry.SourceID] = entry
 
 		switch entry.Status {
-		case skillgen.StatusVerified:
-			if len(entry.Skills) == 0 || len(entry.References) == 0 {
-				return false
-			}
-			for _, skill := range entry.Skills {
-				byID, ok := perSkill[skill]
-				if !ok {
-					return false
-				}
-				local, ok := byID[entry.SourceID]
-				if !ok {
-					return false
-				}
-				if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
-					strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
-					entry.CanonicalURL != "" {
-					return false
-				}
-				if local.Status != entry.Status {
-					return false
-				}
-				if strings.TrimSpace(local.CheckedAt) != strings.TrimSpace(entry.CheckedAt) {
-					return false
-				}
-			}
-		case skillgen.StatusMetadataOnly:
+		case skillgen.StatusVerified, skillgen.StatusMetadataOnly:
 			if len(entry.Skills) == 0 {
-				if len(entry.References) != 0 {
+				if entry.Status != skillgen.StatusMetadataOnly || len(entry.References) != 0 {
 					return false
 				}
 				continue
 			}
-			if len(entry.Skills) == 0 || len(entry.References) == 0 {
+			if !sourceMatchesPerSkill(entry, perSkill) {
 				return false
-			}
-			for _, skill := range entry.Skills {
-				byID, ok := perSkill[skill]
-				if !ok {
-					return false
-				}
-				local, ok := byID[entry.SourceID]
-				if !ok {
-					return false
-				}
-				if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
-					strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
-					entry.CanonicalURL != "" {
-					return false
-				}
-				if local.Status != entry.Status {
-					return false
-				}
-				if strings.TrimSpace(local.CheckedAt) != strings.TrimSpace(entry.CheckedAt) {
-					return false
-				}
 			}
 		case skillgen.StatusDuplicate:
 			if strings.TrimSpace(entry.DuplicateOf) == "" || strings.TrimSpace(entry.DuplicateEvidence) == "" {
@@ -599,8 +553,7 @@ func sourceCoverageMatchesSkillFiles(root string, coverage skillgen.SourceCovera
 			return false
 		}
 	}
-	for skill, byID := range perSkill {
-		_ = skill
+	for _, byID := range perSkill {
 		for sourceID := range byID {
 			entry, ok := coverageByID[sourceID]
 			if !ok {
@@ -614,13 +567,41 @@ func sourceCoverageMatchesSkillFiles(root string, coverage skillgen.SourceCovera
 	return true
 }
 
+func sourceMatchesPerSkill(entry skillgen.SourceCoverageEntry, perSkill map[string]map[string]skillgen.Source) bool {
+	if len(entry.Skills) == 0 || len(entry.References) == 0 {
+		return false
+	}
+	for _, skill := range entry.Skills {
+		byID, ok := perSkill[skill]
+		if !ok {
+			return false
+		}
+		local, ok := byID[entry.SourceID]
+		if !ok {
+			return false
+		}
+		if strings.TrimSpace(local.URL) != strings.TrimSpace(entry.CanonicalURL) &&
+			strings.TrimSpace(local.FinalURL) != strings.TrimSpace(entry.CanonicalURL) &&
+			entry.CanonicalURL != "" {
+			return false
+		}
+		if local.Status != entry.Status {
+			return false
+		}
+		if strings.TrimSpace(local.CheckedAt) != strings.TrimSpace(entry.CheckedAt) {
+			return false
+		}
+	}
+	return true
+}
+
 func generationIsDeterministic(root string) (bool, error) {
 	tmp, err := os.MkdirTemp("", "taxmate-validate-generation-check-")
 	if err != nil {
 		return false, err
 	}
 	defer os.RemoveAll(tmp)
-	if err := copyDir(filepath.Join(root, "data", "ato_knowledge_base"), filepath.Join(tmp, "data", "ato_knowledge_base")); err != nil {
+	if err := atodata.CopyDir(filepath.Join(root, "data", "ato_knowledge_base"), filepath.Join(tmp, "data", "ato_knowledge_base")); err != nil {
 		return false, err
 	}
 	if _, err := skillgen.Generate(skillgen.Options{Root: tmp, OutputRoot: tmp}); err != nil {
@@ -672,50 +653,6 @@ func loadPerSkillSources(root string, skills []string) (map[string]map[string]sk
 		perSkill[skill] = byID
 	}
 	return perSkill, nil
-}
-
-func copyDir(src, dst string) error {
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return err
-		}
-		body, err := os.ReadFile(src)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(dst, body, 0644)
-	}
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return err
-	}
-	return filepath.WalkDir(src, func(path string, d os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		if d.IsDir() {
-			if rel == "." {
-				return nil
-			}
-			return os.MkdirAll(target, 0755)
-		}
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
-		}
-		body, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, body, 0644)
-	})
 }
 
 func haystack(root string, idx *atodata.SourceRegistry) string {

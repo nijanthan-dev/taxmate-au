@@ -95,7 +95,7 @@ func checkGeneration(root string, opts skillgen.Options) (int, error) {
 		return 0, err
 	}
 	defer os.RemoveAll(workRoot)
-	if err := copyDir(filepath.Join(root, "data", "ato_knowledge_base"), filepath.Join(workRoot, "data", "ato_knowledge_base")); err != nil {
+	if err := atodata.CopyDir(filepath.Join(root, "data", "ato_knowledge_base"), filepath.Join(workRoot, "data", "ato_knowledge_base")); err != nil {
 		return 0, err
 	}
 	report, err := skillgen.Generate(skillgen.Options{Root: workRoot, OutputRoot: workRoot, CheckedAt: opts.CheckedAt})
@@ -103,47 +103,6 @@ func checkGeneration(root string, opts skillgen.Options) (int, error) {
 		return 0, err
 	}
 	return len(report.Sources), skillgen.CompareGeneratedArtifacts(root, workRoot)
-}
-
-func copyDir(src, dst string) error {
-	info, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(dst, 0755); err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		body, err := os.ReadFile(src)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(dst, body, 0644)
-	}
-	return filepath.WalkDir(src, func(path string, d os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		rel, relErr := filepath.Rel(src, path)
-		if relErr != nil {
-			return relErr
-		}
-		target := filepath.Join(dst, rel)
-		if d.IsDir() {
-			if rel == "." {
-				return nil
-			}
-			return os.MkdirAll(target, 0755)
-		}
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
-		}
-		body, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, body, 0644)
-	})
 }
 
 func refresh(root, topic string, all bool) (map[string]any, error) {
