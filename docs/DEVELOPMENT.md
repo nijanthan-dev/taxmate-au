@@ -16,21 +16,21 @@ bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
 ```
 
-## Cloud and local build environments (Mac-independent)
+## Cloud (Codex) and local build environments (Mac-independent)
 
-Use one setup for both GitHub-hosted and laptop-local workflows.
+Use one setup for Codex Cloud and laptop-local workflows.
 
-### GitHub Codespaces
+### Codex Cloud workspace
 
-1. Open the repository and click **Code → Codespaces → Create codespace on main**.
-2. The container auto-creates from `.devcontainer/devcontainer.json`.
-3. Run bootstrap checks (or your preferred command set) from the container:
+1. Open this repo in your Codex cloud workspace.
+2. Ensure the workspace checks out the repository at runtime.
+3. Run bootstrap checks (or your preferred command set):
 
 ```bash
 bash scripts/bootstrap-dev-env.sh
 ```
 
-Codespaces will keep `.devcontainer` dependencies pinned to the repository and avoids local host drift.
+This gives a deterministic Go/Node toolchain with the same commands used by CI.
 
 ### Local Docker environment
 
