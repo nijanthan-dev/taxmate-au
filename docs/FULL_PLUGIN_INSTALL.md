@@ -1,6 +1,6 @@
-# Full Plugin Runtime
+# Full Plugin Runtime (Primary)
 
-Use this advanced path only when you need live ATO source refresh, CSV finance review, calculator commands, skill regeneration, source coverage, and Codex plugin orchestration.
+Use this runtime path for the full TaxMate product experience: live ATO source refresh, source coverage governance, calculator workflows, finance review, and plugin orchestration.
 
 Prerequisites:
 
@@ -9,14 +9,14 @@ Prerequisites:
 - Python 3.9+.
 - Git.
 
-## Clean checkout setup
+## Clean plugin checkout setup
 
 ```bash
 git clone https://github.com/nijanthan-dev/taxmate-australia.git
 cd taxmate-australia
 ```
 
-Run full-runtime commands through the launcher (bash entrypoint + python runtime):
+Run runtime commands through the bash launcher (python runtime under the hood):
 
 ```bash
 ./scripts/taxmate refresh --help
@@ -39,6 +39,7 @@ scripts/check-publication-ready.sh
 ```
 
 If you need local-speed, rebuild native binaries in `bin/` once and keep those ahead of the launcher.
+Native binaries are optional; bash + python execution is the supported default path.
 
 ## Local plugin setup
 

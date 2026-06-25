@@ -1,6 +1,6 @@
 # Skill Generation
 
-TaxMate Australia uses a runtime pipeline to turn approved official Australian government sources into concise topic skills.
+TaxMate Australia uses a bash+python runtime pipeline to turn approved Australian government sources into concise topic skills.
 
 ## Pipeline
 

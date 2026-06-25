@@ -1,12 +1,13 @@
-# Portable Installation
+# Portable Skills Access (Optional)
 
-Use portable skills unless you need the full runtime path. Portable install needs Node.js 18 or newer and does not need a repository checkout, binaries, marketplace JSON, plugin manifests, or environment variables.
+Use portable skills only when you need quick ad-hoc use without the full plugin checkout.
+Portable install needs Node.js 18 or newer and does not need a repository checkout, runtime binaries, marketplace JSON, plugin manifests, or environment variables.
 
 Pinned CLI version: `skills@1.5.13`.
 
-## Commands tested
+## Commands
 
-Preview:
+Preview available install methods:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
@@ -108,4 +109,6 @@ npx skills@1.5.13 remove --skill '*' --agent codex --global --yes
 
 ## Safety
 
-Portable skills preserve `Accountant review` flags, source URLs, and effective periods. They require current verification for volatile values when web access is available. They must not invent missing tax treatment.
+Portable skills preserve `Accountant review` flags, source URLs, and effective periods.
+They only preserve metadata links and must mark missing or stale values as uncertain.
+When web access is not trusted or content is unavailable, do not infer tax treatment from metadata.

@@ -7,11 +7,12 @@ Contributor prerequisites:
 - Bash 5+.
 - Python 3.9+.
 
-Core checks:
+Core plugin checks:
 
 ```bash
 bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
+./scripts/taxmate validate
 ```
 
 ## Cloud (Codex) and local build environments (Mac-independent)
@@ -32,7 +33,7 @@ This gives a deterministic contributor environment matching CI expectations.
 
 ### Runtime execution
 
-Run full-runtime commands with:
+Run runtime commands with the bash+python stack:
 
 ```bash
 ./scripts/taxmate refresh --help
@@ -41,7 +42,7 @@ Run full-runtime commands with:
 ```
 
 The launcher entrypoint is bash (`./scripts/taxmate`) and delegates to `scripts/taxmate.py`.
-If you already build local binaries, the launcher prefers those; otherwise it tries release binaries.
+If local binaries are absent, it runs Python directly; this is the supported default runtime path.
 
 ### Local Docker environment
 
@@ -80,14 +81,14 @@ Do not commit `bin/` outputs or private user tax records.
 
 ## Skill packaging
 
-- Public portable skill source of truth: `config/public-skills.json`.
+- Public portable skill source of truth: `config/public-skills.json` (optional fallback).
 - Classification source of truth: `config/skill-packaging.json`.
 - Runtime-only skills must include `metadata.internal: true`.
 - Public skills must not reference repository binaries, `TAXMATE_AUSTRALIA_ROOT`, plugin-qualified skill names, or repository data paths.
 
 ## CI
 
-CI runs repository tests, portable install smoke tests, publication validation, and Gitleaks.
+CI runs plugin runtime checks, publication validation, and Gitleaks.
 
 ## Release (semver on merge to main)
 
