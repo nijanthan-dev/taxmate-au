@@ -95,3 +95,12 @@ Do not commit `bin/` outputs or private user tax records.
 ## CI
 
 CI runs Go tests, `go vet`, builds all packages, runs portable install smoke tests, runs publication validation, and runs Gitleaks.
+
+## Release (semver on merge to main)
+
+- Every successful merge to `main` triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)`.
+- Versions are calculated from Conventional Commits:
+  - `feat:` -> minor
+  - `fix:` / `perf:` -> patch
+  - `feat!:` / `BREAKING CHANGE:` -> major
+- Release notes/changelog and GitHub release artifacts are generated automatically when release-worthy commits are present.
