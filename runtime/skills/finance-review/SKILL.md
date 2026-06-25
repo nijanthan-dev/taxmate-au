@@ -8,19 +8,25 @@ metadata:
 
 # TaxMate Australia Finance Review
 
+Runtime requirements:
+
+- Bash 5+
+- Python 3.9+
+- Git
+
 Use this full-runtime skill to review structured financial records before workbook or accountant output. It is a preparation aid, not professional advice or official lodgment support. It does not replace TaxMate Australia research; refresh ATO pages before final tax treatment.
 
 Run:
 
 ```bash
 export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-finance" --input "<records.csv>" --format markdown --output "<review.md>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "<records.csv>" --format markdown --output "<review.md>"
 ```
 
 For machine-readable output:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-finance" --input "<records.csv>" --format json --output "<review.json>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "<records.csv>" --format json --output "<review.json>"
 ```
 
 Accepted headers include `date`, `description`, `amount`, `gst`, `owner`, `purpose`, `evidence`, `abn`, `category`, `account`, `asset`, `units`, and `type`.

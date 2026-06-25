@@ -2,16 +2,14 @@
 
 Contributor prerequisites:
 
-- Go 1.22 or newer.
 - Node.js 18 or newer.
 - Git.
+- Bash 5+.
+- Python 3.9+.
 
 Core checks:
 
 ```bash
-go test ./...
-go vet ./...
-go build ./...
 bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
 ```
@@ -30,7 +28,20 @@ Use one setup for Codex Cloud and laptop-local workflows.
 bash scripts/bootstrap-dev-env.sh
 ```
 
-This gives a deterministic Go/Node toolchain with the same commands used by CI.
+This gives a deterministic contributor environment matching CI expectations.
+
+### Runtime execution
+
+Run full-runtime commands with:
+
+```bash
+./scripts/taxmate refresh --help
+./scripts/taxmate finance --help
+./scripts/taxmate validate
+```
+
+The launcher entrypoint is bash (`./scripts/taxmate`) and delegates to `scripts/taxmate.py`.
+If you already build local binaries, the launcher prefers those; otherwise it tries release binaries.
 
 ### Local Docker environment
 
@@ -40,7 +51,6 @@ docker compose -f docker-compose.dev.yml exec taxmate-australia bash
 ```
 
 The local container includes:
-- Go 1.22
 - Node.js 20
 - Git/cURL/JQ
 
@@ -48,9 +58,6 @@ Then run the normal checks from the repo:
 
 ```bash
 bash scripts/bootstrap-dev-env.sh
-go test ./...
-go vet ./...
-go build ./...
 bash scripts/test-skills-install.sh
 scripts/check-publication-ready.sh
 ```
@@ -63,24 +70,10 @@ If you need Codex commands inside the container, install it with your standard m
 Coverage checks:
 
 ```bash
-go test ./...
-go vet ./...
-go build ./...
-bin/taxmate-australia-skills generate --check
-bin/taxmate-australia-skills audit --check
-bin/taxmate-australia-skills audit --format markdown --output /tmp/source-coverage.md
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
+./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
 scripts/check-publication-ready.sh
-```
-
-Build all binaries:
-
-```bash
-mkdir -p bin
-go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
-go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
-go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
-go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
 ```
 
 Do not commit `bin/` outputs or private user tax records.
@@ -94,7 +87,7 @@ Do not commit `bin/` outputs or private user tax records.
 
 ## CI
 
-CI runs Go tests, `go vet`, builds all packages, runs portable install smoke tests, runs publication validation, and runs Gitleaks.
+CI runs repository tests, portable install smoke tests, publication validation, and Gitleaks.
 
 ## Release (semver on merge to main)
 

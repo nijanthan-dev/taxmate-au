@@ -1,6 +1,6 @@
 # Portable Installation
 
-Use portable skills unless you need the Go runtime. Portable install needs Node.js 18 or newer and does not need Go, a repository checkout, binaries, marketplace JSON, plugin manifests, or environment variables.
+Use portable skills unless you need the full runtime path. Portable install needs Node.js 18 or newer and does not need a repository checkout, binaries, marketplace JSON, plugin manifests, or environment variables.
 
 Pinned CLI version: `skills@1.5.13`.
 

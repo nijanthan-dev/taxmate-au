@@ -27,6 +27,12 @@ Use this full-runtime skill for Australian tax-prep research and treatment decis
 
 ## Shared Backend
 
+Runtime requirements:
+
+- Bash 5+
+- Python 3.9+
+- Git
+
 Resolve the plugin root first:
 
 ```bash
@@ -36,10 +42,10 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
 Core commands:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --all
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --recrawl
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --all
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --recrawl
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" validate
 ```
 
 ATO source pack:
@@ -80,6 +86,6 @@ Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/`, then r
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
 2. Search `source_registry.json` and `text/`.
-3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"`.
+3. Run `"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"`.
 4. Re-read changed or relevant text.
 5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.

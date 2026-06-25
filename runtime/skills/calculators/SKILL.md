@@ -8,13 +8,18 @@ metadata:
 
 # TaxMate Australia Calculators
 
+Runtime requirements:
+
+- Bash 5+
+- Python 3.9+
+
 Use this full-runtime skill for bounded tax-prep calculations. It is not professional advice, payroll advice, lodgment support, or confirmation of entitlement. Keep outputs labelled as estimates or scaffolds where applicable.
 
 Run:
 
 ```bash
 export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-calc" <bas|super|fbt|cgt|payg|stamp-duty> [flags]
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]
 ```
 
 ## Rules

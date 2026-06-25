@@ -1,15 +1,15 @@
 # Skill Generation
 
-TaxMate Australia uses a Go pipeline to turn approved official Australian government sources into concise topic skills.
+TaxMate Australia uses a runtime pipeline to turn approved official Australian government sources into concise topic skills.
 
 ## Pipeline
 
-1. `taxmate-australia-refresh` refreshes indexed official URLs.
+1. `scripts/taxmate refresh` refreshes indexed official URLs.
 2. Fetched HTML and extracted text are written only to ignored `.cache/ato/`.
-3. `taxmate-australia-skills generate` maps sources to topic skills and writes compact references.
-4. `taxmate-australia-skills generate` writes `data/ato_knowledge_base/source_coverage.json`.
-5. `taxmate-australia-skills audit` writes coverage diagnostics on demand.
-5. `taxmate-australia-skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, and absence of committed raw snapshots.
+3. `scripts/taxmate skills generate` maps sources to topic skills and writes compact references.
+4. `scripts/taxmate skills generate` writes `data/ato_knowledge_base/source_coverage.json`.
+5. `scripts/taxmate skills audit` writes coverage diagnostics on demand.
+5. `scripts/taxmate skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, and absence of committed raw snapshots.
 6. `hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` to remove `.cache/ato/`.
 
 Approved hosts are allowlisted in `internal/skillgen`. Downloaded content is treated as untrusted data and is never allowed to change guardrails.

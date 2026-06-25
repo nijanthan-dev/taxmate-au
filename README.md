@@ -109,7 +109,7 @@ The public portable skills are:
 - `workbook`
 - `taxpack`
 
-Portable skills depend only on their own `SKILL.md`, bundled `references/`, official source URLs, and the agent's web access when available. They do not require Go, TaxMate binaries, a repository checkout, plugin manifests, marketplace JSON, or `TAXMATE_AUSTRALIA_ROOT`.
+Portable skills depend only on their own `SKILL.md`, bundled `references/`, official source URLs, and the agent's web access when available. They do not require TaxMate binaries, a repository checkout, plugin manifests, marketplace JSON, or `TAXMATE_AUSTRALIA_ROOT`.
 Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, derived from `data/ato_knowledge_base/source_registry.json`.
 
 ## Installation modes
@@ -119,13 +119,20 @@ Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, 
 | Topic guidance | Yes | Yes |
 | Bundled references | Yes | Yes |
 | Official source links | Yes | Yes |
-| Live Go source refresh | No | Yes |
+| Live official source refresh | No | Yes |
 | CSV finance review | No | Yes |
 | Calculator CLI | No | Yes |
 | Skill regeneration | No | Yes |
 | Plugin orchestration | No | Yes |
 
-Portable skills are recommended. Full runtime is advanced and needs Go 1.22 or newer plus a repository checkout.
+Portable skills are recommended. Full runtime is advanced and works from a repository checkout. Use the bash+python launcher:
+
+```bash
+cd /path/to/taxmate-australia
+./scripts/taxmate skills validate
+./scripts/taxmate refresh --query "payg"
+./scripts/taxmate finance --help
+```
 
 ## Update and remove
 
