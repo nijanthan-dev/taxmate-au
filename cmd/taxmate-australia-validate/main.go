@@ -80,6 +80,47 @@ func validate(root string) (map[string]any, bool) {
 
 	manifest, manifestErr := readPluginManifest(root)
 	manifestText := readText(filepath.Join(root, ".codex-plugin", "plugin.json"))
+	addPluginManifestChecks(root, add, manifest, manifestErr, manifestText)
+
+	requiredSkills, manifestSkillErr := publicPortableSkills(root)
+	skillText, missingSkills, badFrontmatter := loadSkillDocs(root, requiredSkills)
+	readmeText := readText(filepath.Join(root, "README.md"))
+	addSkillAndDocumentationChecks(root, add, manifestSkillErr, requiredSkills, missingSkills, badFrontmatter, readmeText)
+	disclaimerText := readText(filepath.Join(root, "DISCLAIMER.md"))
+	addPublicDisclaimerChecks(add, readmeText, disclaimerText, skillText, manifestText)
+
+	registry, err := atodata.LoadRegistry(root)
+	add("source_registry_exists", err == nil, "")
+	if err != nil {
+		return finish(root, checks, nil, false)
+	}
+	coverage, coverageErr := skillgen.LoadSourceCoverage(root)
+	addSourceCoverageChecks(root, add, registry, coverage, coverageErr)
+	if coverageErr != nil {
+		return finish(root, checks, nil, false)
+	}
+	addTopicChecks(root, add, registry)
+
+	deterministic, deterministicErr := generationIsDeterministic(root)
+	add("generation_is_deterministic", deterministic, fmt.Sprint(deterministicErr))
+	addRuntimeBinaryChecks(root, add)
+	generated, _ := filepath.Glob(filepath.Join(root, "**", "__pycache__"))
+	pyFiles := findBySuffix(root, ".py")
+	pycFiles := findBySuffix(root, ".pyc")
+	dotGoFiles := findBySuffix(root, ".go")
+	add("no_python_backend", len(pyFiles) == 0 && len(pycFiles) == 0 && len(generated) == 0, strings.Join(firstN(relativePaths(root, append(pyFiles, pycFiles...)), 5), "; "))
+	isWrapperRuntime := strings.Contains(root, string(filepath.Separator)+".agents"+string(filepath.Separator)+"skills"+string(filepath.Separator))
+	wrapperRuntimeClean := len(dotGoFiles) == 0 || !isWrapperRuntime
+	wrapperRuntimeDetail := ""
+	if !wrapperRuntimeClean {
+		wrapperRuntimeDetail = strings.Join(firstN(relativePaths(root, dotGoFiles), 5), "; ")
+	}
+	add("wrapper_runtime_no_go_source", wrapperRuntimeClean, wrapperRuntimeDetail)
+
+	return finish(root, checks, registry, true)
+}
+
+func addPluginManifestChecks(root string, add func(string, bool, string), manifest map[string]string, manifestErr error, manifestText string) {
 	add("codex_plugin_manifest_exists", manifestErr == nil, fmt.Sprint(manifestErr))
 	add("public_manifest_polished", strings.Contains(manifestText, "TaxMate Australia Maintainers") && !strings.Contains(manifestText, `"Local"`) && !strings.Contains(manifestText, `"Private"`) && !strings.Contains(manifestText, `"repository": "local"`), "")
 	add("codex_plugin_manifest_required_keys", manifest["name"] == "taxmate-australia" && manifest["version"] != "" && manifest["skills"] == "./skills/", "")
@@ -87,20 +128,21 @@ func validate(root string) (map[string]any, bool) {
 	add("codex_plugin_no_root_monolith", !fileExists(filepath.Join(root, "SKILL.md")), "")
 	add("open_plugin_backend_dirs", fileExists(filepath.Join(root, "bin")) && fileExists(filepath.Join(root, "cmd")) && fileExists(filepath.Join(root, "internal")) && fileExists(filepath.Join(root, "data")) && fileExists(filepath.Join(root, "skills")), "")
 	add("publication_docs_exist", fileExists(filepath.Join(root, "README.md")) && fileExists(filepath.Join(root, "DISCLAIMER.md")) && fileExists(filepath.Join(root, "docs", "PUBLICATION_CHECKLIST.md")), "")
+}
 
-	requiredSkills, manifestSkillErr := publicPortableSkills(root)
-	skillText, missingSkills, badFrontmatter := loadSkillDocs(root, requiredSkills)
+func addSkillAndDocumentationChecks(root string, add func(string, bool, string), manifestSkillErr error, requiredSkills []string, missingSkills []string, badFrontmatter []string, readmeText string) {
 	add("public_skill_manifest_loaded", manifestSkillErr == nil, fmt.Sprint(manifestSkillErr))
 	add("codex_plugin_required_skills_exist", len(missingSkills) == 0, strings.Join(missingSkills, ", "))
 	add("skill_frontmatter_valid", len(badFrontmatter) == 0, strings.Join(badFrontmatter, ", "))
 	add("description_nonempty", allSkillDescriptionsLong(root, requiredSkills), "")
-	readmeText := readText(filepath.Join(root, "README.md"))
+	add("portable_root_documented", strings.Contains(readmeText, "Portable skills depend only on") && strings.Contains(readmeText, "do not require") && strings.Contains(readmeText, "TAXMATE_AUSTRALIA_ROOT"), "")
+
 	fullRuntimeText := readText(filepath.Join(root, "docs", "FULL_PLUGIN_INSTALL.md")) + readText(filepath.Join(root, "docs", "SKILL_GENERATION.md"))
 	add("invocation_documented", strings.Contains(readmeText, "npx skills@1.5.13 add nijanthan-dev/taxmate-australia") &&
 		strings.Contains(readmeText, "--skill capital-gains-tax") &&
 		strings.Contains(readmeText, "npx skills@1.5.13 use nijanthan-dev/taxmate-australia"), "")
 	add("go_binaries_documented", strings.Contains(fullRuntimeText, "bin/taxmate-australia-refresh") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-skills") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-validate") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-finance") && strings.Contains(fullRuntimeText, "bin/taxmate-australia-calc"), "")
-	add("portable_root_documented", strings.Contains(readmeText, "Portable skills depend only on") && strings.Contains(readmeText, "do not require") && strings.Contains(readmeText, "TAXMATE_AUSTRALIA_ROOT"), "")
+
 	publicDocs := publicDocFiles(root)
 	add("public_docs_no_private_paths", noPrivatePaths(root, publicDocs), strings.Join(firstN(privatePathHits(root, publicDocs), 5), "; "))
 	legacyIdentityDocs := append([]string{}, publicDocs...)
@@ -111,21 +153,16 @@ func validate(root string) (map[string]any, bool) {
 	add("wrappers_mark_local_fallback", wrappersMarkLocalFallback(root), "")
 	add("wrapper_frontmatter_names", wrapperFrontmatterNamesMatchPath(root), "")
 	add("wrapper_invocation_paths", wrapperInvocationsUseAustraliaPrefix(root), "")
-	disclaimerText := readText(filepath.Join(root, "DISCLAIMER.md"))
+}
+
+func addPublicDisclaimerChecks(add func(string, bool, string), readmeText string, disclaimerText string, skillText string, manifestText string) {
 	add("public_disclaimer_documented", hasPublicDisclaimers(readmeText+disclaimerText+skillText+manifestText), "")
 	add("output_layer_separated", strings.Contains(skillText, "must not create new tax logic") && strings.Contains(skillText, "consumes reviewed data"), "")
 	add("expanded_domain_rules_documented", strings.Contains(skillText, "PAYG") && strings.Contains(skillText, "FBT") && strings.Contains(skillText, "CGT") && strings.Contains(skillText, "GST/BAS"), "")
+}
 
-	registry, err := atodata.LoadRegistry(root)
-	add("source_registry_exists", err == nil, "")
-	if err != nil {
-		return finish(root, checks, nil, false)
-	}
-	coverage, coverageErr := skillgen.LoadSourceCoverage(root)
+func addSourceCoverageChecks(root string, add func(string, bool, string), registry *atodata.SourceRegistry, coverage skillgen.SourceCoverage, coverageErr error) {
 	add("source_coverage_exists", coverageErr == nil, "")
-	if coverageErr != nil {
-		return finish(root, checks, nil, false)
-	}
 	add("source_coverage_matches_registry", len(coverage.Sources) == len(registry.Records), "")
 	if validateCoverageErr := skillgen.ValidateSourceCoverage(root); validateCoverageErr != nil {
 		add("source_coverage_statuses_valid", false, validateCoverageErr.Error())
@@ -153,7 +190,9 @@ func validate(root string) (map[string]any, bool) {
 		}
 	}
 	add("all_records_http_200", all200, "")
+}
 
+func addTopicChecks(root string, add func(string, bool, string), registry *atodata.SourceRegistry) {
 	hay := haystack(root, registry)
 	var missingTopics []string
 	for topic, needles := range topicQueries {
@@ -177,26 +216,12 @@ func validate(root string) (map[string]any, bool) {
 		}
 	}
 	add("stale_seed_failures_have_replacements", len(unresolved) == 0, strings.Join(firstN(unresolved, 5), "; "))
+}
 
-	deterministic, deterministicErr := generationIsDeterministic(root)
-	add("generation_is_deterministic", deterministic, fmt.Sprint(deterministicErr))
+func addRuntimeBinaryChecks(root string, add func(string, bool, string)) {
 	add("audit_is_read_only", auditIsReadOnly(root), "")
 	add("generated_skills_validate", skillgen.Validate(root) == nil, "")
 	add("go_binaries_exist", fileExists(filepath.Join(root, "bin", "taxmate-australia-refresh")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-skills")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-validate")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-finance")) && fileExists(filepath.Join(root, "bin", "taxmate-australia-calc")), "")
-	generated, _ := filepath.Glob(filepath.Join(root, "**", "__pycache__"))
-	pyFiles := findBySuffix(root, ".py")
-	pycFiles := findBySuffix(root, ".pyc")
-	dotGoFiles := findBySuffix(root, ".go")
-	add("no_python_backend", len(pyFiles) == 0 && len(pycFiles) == 0 && len(generated) == 0, strings.Join(firstN(relativePaths(root, append(pyFiles, pycFiles...)), 5), "; "))
-	isWrapperRuntime := strings.Contains(root, string(filepath.Separator)+".agents"+string(filepath.Separator)+"skills"+string(filepath.Separator))
-	wrapperRuntimeClean := len(dotGoFiles) == 0 || !isWrapperRuntime
-	wrapperRuntimeDetail := ""
-	if !wrapperRuntimeClean {
-		wrapperRuntimeDetail = strings.Join(firstN(relativePaths(root, dotGoFiles), 5), "; ")
-	}
-	add("wrapper_runtime_no_go_source", wrapperRuntimeClean, wrapperRuntimeDetail)
-
-	return finish(root, checks, registry, true)
 }
 
 func finish(root string, checks []check, registry *atodata.SourceRegistry, includeIndex bool) (map[string]any, bool) {
