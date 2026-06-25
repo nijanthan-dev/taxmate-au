@@ -98,7 +98,7 @@ CI runs Go tests, `go vet`, builds all packages, runs portable install smoke tes
 
 ## Release (semver on merge to main)
 
-- Every successful merge to `main` triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)`.
+- Every successful merge to `main` triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)` after CI completes for that commit.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
