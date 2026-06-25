@@ -190,8 +190,9 @@ def _run_python_command(script: str, args: List[str], root: Path) -> int:
 
 def _dispatch(command: str, args: List[str]) -> int:
     root = _find_repo_root(Path.cwd())
-    if command == "calc":
-        return _run_python_command("taxmate_calc.py", args, root)
+    if command in {"calc", "finance"}:
+        script = "taxmate_calc.py" if command == "calc" else "taxmate_finance.py"
+        return _run_python_command(script, args, root)
 
     local = _find_local_binary(command, root)
 
