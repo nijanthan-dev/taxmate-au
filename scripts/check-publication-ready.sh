@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export GOCACHE="${GOCACHE:-$ROOT/.cache/go-build}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$ROOT/.cache}"
 
 fail() {
   echo "error: $*" >&2
@@ -19,10 +19,15 @@ fail() {
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
 [[ -f hooks.json ]] || fail "missing hooks.json"
 [[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
+[[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
+[[ -f data/ato_knowledge_base/source_coverage.json ]] || fail "missing source_coverage.json"
 [[ -f config/public-skills.json ]] || fail "missing public skills manifest"
 [[ -f config/skill-packaging.json ]] || fail "missing skill packaging manifest"
 [[ -f skills/taxmate-australia/SKILL.md ]] || fail "missing portable entry-point skill"
 [[ -f scripts/test-skills-install.sh ]] || fail "missing skills install smoke test"
+if [[ -d migration ]] || [[ -f data/ato_knowledge_base/source_index.json ]] || [[ -f data/ato_knowledge_base/source_manifest.json ]] || [[ -f data/ato_knowledge_base/migration_report.json ]]; then
+  fail "legacy migration artifacts present"
+fi
 
 if git ls-files 'bin/*' | grep -q .; then
   fail "built binaries are tracked"
@@ -36,7 +41,7 @@ if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Dev
   fail "private machine path leaked into public docs"
 fi
 
-if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
+if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
   fail "legacy public identity leaked"
 fi
 
@@ -47,15 +52,17 @@ git grep -q 'Accountant review' -- DISCLAIMER.md skills || fail "missing account
 
 node <<'NODE'
 const fs = require("fs");
+const crypto = require("crypto");
 const path = require("path");
 
 const root = process.cwd();
+const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
 const publicSkills = publicManifest.portableSkills;
 const publicSet = new Set(publicSkills);
 const emptyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|bin\/taxmate-australia-|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
+const repoOnly = /(TAXMATE_AUSTRALIA_ROOT|cmd\/|internal\/|data\/ato_knowledge_base|\.codex-plugin|\$taxmate-australia:|taxmate-australia-(skills|refresh|finance|calc|validate))/;
 
 function fail(message) {
   console.error(`error: ${message}`);
@@ -64,6 +71,7 @@ function fail(message) {
 
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
+if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
 
 for (const name of publicSkills) {
   const dir = path.join(root, "skills", name);
@@ -83,11 +91,16 @@ for (const name of publicSkills) {
   const rules = fs.readFileSync(rulesPath, "utf8");
   if (rules.includes(emptyHash)) fail(`empty-content hash in ${name}`);
   if (repoOnly.test(rules)) fail(`repository-only reference in ${name}/references`);
-  if (!rules.includes("Official-source metadata")) fail(`missing official-source metadata ${name}`);
+  if (!rules.includes("Verified official-source content")) fail(`missing verified provenance heading ${name}`);
+  if (!rules.includes("Metadata-only official-source links")) fail(`missing metadata-only provenance heading ${name}`);
   if (!rules.includes("TaxMate conservative summary")) fail(`missing conservative summary ${name}`);
   if (!rules.includes("Accountant review")) fail(`missing accountant review rules ${name}`);
   if (rules.length < 300) fail(`placeholder-only rules ${name}`);
 }
+
+const sourceCoverage = JSON.parse(fs.readFileSync("data/ato_knowledge_base/source_coverage.json", "utf8"));
+if (!Array.isArray(sourceCoverage.sources) || sourceCoverage.sources.length === 0) fail("missing or empty source_coverage");
+if (sourceCoverage.sources.some((entry) => entry.status === "needs_review")) fail("source_coverage contains needs_review entries");
 
 const skillDirs = fs.readdirSync("skills").filter((entry) => fs.existsSync(path.join("skills", entry, "SKILL.md")));
 const unexpectedPublic = skillDirs.filter((entry) => !publicSet.has(entry) && !packaging.runtimeOnly.includes(entry));
@@ -100,6 +113,30 @@ for (const runtimePath of packaging.runtimeOnlyPaths) {
   if (!/metadata:\n(?:.*\n)*?\s+internal:\s+true/m.test(body)) fail(`runtime skill not internal: ${runtimePath}`);
 }
 
+const lock = JSON.parse(fs.readFileSync("plugin.lock.json", "utf8"));
+const expectedLockPaths = [
+  ...publicSkills.map((name) => `skills/${name}`),
+  ...packaging.runtimeOnlyPaths.filter((name) => name.startsWith("runtime/skills/")),
+].sort();
+const lockedPaths = lock.skills.map((entry) => entry.vendoredPath).sort();
+if (JSON.stringify(lockedPaths) !== JSON.stringify(expectedLockPaths)) fail("plugin.lock skill paths do not match packaged skills");
+for (const entry of lock.skills) {
+  if (!entry.source || entry.source.path !== entry.vendoredPath) fail(`plugin.lock source path mismatch ${entry.id}`);
+  if (!fs.existsSync(path.join(entry.vendoredPath, "SKILL.md"))) fail(`plugin.lock missing skill path ${entry.vendoredPath}`);
+  if (!/^sha256:[a-f0-9]{64}$/.test(entry.integrity || "")) fail(`plugin.lock invalid integrity ${entry.id}`);
+  const skillHash = crypto.createHash("sha256").update(fs.readFileSync(path.join(entry.vendoredPath, "SKILL.md"))).digest("hex");
+  if (entry.integrity !== `sha256:${skillHash}`) fail(`plugin.lock stale integrity ${entry.id}`);
+}
+
+for (const wrapper of packaging.runtimeOnlyPaths.filter((name) => name.startsWith("wrappers/"))) {
+  const body = fs.readFileSync(path.join(wrapper, "SKILL.md"), "utf8");
+  const fallbackPaths = [...body.matchAll(/\$TAXMATE_AUSTRALIA_ROOT\/([^"`\n]+\/SKILL\.md)/g)].map((match) => match[1]);
+  if (!fallbackPaths.length) fail(`wrapper missing fallback path ${wrapper}`);
+  for (const fallback of fallbackPaths) {
+    if (!fs.existsSync(fallback)) fail(`wrapper fallback path missing ${wrapper}: ${fallback}`);
+  }
+}
+
 const readme = fs.readFileSync("README.md", "utf8");
 const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVELOPMENT.md", "docs/SKILL_GENERATION.md"];
 for (const doc of docs) if (!fs.existsSync(doc)) fail(`missing ${doc}`);
@@ -109,20 +146,15 @@ if (readme.includes("official plugin discovery") || readme.includes("marketplace
 for (const name of publicSkills) if (!readme.includes(`\`${name}\``)) fail(`README missing public skill ${name}`);
 NODE
 
-if git grep -nE 'taxmate-australia-re[d]act|internal/pri[v]acy|cmd/taxmate-australia-re[d]act|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
+if git grep -nE 'taxmate-australia-re[d]act|internal/pri[v]acy|RE[D]ACTED' -- . ':!data/ato_knowledge_base/raw/**' ':!data/ato_knowledge_base/text/**'; then
   fail "legacy file-sanitisation artifact found"
 fi
 
-go test ./...
-mkdir -p bin
-go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
-go build -o bin/taxmate-australia-skills ./cmd/taxmate-australia-skills
-go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
-go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
-bin/taxmate-australia-skills validate >/tmp/taxmate-australia-skills-validate.json
-bin/taxmate-australia-skills audit >/tmp/taxmate-australia-skills-audit.json
-bin/taxmate-australia-validate >/tmp/taxmate-australia-validate.json
+./scripts/taxmate skills validate >/tmp/taxmate-australia-skills-validate.json
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
+./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
+./scripts/taxmate validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
 bash scripts/clean-source-cache.sh
 

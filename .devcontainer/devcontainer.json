@@ -1,0 +1,20 @@
+{
+  "name": "TaxMate Australia",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/workspaces/taxmate-australia",
+  "postCreateCommand": "bash scripts/bootstrap-dev-env.sh",
+  "containerEnv": {
+    "LC_ALL": "C.UTF-8"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "mounts": []
+}

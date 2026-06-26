@@ -19,4 +19,4 @@ TaxMate Australia may identify claim candidates, GST candidates, or record gaps,
 
 Do not publish private tax records, TFNs, Medicare numbers, bank details, identity documents, client files, or other sensitive personal information in issues, pull requests, examples, tests, or repository content.
 
-The bundled ATO source cache is included to support source-backed workflows. ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.
+The tracked source registry and coverage metadata support source-backed workflows. Refreshed ATO text is an ignored local cache under `.cache/ato/text/`, not committed repository content. ATO and Commonwealth material remains subject to the notices and terms published by the relevant official source. TaxMate Australia must not imply official endorsement.

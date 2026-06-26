@@ -27,6 +27,14 @@ Use this full-runtime skill for Australian tax-prep research and treatment decis
 
 ## Shared Backend
 
+Runtime requirements:
+
+- Bash
+- Python 3.9+
+- Git
+
+Do not use Go commands or Go module files. This runtime is bash plus Python.
+
 Resolve the plugin root first:
 
 ```bash
@@ -36,10 +44,10 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
 Core commands:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --all
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --recrawl
-"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-validate"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --all
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --recrawl
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" validate
 ```
 
 ATO source pack:
@@ -48,7 +56,7 @@ ATO source pack:
 "$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base"
 ```
 
-Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
+Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/text/`, then refresh relevant pages before answering current tax questions. Do not use old `data/ato_knowledge_base/text`, `source_index`, or `source_manifest` paths. If refresh fails, say so and use cached sources only when useful.
 
 ## Answer Rules
 
@@ -79,7 +87,7 @@ Read `SCOPE_SUMMARY.md`, search `source_index.json` and `text/`, then refresh re
 ## Workflow
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
-2. Search `source_index.json` and `text/`.
-3. Run `"$TAXMATE_AUSTRALIA_ROOT/bin/taxmate-australia-refresh" --query "<topic>"`.
+2. Search `source_registry.json` and `.cache/ato/text/`.
+3. Run `"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"`.
 4. Re-read changed or relevant text.
 5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.

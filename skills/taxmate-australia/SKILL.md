@@ -40,14 +40,26 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 ## Required Method
 
 1. Identify the requested income year or effective period before applying any rule.
-2. Read the selected skill and its bundled `references/rules.md`.
-3. Use official source URLs listed there. Verify volatile values online when web access is available.
-4. Reject values outside the relevant period.
-5. Preserve every `Accountant review` flag.
-6. Keep source URLs and effective periods visible.
-7. Do not guess when sources conflict, facts are incomplete, or verification fails.
-8. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
+2. Read the selected topic skill's bundled rules, evidence, and source list.
+3. If the selected topic skill bundles current values, use values only with their source URL, checked-at date, content hash, and effective period or income year when present.
+4. Verify volatile values online when web access is available.
+5. Reject values outside the relevant period.
+6. Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
+7. Preserve every `Accountant review` flag.
+8. Keep source URLs and effective periods visible.
+9. Do not guess when sources conflict, facts are incomplete, or verification fails.
+10. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
 
 ## Mandatory Accountant Review
 
 Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless installed sources clearly resolve them.
+
+## Maintenance Guardrails
+
+- Keep plugin lock entries and wrapper fallback paths pointed at real tracked `SKILL.md` files.
+- Keep no-op refresh commands read-only; they must not rewrite source registry metadata.
+- Treat returned validation errors as failed checks, even when helpers do not throw.
+- Preserve generated current values only when their source URL and content hash match an assigned verified source; refresh preserved value metadata from the current source row.
+- Do not publish volatile values from metadata-only sources.
+- Keep wrapper help on `./scripts/taxmate ...`; do not leak internal `taxmate_*.py` script names.
+- Do not replace the complete Codex plugin with portable skills only.

@@ -9,13 +9,10 @@ Do not present TaxMate Australia output as tax, legal, accounting, financial, BA
 Run:
 
 ```bash
-go test ./...
-mkdir -p bin
-go build -o bin/taxmate-australia-refresh ./cmd/taxmate-australia-refresh
-go build -o bin/taxmate-australia-validate ./cmd/taxmate-australia-validate
-go build -o bin/taxmate-australia-finance ./cmd/taxmate-australia-finance
-go build -o bin/taxmate-australia-calc ./cmd/taxmate-australia-calc
-bin/taxmate-australia-validate
+PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+./scripts/taxmate skills audit --check
 scripts/check-publication-ready.sh
 ```
 

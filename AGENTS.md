@@ -3,8 +3,30 @@
 - Keep changes conservative and source-backed.
 - Do not invent tax treatment.
 - Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless sources clearly resolve them.
-- Keep tax logic in `skills/research`, `skills/finance-review`, `skills/calculators`, and shared Go backend.
+- Keep tax logic in `runtime/skills/research`, `runtime/skills/finance-review`, `runtime/skills/calculators`, and shared Python runtime.
 - Keep `skills/workbook` and `skills/taxpack` as output layers only.
+- Keep this as a complete Codex plugin with runtime plus portable skills.
+- Public plugin metadata must describe the bash+Python runtime, not a Go backend.
+- Do not reintroduce Go source, Go modules, Go commands, Go build/test docs, or `gomod` automation.
+- Do not add Go tooling to devcontainers, CI, dependency automation, or contributor docs unless a Go manifest is restored.
+- Validation must scan plugin metadata and GitHub workflows for stale Go runtime/tooling claims, not only devcontainer commands.
+- Dependency automation must match committed manifests. Remove stale ecosystem entries when their manifest is removed.
+- Plugin locks and wrapper fallback paths must resolve to tracked `SKILL.md` files.
+- Publication checks must fail when `plugin.lock.json` omits packaged skills or points at stale paths.
+- Treat validator helpers that return errors as failed checks; do not assume they throw exceptions.
+- No-op CLI commands, including unknown-topic refreshes, must not rewrite registry metadata.
+- Plugin hooks should use Codex-compatible root resolution with cwd fallback.
+- Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
+- Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
+- Treat refreshed source text as ignored cache under `.cache/ato/text/`.
+- Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
+- Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
+- Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.
+- Wrapper help must show `./scripts/taxmate ...` commands, not internal `taxmate_*.py` script names.
+- Update generated topic skills through `scripts/skillgen.py`, then regenerate. Do not hand-edit generated `skills/<topic>/SKILL.md`.
+- `skills generate --check` must fail on stale tracked generated artifacts, including files absent from fresh output.
+- Generated-artifact checks must enumerate tracked `skills/<topic>/SKILL.md` and `skills/<topic>/references/*`, not only hard-coded expected files.
 - Do not commit private user tax records.
 - Do not commit built binaries from `bin/`.
-- Before PR/merge, run `go test ./...`, build all binaries, run `bin/taxmate-australia-validate`, run `scripts/check-publication-ready.sh`, and run a secret scan.
+- Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
+- Before merge, require latest-head Codex review, green CI, `mergeStateStatus` `CLEAN`, and no unresolved review threads.

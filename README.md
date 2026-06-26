@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia is a portable Codex skill set for Australian tax-prep review. It helps route records and questions into conservative, source-linked, accountant-ready workflows.
+TaxMate Australia is a complete Codex plugin for Australian tax-prep review. It provides full runtime features, source-based generation, and conservative, source-linked workflows through the plugin architecture.
 
 TaxMate Australia is only a preparation aid. It is not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
@@ -16,64 +16,47 @@ TaxMate Australia must not lodge, file, submit, transmit, or finalise any tax re
 
 ## Install in 60 seconds
 
+Primary install is the full plugin runtime (full feature set, CI-safe source pipeline, and audit tooling).
+
 Prerequisites:
 
-- Node.js 18 or newer.
-- Codex for Codex-targeted install commands.
+- Node.js 20 or newer.
+- Bash, Python 3.9+, Git, curl, and jq.
+- Codex for plugin-oriented workflows.
 
-Preview available portable skills:
+- Clone and wire locally:
+
+```bash
+git clone https://github.com/nijanthan-dev/taxmate-australia.git
+cd taxmate-australia
+```
+
+Run plugin bootstrap and validation:
+
+```bash
+bash scripts/bootstrap-dev-env.sh
+```
+
+Validate plugin and generated artifacts:
+
+```bash
+./scripts/taxmate validate
+./scripts/taxmate skills generate --check
+```
+
+Run a full runtime command:
+
+```bash
+./scripts/taxmate skills generate
+```
+
+Optional: install one or more portable skills for ad-hoc use without checkout:
 
 ```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list
-```
-
-Install all portable skills globally for Codex:
-
-```bash
 npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
-  --skill '*' \
-  --agent codex \
-  --global \
-  --yes
+  --agent codex --global --skill '*' --yes
 ```
-
-Install all portable skills in the current project:
-
-```bash
-npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
-  --skill '*' \
-  --agent codex \
-  --yes
-```
-
-Install one skill:
-
-```bash
-npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
-  --skill capital-gains-tax \
-  --agent codex \
-  --global \
-  --yes
-```
-
-Use one skill without installing it:
-
-```bash
-npx skills@1.5.13 use nijanthan-dev/taxmate-australia \
-  --skill capital-gains-tax \
-  --agent codex
-```
-
-## Verify install
-
-```bash
-npx skills@1.5.13 list --agent codex --global
-```
-
-Expected Codex locations:
-
-- Project: `.agents/skills/`
-- Global with `skills@1.5.13`: `~/.agents/skills/`
 
 ## First use
 
@@ -89,9 +72,9 @@ Use the gst-bas skill to identify missing evidence and accountant-review items.
 Use the work-from-home skill for the 2025-26 income year and verify current rates before calculating anything.
 ```
 
-## Portable skills
+## Public portable skills (optional)
 
-The public portable skills are:
+If you need ad-hoc access without checkout, the public portable entry points remain available:
 
 - `taxmate-australia`
 - `employment-deductions`
@@ -108,62 +91,33 @@ The public portable skills are:
 - `records-evidence`
 - `workbook`
 - `taxpack`
-
-Portable skills depend only on their own `SKILL.md`, bundled `references/`, official source URLs, and the agent's web access when available. They do not require Go, TaxMate binaries, a repository checkout, plugin manifests, marketplace JSON, or `TAXMATE_AUSTRALIA_ROOT`.
+Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, derived from `data/ato_knowledge_base/source_registry.json`.
 
 ## Installation modes
 
-| Capability | Portable skills | Full runtime |
-|---|---:|---:|
-| Topic guidance | Yes | Yes |
-| Bundled references | Yes | Yes |
-| Official source links | Yes | Yes |
-| Live Go source refresh | No | Yes |
-| CSV finance review | No | Yes |
-| Calculator CLI | No | Yes |
-| Skill regeneration | No | Yes |
-| Plugin orchestration | No | Yes |
-
-Portable skills are recommended. Full runtime is advanced and needs Go 1.22 or newer plus a repository checkout.
-
-## Update and remove
-
-Update all installed TaxMate skills:
+Full plugin path is recommended for production and plugin users:
 
 ```bash
-npx skills@1.5.13 update --global --yes
+cd /path/to/taxmate-australia
+./scripts/taxmate skills validate
+./scripts/taxmate refresh --query "payg"
+./scripts/taxmate finance --help
 ```
 
-Update one TaxMate skill:
+## Update and remove (portable only)
 
-```bash
-npx skills@1.5.13 update capital-gains-tax --global --yes
-```
-
-Remove one TaxMate skill:
-
-```bash
-npx skills@1.5.13 remove --skill capital-gains-tax --agent codex --global --yes
-```
-
-Remove all TaxMate skills:
-
-```bash
-npx skills@1.5.13 remove --skill '*' --agent codex --global --yes
-```
+Portable skills are optional. Update/remove portable skills with the `skills@1.5.13` package as needed, then keep plugin checkout refreshed for plugin/runtime parity.
 
 ## Troubleshooting
 
-- `npx: command not found`: install Node.js 18 or newer.
-- Skill missing after install: run `npx skills@1.5.13 list --agent codex --global`.
-- Project install not visible: check `.agents/skills/` in the current project.
-- Global install not visible: check `~/.agents/skills/`.
+- `npx: command not found`: install Node.js 20 or newer for full-runtime workflows.
+- Plugin command not working: re-run `bash scripts/bootstrap-dev-env.sh` and verify `python3` + `bash` are available.
 - Tax answer uncertain: keep `Accountant review`; do not guess.
 
 ## More docs
 
-- Portable install: [docs/INSTALLATION.md](docs/INSTALLATION.md)
-- Full runtime install: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md)
+- Full plugin setup: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md)
+- Optional portable install: [docs/INSTALLATION.md](docs/INSTALLATION.md)
 - Development: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 - Skill generation: [docs/SKILL_GENERATION.md](docs/SKILL_GENERATION.md)
 - Disclaimer: [DISCLAIMER.md](DISCLAIMER.md)
