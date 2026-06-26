@@ -2,6 +2,8 @@
 
 TaxMate Australia uses a bash+python runtime pipeline to turn approved Australian government sources into concise topic skills.
 
+Do not reintroduce Go tooling, `go.mod`, `gomod` Dependabot entries, migration artifacts, `source_index`, `source_manifest`, or committed raw source text.
+
 ## Pipeline
 
 1. `scripts/taxmate refresh` refreshes indexed official URLs.
@@ -9,14 +11,14 @@ TaxMate Australia uses a bash+python runtime pipeline to turn approved Australia
 3. `scripts/taxmate skills generate` maps sources to topic skills and writes compact references.
 4. `scripts/taxmate skills generate` writes `data/ato_knowledge_base/source_coverage.json`.
 5. `scripts/taxmate skills audit` writes coverage diagnostics on demand.
-5. `scripts/taxmate skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, and absence of committed raw snapshots.
-6. `hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` to remove `.cache/ato/`.
+6. `scripts/taxmate skills validate` checks guardrails, source assignment, reverse provenance, dynamic-value periods, stale generated artifacts, and absence of committed raw snapshots.
+7. `hooks.json` runs `scripts/clean-source-cache.sh` on `SessionEnd` to remove `.cache/ato/`.
 
 Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is treated as untrusted data and is never allowed to change guardrails.
 
 ## Generated Outputs
 
-- `skills/<topic>/SKILL.md`: concise routing, facts, refresh workflow, output states, review flags, and anti-overclaim rules.
+- `skills/<topic>/SKILL.md`: concise routing, facts, source workflow, output states, review flags, and anti-overclaim rules.
 - `skills/<topic>/references/rules.md`: source-backed scope and provenance.
 - `skills/<topic>/references/evidence.md`: records needed before classification.
 - `skills/<topic>/references/sources.json`: source URL, title, last-updated date, checked-at date, and content hash.
@@ -28,6 +30,8 @@ Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is tr
 Skills must not hardcode rates, thresholds, caps, due dates, or similar volatile values. Generated references may include a value only with source URL, title, last-updated date when available, checked-at date, content hash, context, and effective period or income year when detectable.
 
 If a value is stale, unavailable, conflicting, or wrong-year, classify the matter as `Accountant review`.
+
+When `.cache/ato/text/` is unavailable, generation may preserve existing `current-values.json` entries only if their provenance still matches tracked sources. `skills generate --check` must compare both generated and tracked generated files so stale tracked references fail the check.
 
 ## Empty-content provenance
 

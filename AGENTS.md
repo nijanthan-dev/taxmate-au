@@ -3,8 +3,17 @@
 - Keep changes conservative and source-backed.
 - Do not invent tax treatment.
 - Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, and business-versus-hobby items as `Accountant review` unless sources clearly resolve them.
-- Keep tax logic in `skills/research`, `skills/finance-review`, `skills/calculators`, and shared Python runtime.
+- Keep tax logic in `runtime/skills/research`, `runtime/skills/finance-review`, `runtime/skills/calculators`, and shared Python runtime.
 - Keep `skills/workbook` and `skills/taxpack` as output layers only.
+- Keep this as a complete Codex plugin with runtime plus portable skills.
+- Do not reintroduce Go source, Go modules, Go commands, Go build/test docs, or `gomod` automation.
+- Dependency automation must match committed manifests. Remove stale ecosystem entries when their manifest is removed.
+- Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
+- Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.
+- Treat refreshed source text as ignored cache under `.cache/ato/text/`.
+- Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
+- `skills generate --check` must fail on stale tracked generated artifacts, including files absent from fresh output.
 - Do not commit private user tax records.
 - Do not commit built binaries from `bin/`.
 - Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
+- Before merge, require latest-head Codex review, green CI, `mergeStateStatus` `CLEAN`, and no unresolved review threads.

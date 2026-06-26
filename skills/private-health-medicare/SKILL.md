@@ -14,7 +14,8 @@ Use for private health and Medicare levy questions. Do not use for deductibility
 1. Read `references/rules.md` before classifying tax treatment.
 2. Read `references/evidence.md` before deciding record status.
 3. Check `references/sources.json` for source URLs, checked-at dates, and metadata-only sources.
-4. Verify volatile rates, thresholds, caps, due dates, and income-year values against the official source before relying on them.
+4. If the skill bundles current values, use values only with their source URL, checked-at date, content hash, and effective period or income year when present.
+5. Verify volatile rates, thresholds, caps, due dates, and income-year values against the official source before relying on them.
 
 ## Safety rules
 

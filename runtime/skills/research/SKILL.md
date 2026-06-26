@@ -33,6 +33,8 @@ Runtime requirements:
 - Python 3.9+
 - Git
 
+Do not use Go commands or Go module files. This runtime is bash plus Python.
+
 Resolve the plugin root first:
 
 ```bash
@@ -54,7 +56,7 @@ ATO source pack:
 "$TAXMATE_AUSTRALIA_ROOT/data/ato_knowledge_base"
 ```
 
-Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/`, then refresh relevant pages before answering current tax questions. If refresh fails, say so and use cached sources only when useful.
+Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/text/`, then refresh relevant pages before answering current tax questions. Do not use old `data/ato_knowledge_base/text`, `source_index`, or `source_manifest` paths. If refresh fails, say so and use cached sources only when useful.
 
 ## Answer Rules
 
