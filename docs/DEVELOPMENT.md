@@ -2,8 +2,10 @@
 
 Contributor prerequisites:
 
-- Node.js 18 or newer.
+- Node.js 20 or newer.
 - Git.
+- curl.
+- jq.
 - Bash 5+.
 - Python 3.9+.
 

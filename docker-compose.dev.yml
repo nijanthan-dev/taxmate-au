@@ -9,10 +9,7 @@ services:
     tty: true
     volumes:
       - .:/workspaces/taxmate-australia
-      - go-cache:/workspaces/taxmate-australia/.cache
-    environment:
-      GOCACHE: /workspaces/taxmate-australia/.cache/gocache
-      GOMODCACHE: /workspaces/taxmate-australia/.cache/gomod
+      - taxmate-cache:/workspaces/taxmate-australia/.cache
 
 volumes:
-  go-cache:
+  taxmate-cache:

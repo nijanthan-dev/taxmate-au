@@ -664,6 +664,11 @@ def stale_go_tooling_hits(root: str) -> List[str]:
     for rel in [
         os.path.join(".devcontainer", "Dockerfile"),
         os.path.join(".devcontainer", "devcontainer.json"),
+        "docker-compose.dev.yml",
+        "CONTRIBUTING.md",
+        "README.md",
+        os.path.join("docs", "DEVELOPMENT.md"),
+        os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
         os.path.join(".github", "dependabot.yml"),
         os.path.join(".github", "dependabot.yaml"),
     ]:
@@ -671,7 +676,17 @@ def stale_go_tooling_hits(root: str) -> List[str]:
         text = read_text(path).lower()
         if not text:
             continue
-        for needle in ["devcontainers/go", "golang.go", "gomodcache", "gocache", "go version", "package-ecosystem: gomod"]:
+        for needle in [
+            "devcontainers/go",
+            "golang.go",
+            "gomodcache",
+            "gocache",
+            "go version",
+            "go test",
+            "go build",
+            "go run",
+            "package-ecosystem: gomod",
+        ]:
             if needle in text:
                 hits.append(f"{rel}:{needle}")
     return hits

@@ -21,8 +21,8 @@ Primary install is the full plugin runtime (full feature set, CI-safe source pip
 Prerequisites:
 
 - Node.js 20 or newer.
-- Bash 5+, Python 3.9+, and Codex for plugin-oriented workflows.
-- Git for local plugin checkout.
+- Bash 5+, Python 3.9+, Git, curl, and jq.
+- Codex for plugin-oriented workflows.
 
 - Clone and wire locally:
 
@@ -110,7 +110,7 @@ Portable skills are optional. Update/remove portable skills with the `skills@1.5
 
 ## Troubleshooting
 
-- `npx: command not found`: install Node.js 18 or newer.
+- `npx: command not found`: install Node.js 20 or newer for full-runtime workflows.
 - Plugin command not working: re-run `bash scripts/bootstrap-dev-env.sh` and verify `python3` + `bash` are available.
 - Tax answer uncertain: keep `Accountant review`; do not guess.
 
