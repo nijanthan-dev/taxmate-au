@@ -214,7 +214,7 @@ def write_json(report: Report, out) -> None:
         "caveats": report.caveats,
         "ato_refresh_queries": report.ato_refresh_queries,
     }
-    json.dump(payload, out, indent=2)
+    json.dump(payload, out, indent=2, allow_nan=False)
     out.write("\n")
 
 
@@ -727,6 +727,8 @@ def parse_money(raw_value: str) -> float:
         number = float(value)
     except ValueError:
         return 0.0
+    if not math.isfinite(number):
+        raise ValueError(f"invalid finite money value: {raw_value!r}")
     if neg:
         number = -number
     return round2(number)

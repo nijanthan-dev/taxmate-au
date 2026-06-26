@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
@@ -23,8 +24,18 @@ def validate_tool(tool: str) -> None:
 
 
 def write_json(result: Dict[str, Any], out) -> None:
-    json.dump(result, out, indent=2)
+    json.dump(result, out, indent=2, allow_nan=False)
     out.write("\n")
+
+
+def finite_float(value: str) -> float:
+    try:
+        number = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid number: {value!r}") from exc
+    if not math.isfinite(number):
+        raise argparse.ArgumentTypeError(f"invalid finite number: {value!r}")
+    return number
 
 
 def parse_bool_arg(value: str) -> bool:
@@ -300,30 +311,30 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if tool == "bas":
         parser.add_argument("tool")
-        parser.add_argument("--gst-collected", type=float, default=0)
-        parser.add_argument("--gst-credits", type=float, default=0)
-        parser.add_argument("--payg-withheld", type=float, default=0)
-        parser.add_argument("--fuel-tax-credit", type=float, default=0)
-        parser.add_argument("--adjustments", type=float, default=0)
+        parser.add_argument("--gst-collected", type=finite_float, default=0)
+        parser.add_argument("--gst-credits", type=finite_float, default=0)
+        parser.add_argument("--payg-withheld", type=finite_float, default=0)
+        parser.add_argument("--fuel-tax-credit", type=finite_float, default=0)
+        parser.add_argument("--adjustments", type=finite_float, default=0)
         args = parser.parse_args(argv)
         result = bas(args.gst_collected, args.gst_credits, args.payg_withheld, args.fuel_tax_credit, args.adjustments)
     elif tool == "super":
         parser.add_argument("tool")
-        parser.add_argument("--ote", type=float, default=0)
-        parser.add_argument("--rate", type=float, default=0)
+        parser.add_argument("--ote", type=finite_float, default=0)
+        parser.add_argument("--rate", type=finite_float, default=0)
         args = parser.parse_args(argv)
         result = super_guarantee(args.ote, args.rate)
     elif tool == "fbt":
         parser.add_argument("tool")
-        parser.add_argument("--taxable-value", type=float, default=0)
+        parser.add_argument("--taxable-value", type=finite_float, default=0)
         parser.add_argument("--type", default="type2")
         args = parser.parse_args(argv)
         result = fbt(args.taxable_value, args.type)
     elif tool == "cgt":
         parser.add_argument("tool")
-        parser.add_argument("--proceeds", type=float, default=0)
-        parser.add_argument("--cost-base", type=float, default=0)
-        parser.add_argument("--capital-losses", type=float, default=0)
+        parser.add_argument("--proceeds", type=finite_float, default=0)
+        parser.add_argument("--cost-base", type=finite_float, default=0)
+        parser.add_argument("--capital-losses", type=finite_float, default=0)
         parser.add_argument("--acquired", default="")
         parser.add_argument("--disposed", default="")
         parser.add_argument("--discount", action="store_true")
@@ -331,7 +342,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         result = cgt(args.proceeds, args.cost_base, args.capital_losses, args.acquired, args.disposed, args.discount)
     elif tool == "payg":
         parser.add_argument("tool")
-        parser.add_argument("--gross-pay", type=float, default=0)
+        parser.add_argument("--gross-pay", type=finite_float, default=0)
         parser.add_argument("--periods", type=int, default=52)
         parser.add_argument(
             "--tax-free-threshold",
@@ -347,7 +358,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     else:  # stamp-duty
         parser.add_argument("tool")
         parser.add_argument("--state", default="")
-        parser.add_argument("--value", type=float, default=0)
+        parser.add_argument("--value", type=finite_float, default=0)
         args = parser.parse_args(argv)
         result = stamp_duty_router(args.state, args.value)
 

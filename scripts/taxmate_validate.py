@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import atodata
 import skillgen
+import taxmate_calc
 import taxmate_finance
 import taxmate_skills
 
@@ -260,6 +261,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
     add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
     add("finance_csv_trims_leading_space", finance_csv_trims_leading_space(), "")
+    add("calc_rejects_non_finite_numbers", calc_rejects_non_finite_numbers(), "")
+    add("finance_csv_rejects_non_finite_numbers", finance_csv_rejects_non_finite_numbers(), "")
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
     add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
@@ -979,6 +982,26 @@ def finance_csv_trims_leading_space() -> bool:
     except Exception:
         return False
     return len(rows) == 1 and rows[0].description == "Quoted desk"
+
+
+def calc_rejects_non_finite_numbers() -> bool:
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            taxmate_calc.main(["payg", "--gross-pay", "nan"])
+    except SystemExit as exc:
+        return exc.code != 0 and out.getvalue() == ""
+    return False
+
+
+def finance_csv_rejects_non_finite_numbers() -> bool:
+    body = "date,description,amount,gst,units\n2026-01-01,Bad,nan,0,1\n"
+    try:
+        taxmate_finance.read_csv(io.StringIO(body))
+    except ValueError:
+        return True
+    return False
 
 
 def refresh_errors_use_python_formatting(root: str) -> bool:
