@@ -1041,7 +1041,7 @@ valueRE = re.compile(r"(?i)(\b\d{4}[-–]\d{2}\b|\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b
 def detectValues(topic: str, text: str, src: Source) -> List[ValueFact]:
     out: List[ValueFact] = []
     seen = set()
-    for match in valueRE.finditer(text, 20):
+    for match in valueRE.finditer(text):
         value = text[match.start() : match.end()].strip()
         if value in seen:
             continue
@@ -1065,6 +1065,8 @@ def detectValues(topic: str, text: str, src: Source) -> List[ValueFact]:
                 reuse_warning="Do not reuse outside the stated income year or effective period without refreshing the official source.",
             )
         )
+        if len(out) >= 20:
+            break
     return out
 
 

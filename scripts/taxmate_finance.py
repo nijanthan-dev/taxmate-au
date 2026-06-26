@@ -10,6 +10,7 @@ import math
 import re
 import sys
 from dataclasses import asdict, dataclass, field
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timezone
 from typing import Dict, Iterable, List, Optional
 
@@ -776,7 +777,7 @@ def first_rows(values: List[int], n: int) -> List[int]:
 
 
 def round2(value: float) -> float:
-    return round(value * 100) / 100
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def abs_float(value: float) -> float:

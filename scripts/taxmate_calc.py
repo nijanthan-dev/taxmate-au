@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -48,7 +49,7 @@ def titlecase_tool(tool: str) -> str:
 
 
 def round2(value: float) -> float:
-    return round(value * 100) / 100
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def bas(sales_gst: float, purchase_gst: float, payg_withheld: float, fuel_tax_credit: float, adjustments: float) -> Dict[str, Any]:
