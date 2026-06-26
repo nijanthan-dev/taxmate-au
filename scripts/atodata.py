@@ -73,7 +73,7 @@ SEED_URLS = [
     "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/managed-investment-funds",
     "https://www.ato.gov.au/individuals-and-families/investments-and-assets/investment-income",
     "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families",
-    "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-to-pay",
+    "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay",
     "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/personal-super-contributions",
     "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super/growing-and-keeping-track-of-your-super/how-to-save-more-in-your-super/personal-super-contributions",
     "https://www.ato.gov.au/individuals-and-families/super-for-individuals-and-families/super-contributions-tax-and-government-contributions/claiming-deductions-for-personal-super-contributions",
@@ -586,9 +586,9 @@ def discover_links(base_url: str, src: bytes) -> List[str]:
         absolute = urlunparse(urlparse(urljoin(base.geturl(), parsed.geturl())))
         if absolute == "":
             continue
-        if not absolute.startswith("https://www.ato.gov.au"):
-            continue
         parts = urlparse(absolute)
+        if parts.scheme != "https" or parts.netloc.lower() != "www.ato.gov.au":
+            continue
         normalized = (parts.scheme, parts.netloc, parts.path.rstrip("/"), "", "", "")
         rebuilt = urlunparse(normalized)
         if path_allowed(parts.path):
