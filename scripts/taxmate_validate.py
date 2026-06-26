@@ -89,6 +89,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     deterministic, deterministic_err = generation_is_deterministic(root)
     add("generation_is_deterministic", deterministic, str(deterministic_err))
     add("current_values_preserved_without_cache", current_values_preserved_without_cache(root), "")
+    add("blank_registry_hash_downgrades_previous_coverage", blank_registry_hash_downgrades_previous_coverage(root), "")
     add("stale_current_values_detected", stale_current_values_detected(root), "")
     add("stale_generated_reference_detected", stale_generated_reference_detected(root), "")
     add_runtime_binary_checks(root, add, registry)
@@ -732,6 +733,73 @@ def current_values_preserved_without_cache(root: str) -> bool:
         return False
     finally:
         shutil.rmtree(work_root, ignore_errors=True)
+
+
+def blank_registry_hash_downgrades_previous_coverage(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-blank-registry-hash-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-blank-registry-generated-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+
+        target = first_current_value_source(work_root)
+        if target is None:
+            return False
+        skill, source_url = target
+
+        registry = atodata.LoadRegistry(work_root)
+        rec = find_registry_record(registry, source_url)
+        if rec is None:
+            return False
+        rec.content_hash = ""
+        rec.content_verified = False
+        atodata.SaveRegistry(work_root, registry)
+
+        skillgen.Generate(skillgen.Options(root=work_root, output_root=generated_root))
+        generated_registry = atodata.LoadRegistry(generated_root)
+        generated_rec = find_registry_record(generated_registry, source_url)
+        if generated_rec is None or generated_rec.content_hash != "" or generated_rec.content_verified:
+            return False
+
+        coverage = skillgen.LoadSourceCoverage(generated_root)
+        source_id = skillgen.sourceID(rec.url, skillgen.coverageCanonicalURL(rec.url, rec.final_url))
+        entry = next((item for item in coverage.sources if item.source_id == source_id), None)
+        if entry is None or entry.status == skillgen.StatusVerified:
+            return False
+
+        values_path = os.path.join(generated_root, "skills", skill, "references", "current-values.json")
+        if not os.path.exists(values_path):
+            return True
+        values = json.loads(Path(values_path).read_text(encoding="utf-8"))
+        return all(skillgen.canonicalURL(str(item.get("source_url", ""))) != skillgen.canonicalURL(source_url) for item in values)
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def first_current_value_source(root: str) -> Optional[Tuple[str, str]]:
+    for skill in required_topics():
+        path = os.path.join(root, "skills", skill, "references", "current-values.json")
+        try:
+            values = json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for item in values:
+            if isinstance(item, dict) and item.get("source_url"):
+                return skill, str(item["source_url"])
+    return None
+
+
+def find_registry_record(registry, source_url: str):
+    canonical = skillgen.canonicalURL(source_url)
+    for rec in registry.records:
+        if skillgen.canonicalURL(rec.url) == canonical or skillgen.canonicalURL(rec.final_url) == canonical:
+            return rec
+    return None
 
 
 def stale_current_values_detected(root: str) -> bool:

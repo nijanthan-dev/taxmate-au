@@ -766,13 +766,6 @@ def _build(
         if text_hash != "":
             content_hash = text_hash
         prev = previous_by_id.get(record_id) if use_previous else None
-        if (
-            not validContentHash(content_hash)
-            and prev is not None
-            and prev.canonical_url.strip() == canonical.strip()
-            and validContentHash(prev.content_hash)
-        ):
-            content_hash = prev.content_hash.strip()
 
         preserved_verified = False
         preserved_skill = ""

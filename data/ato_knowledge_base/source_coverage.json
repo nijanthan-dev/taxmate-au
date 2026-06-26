@@ -7554,14 +7554,14 @@
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
       "checked_at": "2026-06-23T09:04:57Z",
-      "content_hash": "da4a1b486f3c85ec09c825f0b90da2f2e5ad9469d5dc5524eb1f13ba11f5e1de",
+      "content_hash": "",
       "status": "duplicate",
       "skills": [],
       "references": [],
       "covered_concepts": [],
       "duplicate_of": "ato-ff8796199a01",
-      "duplicate_evidence": "identical non-empty content hash",
-      "reason": "identical non-empty content hash"
+      "duplicate_evidence": "identical canonical URL",
+      "reason": "identical canonical URL"
     },
     {
       "source_id": "ato-b4bd59e5ac66",
