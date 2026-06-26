@@ -62,13 +62,9 @@ def _source_url(row: Dict[str, Any]) -> str:
 def _check_generation(root: str, checked_at: str) -> Tuple[int, Optional[Exception]]:
     work_root = Path(tempfile.mkdtemp(prefix="taxmate-australia-skills-check-"))
     try:
-        atodata.CopyDir(
-            os.path.join(root, "data", "ato_knowledge_base"),
-            str(work_root / "data" / "ato_knowledge_base"),
-        )
         report = skillgen.Generate(
             skillgen.Options(
-                root=str(work_root),
+                root=root,
                 output_root=str(work_root),
                 checked_at=checked_at,
             )

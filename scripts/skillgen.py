@@ -651,7 +651,7 @@ def Generate(opts: Union[Options, dict]) -> GenerationReport:
     report_sources, grouped, values, _ = _build(opts.root, registry, checked_at, previous_loaded, previous_coverage)
     for t in Topics():
         sources = grouped.get(t.slug, [])
-        if writeTopic(opts.output_root, t, sources, values.get(t.slug, [])) is not None:
+        if writeTopic(opts.output_root, opts.root, t, sources, values.get(t.slug, [])) is not None:
             pass
 
     if writeOutputLayers(opts.output_root) is not None:
@@ -659,6 +659,11 @@ def Generate(opts: Union[Options, dict]) -> GenerationReport:
 
     coverage = BuildSourceCoverage(report_sources)
     WriteSourceCoverage(opts.output_root, coverage)
+    if opts.output_root != opts.root:
+        src = os.path.join(opts.root, "data", "ato_knowledge_base", "source_registry.json")
+        dst = os.path.join(opts.output_root, "data", "ato_knowledge_base", "source_registry.json")
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst)
     err = ValidateSourceCoverage(opts.output_root)
     if err is not None:
         raise err
@@ -814,7 +819,7 @@ def _build(
     return sources, grouped, values, None
 
 
-def writeTopic(root: str, topic_obj: Topic, sources: List[Source], values: List[ValueFact]) -> None:
+def writeTopic(root: str, source_root: str, topic_obj: Topic, sources: List[Source], values: List[ValueFact]) -> None:
     dir_path = os.path.join(root, "skills", topic_obj.slug)
     ref_dir = os.path.join(dir_path, "references")
     os.makedirs(ref_dir, exist_ok=True)
@@ -823,8 +828,8 @@ def writeTopic(root: str, topic_obj: Topic, sources: List[Source], values: List[
     writeText(os.path.join(ref_dir, "evidence.md"), evidenceMarkdown(topic_obj, sources))
     writeJSON(os.path.join(ref_dir, "sources.json"), [_source_to_json(src) for src in sources])
 
+    values = mergeAndFilterValues(source_root, topic_obj.slug, values)
     if len(values) > 0:
-        values = filterValuesWithPeriods(values)
         writeJSON(os.path.join(ref_dir, "current-values.json"), [_value_to_json(v) for v in values])
     else:
         try:
@@ -1673,8 +1678,9 @@ def requiredSourceArtifacts(root: str) -> List[str]:
 
 
 def CompareGeneratedArtifacts(root: str, generated_root: str) -> Optional[RuntimeError]:
-    generated_files = requiredSourceArtifacts(generated_root)
-    for rel in generated_files:
+    expected_files = set(requiredSourceArtifacts(root))
+    generated_files = set(requiredSourceArtifacts(generated_root))
+    for rel in sorted(expected_files | generated_files):
         generated_path = os.path.join(generated_root, rel)
         expected_path = os.path.join(root, rel)
         try:
@@ -1848,22 +1854,25 @@ def _source_from_json(payload: Dict[str, Any]) -> Source:
 
 
 def _value_to_json(value: ValueFact) -> Dict[str, Any]:
-    return {
+    out = {
         "topic": value.topic,
         "value": value.value,
         "unit": value.unit,
         "context": value.context,
         "jurisdiction": value.jurisdiction,
         "income_year": value.income_year,
-        "effective_from": value.effective_from,
-        "effective_to": value.effective_to,
         "source_url": value.source_url,
         "source_title": value.source_title,
-        "last_updated": value.last_updated,
+        "source_last_updated": value.last_updated,
         "checked_at": value.checked_at,
         "content_hash": value.content_hash,
         "reuse_warning": value.reuse_warning,
     }
+    if value.effective_from:
+        out["effective_from"] = value.effective_from
+    if value.effective_to:
+        out["effective_to"] = value.effective_to
+    return out
 
 
 def value_from_json(payload: Dict[str, Any]) -> ValueFact:

@@ -83,6 +83,8 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
 
     deterministic, deterministic_err = generation_is_deterministic(root)
     add("generation_is_deterministic", deterministic, str(deterministic_err))
+    add("current_values_preserved_without_cache", current_values_preserved_without_cache(root), "")
+    add("stale_current_values_detected", stale_current_values_detected(root), "")
     add_runtime_binary_checks(root, add, registry)
 
     return finish(root, checks, registry, True)
@@ -572,17 +574,65 @@ def generation_is_deterministic(root: str) -> Tuple[bool, Optional[Exception]]:
 
     work_root = tempfile.mkdtemp(prefix="taxmate-validate-generation-check-")
     try:
-        atodata.CopyDir(
-            os.path.join(root, "data", "ato_knowledge_base"),
-            os.path.join(work_root, "data", "ato_knowledge_base"),
-        )
-        skillgen.Generate(skillgen.Options(root=work_root, output_root=work_root))
+        skillgen.Generate(skillgen.Options(root=root, output_root=work_root))
         err = skillgen.CompareGeneratedArtifacts(root, work_root)
         return err is None, err
     except Exception as exc:
         return False, exc
     finally:
         shutil.rmtree(work_root, ignore_errors=True)
+
+
+def current_values_preserved_without_cache(root: str) -> bool:
+    import shutil
+
+    value_files = current_value_files(root)
+    if not value_files:
+        return False
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-values-preserved-")
+    try:
+        skillgen.Generate(skillgen.Options(root=root, output_root=work_root))
+        for rel in value_files:
+            expected = Path(os.path.join(root, rel)).read_bytes().strip()
+            generated = Path(os.path.join(work_root, rel)).read_bytes().strip()
+            if generated != expected:
+                return False
+        return True
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def stale_current_values_detected(root: str) -> bool:
+    import shutil
+
+    value_files = current_value_files(root)
+    if not value_files:
+        return False
+    expected_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-expected-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-generated-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(expected_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(expected_root, "data", "ato_knowledge_base"))
+        atodata.CopyDir(os.path.join(expected_root, "skills"), os.path.join(generated_root, "skills"))
+        atodata.CopyDir(os.path.join(expected_root, "data", "ato_knowledge_base"), os.path.join(generated_root, "data", "ato_knowledge_base"))
+        os.remove(os.path.join(generated_root, value_files[0]))
+        return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is not None
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(expected_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def current_value_files(root: str) -> List[str]:
+    out: List[str] = []
+    for skill in required_topics():
+        rel = os.path.join("skills", skill, "references", "current-values.json")
+        if file_exists(os.path.join(root, rel)):
+            out.append(rel)
+    return sorted(out)
 
 
 def audit_is_read_only(root: str) -> bool:
