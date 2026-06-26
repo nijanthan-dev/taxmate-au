@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import tempfile
@@ -12,6 +14,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import atodata
 import skillgen
+import taxmate_skills
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
@@ -80,7 +83,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
 
     deterministic, deterministic_err = generation_is_deterministic(root)
     add("generation_is_deterministic", deterministic, str(deterministic_err))
-    add_runtime_binary_checks(root, add)
+    add_runtime_binary_checks(root, add, registry)
 
     return finish(root, checks, registry, True)
 
@@ -242,8 +245,12 @@ def add_topic_checks(root: str, add, registry) -> None:
     add("stale_seed_failures_have_replacements", len(unresolved) == 0, "; ".join(first_n(unresolved, 5)))
 
 
-def add_runtime_binary_checks(root: str, add) -> None:
+def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_is_read_only", audit_is_read_only(root), "")
+    add("audit_json_stdout_single_document", audit_json_stdout_single_document(root), "")
+    add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
+    add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
+    add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
     add("generated_skills_validate", is_valid_exception_safe(lambda: skillgen.Validate(root)) is None, "")
     python_backend = (
         file_exists(os.path.join(root, "scripts", "taxmate_skills.py"))
@@ -584,6 +591,53 @@ def audit_is_read_only(root: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def audit_json_stdout_single_document(root: str) -> bool:
+    out = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            code = taxmate_skills._audit(root, "", "json", False)
+        if code != 0:
+            return False
+        payload = json.loads(out.getvalue())
+        return "summary" in payload and "source_coverage" in payload
+    except Exception:
+        return False
+
+
+def save_registry_stamps_refreshed_at() -> bool:
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-registry-save-")
+    try:
+        registry = atodata.SourceRegistry(fetched_at="2000-01-01T00:00:00Z", refreshed_at="2000-01-01T00:00:00Z")
+        atodata.SaveRegistry(work_root, registry)
+        saved = atodata.LoadRegistry(work_root)
+        return saved.refreshed_at != "2000-01-01T00:00:00Z" and saved.refreshed_at.endswith("Z")
+    except Exception:
+        return False
+    finally:
+        import shutil
+
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def recrawl_link_host_filter_strict() -> bool:
+    body = b"""
+    <a href="https://www.ato.gov.au.evil/tax-rates-and-codes/x">bad host</a>
+    <a href="https://www.ato.gov.au@evil.example/tax-rates-and-codes/x">bad userinfo</a>
+    <a href="https://user@www.ato.gov.au/tax-rates-and-codes/x">bad user</a>
+    <a href="/tax-rates-and-codes/tax-rates-australian-residents">good</a>
+    """
+    links = atodata.DiscoverLinks("https://www.ato.gov.au/tax-rates-and-codes", body)
+    return links == ["https://www.ato.gov.au/tax-rates-and-codes/tax-rates-australian-residents"]
+
+
+def super_seed_matches_registry(registry) -> bool:
+    canonical = "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-super-to-pay"
+    stale = "https://www.ato.gov.au/businesses-and-organisations/super-for-employers/paying-super-contributions/how-much-to-pay"
+    seed_ok = canonical in atodata.SEED_URLS and stale not in atodata.SEED_URLS
+    registry_ok = any(rec.url == canonical or rec.final_url == canonical for rec in registry.records)
+    return seed_ok and registry_ok
 
 
 def required_topics() -> List[str]:

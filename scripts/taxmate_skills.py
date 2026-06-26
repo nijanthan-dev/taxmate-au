@@ -129,9 +129,8 @@ def _audit(root: str, output: str, fmt: str, check_only: bool) -> int:
             f.write(report)
         return _exit_json({"audit": "source_coverage", "output": output}, None)
 
-    # Keep old behavior: write report first, then json status payload.
     print(report.decode("utf-8"), end="")
-    return _exit_json({"audit": "source_coverage"}, None)
+    return 0
 
 
 def run(argv: Optional[List[str]] = None) -> int:

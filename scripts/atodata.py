@@ -440,6 +440,7 @@ def load_registry(root: str) -> SourceRegistry:
 def save_registry(root: str, registry: SourceRegistry) -> None:
     path = registry_path(root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    registry.refreshed_at = utc_timestamp()
     path_obj = Path(path)
     path_obj.write_text(json.dumps(registry.to_dict(), indent=2) + "\n", encoding="utf-8")
 
@@ -618,7 +619,7 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
     queue: List[QueueItem] = [QueueItem(url=url.rstrip("/"), depth=0) for url in SEED_URLS]
     seen = {item.url: True for item in queue}
 
-    registry = SourceRegistry(fetched_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    registry = SourceRegistry(fetched_at=utc_timestamp())
     idx = 0
     while queue and len(registry.records) < max_pages:
         item = queue.pop(0)
@@ -659,7 +660,7 @@ def recrawl(root: str, max_pages: int) -> SourceRegistry:
                 text_file=text_file,
                 content_hash=content_hash,
                 content_verified=content_hash != "" and content_hash != hash_text(""),
-                last_checked=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                last_checked=utc_timestamp(),
             )
         )
 
@@ -720,7 +721,7 @@ def refresh_record(root: str, rec: SourceRecord) -> RefreshResult:
     rec.status = fetched.status
     rec.title = title_of(text)
     rec.last_updated = modified_of(fetched.body, text)
-    rec.last_checked = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rec.last_checked = utc_timestamp()
     rec.content_hash = new_hash
     rec.content_verified = new_hash != "" and new_hash != hash_text("")
     return RefreshResult(url=fetched.final_url, status=fetched.status, changed=changed, title=rec.title)
@@ -731,6 +732,10 @@ def first_non_empty(*values: str) -> str:
         if value:
             return value
     return ""
+
+
+def utc_timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def copy_dir(src: str, dst: str) -> None:
