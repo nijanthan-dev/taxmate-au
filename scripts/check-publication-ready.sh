@@ -19,6 +19,11 @@ fail() {
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
 [[ -f hooks.json ]] || fail "missing hooks.json"
 [[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
+[[ -f scripts/codex-env-setup.sh ]] || fail "missing Codex environment setup"
+[[ -f scripts/codex-env-cleanup.sh ]] || fail "missing Codex environment cleaner"
+[[ -f scripts/codex-env-full-check.sh ]] || fail "missing Codex environment full check"
+[[ -f scripts/codex-cloud-post-task-cleanup.sh ]] || fail "missing Codex Cloud cleanup wrapper"
+[[ -f scripts/test-codex-env-cleanup.sh ]] || fail "missing Codex environment cleanup test"
 [[ -f data/ato_knowledge_base/source_registry.json ]] || fail "missing source_registry.json"
 [[ -f data/ato_knowledge_base/source_coverage.json ]] || fail "missing source_coverage.json"
 [[ -f config/public-skills.json ]] || fail "missing public skills manifest"
@@ -156,6 +161,12 @@ fi
 ./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
 ./scripts/taxmate validate >/tmp/taxmate-australia-validate.json
 bash scripts/test-skills-install.sh
+bash -n scripts/codex-env-setup.sh
+bash -n scripts/codex-env-cleanup.sh
+bash -n scripts/codex-env-full-check.sh
+bash -n scripts/codex-cloud-post-task-cleanup.sh
+bash -n scripts/test-codex-env-cleanup.sh
+bash scripts/test-codex-env-cleanup.sh
 bash scripts/clean-source-cache.sh
 
 echo "publication checks passed"
