@@ -56,6 +56,7 @@ const crypto = require("crypto");
 const path = require("path");
 
 const root = process.cwd();
+const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
 const publicSkills = publicManifest.portableSkills;
@@ -70,6 +71,7 @@ function fail(message) {
 
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
+if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
 
 for (const name of publicSkills) {
   const dir = path.join(root, "skills", name);

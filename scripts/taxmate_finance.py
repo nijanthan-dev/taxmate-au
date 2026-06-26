@@ -383,6 +383,9 @@ def classify(tx: Transaction, mode: str) -> Finding:
         )
         finding.records_needed = ["fund acknowledgement", "notice of intent", "contribution statement"]
         return finding
+    if tx.direction == "income":
+        classify_income(finding, tx, text)
+        return finding
     if contains_any(text, *investment_terms) or tx.asset != "" or tx.units != 0:
         set_finding(
             finding,
@@ -399,9 +402,6 @@ def classify(tx: Transaction, mode: str) -> Finding:
             "DRP statement",
             "AMIT cost-base adjustments",
         ]
-        return finding
-    if tx.direction == "income":
-        classify_income(finding, tx, text)
         return finding
     if contains_any(text, *software_terms):
         if is_business(tx, text):
@@ -485,6 +485,17 @@ def classify(tx: Transaction, mode: str) -> Finding:
 
 
 def classify_income(finding: Finding, tx: Transaction, text: str) -> None:
+    if contains_any(text, *investment_income_terms) or tx.asset != "" or tx.units != 0:
+        set_finding(
+            finding,
+            "investment_income",
+            "tax_statement_record",
+            0,
+            "medium",
+            True,
+            "investment income needs annual tax statement and franking/AMIT details",
+        )
+        return
     if is_business(tx, text):
         set_finding(
             finding,
@@ -508,17 +519,6 @@ def classify_income(finding: Finding, tx: Transaction, text: str) -> None:
             "medium",
             False,
             "employment income belongs outside ABN expense tracking",
-        )
-        return
-    if contains_any(text, *investment_income_terms):
-        set_finding(
-            finding,
-            "investment_income",
-            "tax_statement_record",
-            0,
-            "medium",
-            True,
-            "investment income needs annual tax statement and franking/AMIT details",
         )
         return
     set_finding(finding, "income", "accountant_review", 0, "low", True, "income source needs classification")

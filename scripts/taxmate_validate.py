@@ -114,6 +114,8 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
         and file_exists(os.path.join(root, "assets", "icon.png")),
         "",
     )
+    website_url = manifest.get("interface.websiteURL", "")
+    add("plugin_website_is_repository", website_url == manifest.get("repository"), website_url)
     add("codex_plugin_no_root_monolith", not file_exists(os.path.join(root, "SKILL.md")), "")
     add(
         "open_plugin_backend_dirs",
@@ -268,6 +270,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("refresh_query_no_match_is_read_only", refresh_query_no_match_is_read_only(root), "")
     add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
     add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
+    add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
+    add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -327,10 +331,13 @@ def read_plugin_manifest(root: str) -> Tuple[Dict[str, str], Exception]:
     body = Path(os.path.join(root, ".codex-plugin", "plugin.json")).read_text(encoding="utf-8")
     raw = json.loads(body)
     out: Dict[str, str] = {}
-    for key in ("name", "version", "skills"):
+    for key in ("name", "version", "skills", "repository"):
         value = raw.get(key)
         if isinstance(value, str):
             out[key] = value
+    interface = raw.get("interface")
+    if isinstance(interface, dict) and isinstance(interface.get("websiteURL"), str):
+        out["interface.websiteURL"] = interface["websiteURL"]
     return out, None
 
 
@@ -822,6 +829,7 @@ def public_runtime_claim_scan_files() -> List[str]:
         "plugin.lock.json",
         ".gitleaks.toml",
         "README.md",
+        "DISCLAIMER.md",
         "CONTRIBUTING.md",
         "SECURITY.md",
         os.path.join("docs", "DEVELOPMENT.md"),
@@ -834,6 +842,7 @@ def public_runtime_claim_scan_files() -> List[str]:
 def committed_source_cache_claim_needles() -> List[str]:
     return [
         "repository contains an ato source cache",
+        "bundled ato source cache",
         "committed ato source cache",
         "committed source cache",
         "source cache and test fixtures",
@@ -1060,6 +1069,34 @@ def finance_record_rows_classify_before_income() -> bool:
     )
     finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
     return finding.bucket == "private_health" and finding.tax_treatment == "tax_return_info_only"
+
+
+def finance_investment_income_classifies_as_income() -> bool:
+    tx = taxmate_finance.Transaction(
+        row=2,
+        description="ETF dividend distribution",
+        amount=50.0,
+        direction="income",
+        asset="ETF",
+        units=10.0,
+    )
+    finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
+    return finding.bucket == "investment_income" and finding.tax_treatment == "tax_statement_record"
+
+
+def finance_investment_income_outranks_business_tag() -> bool:
+    tx = taxmate_finance.Transaction(
+        row=2,
+        description="Payment received",
+        amount=50.0,
+        direction="income",
+        purpose="business records",
+        abn="12345678901",
+        asset="ETF",
+        units=10.0,
+    )
+    finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
+    return finding.bucket == "investment_income" and finding.tax_treatment == "tax_statement_record"
 
 
 def validate_json_uses_check_field() -> bool:
