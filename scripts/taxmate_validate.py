@@ -90,6 +90,8 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     add("generation_is_deterministic", deterministic, str(deterministic_err))
     add("current_values_preserved_without_cache", current_values_preserved_without_cache(root), "")
     add("blank_registry_hash_downgrades_previous_coverage", blank_registry_hash_downgrades_previous_coverage(root), "")
+    add("unverified_registry_hash_downgrades_previous_coverage", unverified_registry_hash_downgrades_previous_coverage(root), "")
+    add("stale_cache_text_does_not_verify_source", stale_cache_text_does_not_verify_source(root), "")
     add("stale_current_values_detected", stale_current_values_detected(root), "")
     add("stale_generated_reference_detected", stale_generated_reference_detected(root), "")
     add_runtime_binary_checks(root, add, registry)
@@ -265,6 +267,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("audit_check_fails_missing_required_verified_sources", audit_check_fails_missing_required_verified_sources(root), "")
     add("skills_generate_check_catches_validation_error", skills_generate_check_catches_validation_error(root), "")
     add("source_coverage_status_check_consumes_return_error", source_coverage_status_check_consumes_return_error(root), "")
+    add("plugin_manifest_errors_are_reported", plugin_manifest_errors_are_reported(), "")
+    add("public_skills_errors_are_reported", public_skills_errors_are_reported(), "")
     add("save_registry_stamps_refreshed_at", save_registry_stamps_refreshed_at(), "")
     add("fetch_http_error_preserves_status", fetch_http_error_preserves_status(), "")
     add("finance_csv_trims_leading_space", finance_csv_trims_leading_space(), "")
@@ -325,19 +329,25 @@ def finish(root: str, checks: List[Dict[str, Any]], registry, include_index: boo
     return report, passed == len(checks)
 
 
-def public_portable_skills(root: str) -> Tuple[List[str], Exception]:
+def public_portable_skills(root: str) -> Tuple[List[str], Optional[Exception]]:
     path = os.path.join(root, "config", "public-skills.json")
-    body = Path(path).read_bytes()
-    raw = json.loads(body)
+    try:
+        body = Path(path).read_bytes()
+        raw = json.loads(body)
+    except Exception as exc:
+        return [], exc
     skills = list(raw.get("portableSkills", []))
     if not skills:
         return [], ValueError("portableSkills empty")
     return skills, None
 
 
-def read_plugin_manifest(root: str) -> Tuple[Dict[str, str], Exception]:
-    body = Path(os.path.join(root, ".codex-plugin", "plugin.json")).read_text(encoding="utf-8")
-    raw = json.loads(body)
+def read_plugin_manifest(root: str) -> Tuple[Dict[str, str], Optional[Exception]]:
+    try:
+        body = Path(os.path.join(root, ".codex-plugin", "plugin.json")).read_text(encoding="utf-8")
+        raw = json.loads(body)
+    except Exception as exc:
+        return {}, exc
     out: Dict[str, str] = {}
     for key in ("name", "version", "skills", "repository"):
         value = raw.get(key)
@@ -769,11 +779,92 @@ def blank_registry_hash_downgrades_previous_coverage(root: str) -> bool:
         if entry is None or entry.status == skillgen.StatusVerified:
             return False
 
-        values_path = os.path.join(generated_root, "skills", skill, "references", "current-values.json")
-        if not os.path.exists(values_path):
-            return True
-        values = json.loads(Path(values_path).read_text(encoding="utf-8"))
-        return all(skillgen.canonicalURL(str(item.get("source_url", ""))) != skillgen.canonicalURL(source_url) for item in values)
+        return current_values_exclude_source(generated_root, skill, source_url)
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def unverified_registry_hash_downgrades_previous_coverage(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-unverified-registry-hash-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-unverified-registry-generated-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+
+        target = first_current_value_source(work_root)
+        if target is None:
+            return False
+        skill, source_url = target
+
+        registry = atodata.LoadRegistry(work_root)
+        rec = find_registry_record(registry, source_url)
+        if rec is None or not rec.content_hash:
+            return False
+        rec.content_verified = False
+        atodata.SaveRegistry(work_root, registry)
+
+        skillgen.Generate(skillgen.Options(root=work_root, output_root=generated_root))
+        coverage = skillgen.LoadSourceCoverage(generated_root)
+        source_id = skillgen.sourceID(rec.url, skillgen.coverageCanonicalURL(rec.url, rec.final_url))
+        entry = next((item for item in coverage.sources if item.source_id == source_id), None)
+        if entry is None or entry.status == skillgen.StatusVerified:
+            return False
+
+        return current_values_exclude_source(generated_root, skill, source_url)
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+        shutil.rmtree(generated_root, ignore_errors=True)
+
+
+def stale_cache_text_does_not_verify_source(root: str) -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-cache-")
+    generated_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-cache-generated-")
+    try:
+        atodata.CopyDir(os.path.join(root, "skills"), os.path.join(work_root, "skills"))
+        atodata.CopyDir(os.path.join(root, "data", "ato_knowledge_base"), os.path.join(work_root, "data", "ato_knowledge_base"))
+
+        target = first_current_value_source(work_root)
+        if target is None:
+            return False
+        skill, source_url = target
+
+        registry = atodata.LoadRegistry(work_root)
+        rec = find_registry_record(registry, source_url)
+        if rec is None:
+            return False
+        rec.content_hash = ""
+        rec.content_verified = False
+        atodata.SaveRegistry(work_root, registry)
+
+        cache_path = os.path.join(atodata.CacheDir(work_root), rec.text_file)
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        Path(cache_path).write_text(
+            "Working from home expenses fake stale cache 99 cents per hour from 1 July 2026.",
+            encoding="utf-8",
+        )
+
+        skillgen.Generate(skillgen.Options(root=work_root, output_root=generated_root))
+        generated_registry = atodata.LoadRegistry(generated_root)
+        generated_rec = find_registry_record(generated_registry, source_url)
+        if generated_rec is None or generated_rec.content_hash != "" or generated_rec.content_verified:
+            return False
+
+        coverage = skillgen.LoadSourceCoverage(generated_root)
+        source_id = skillgen.sourceID(rec.url, skillgen.coverageCanonicalURL(rec.url, rec.final_url))
+        entry = next((item for item in coverage.sources if item.source_id == source_id), None)
+        if entry is None or entry.status == skillgen.StatusVerified:
+            return False
+
+        return current_values_exclude_source(generated_root, skill, source_url)
     except Exception:
         return False
     finally:
@@ -792,6 +883,15 @@ def first_current_value_source(root: str) -> Optional[Tuple[str, str]]:
             if isinstance(item, dict) and item.get("source_url"):
                 return skill, str(item["source_url"])
     return None
+
+
+def current_values_exclude_source(root: str, skill: str, source_url: str) -> bool:
+    values_path = os.path.join(root, "skills", skill, "references", "current-values.json")
+    if not os.path.exists(values_path):
+        return True
+    values = json.loads(Path(values_path).read_text(encoding="utf-8"))
+    source_url = skillgen.canonicalURL(source_url)
+    return all(skillgen.canonicalURL(str(item.get("source_url", ""))) != source_url for item in values)
 
 
 def find_registry_record(registry, source_url: str):
@@ -1090,6 +1190,34 @@ def source_coverage_status_check_consumes_return_error(root: str) -> bool:
         )
         status = next((check for check in checks if check["check"] == "source_coverage_statuses_valid"), None)
         return status is not None and status["passed"] is False and "does not match registry count" in status["detail"]
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def plugin_manifest_errors_are_reported() -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-bad-manifest-")
+    try:
+        os.makedirs(os.path.join(work_root, ".codex-plugin"), exist_ok=True)
+        Path(os.path.join(work_root, ".codex-plugin", "plugin.json")).write_text("{", encoding="utf-8")
+        manifest, err = read_plugin_manifest(work_root)
+        return manifest == {} and err is not None
+    except Exception:
+        return False
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def public_skills_errors_are_reported() -> bool:
+    import shutil
+
+    work_root = tempfile.mkdtemp(prefix="taxmate-validate-missing-public-skills-")
+    try:
+        skills, err = public_portable_skills(work_root)
+        return skills == [] and err is not None
     except Exception:
         return False
     finally:

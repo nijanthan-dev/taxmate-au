@@ -757,19 +757,18 @@ def _build(
         record_text = atodata.RecordText(root, rec).strip()
         topic_match, score = assignTopic(rec, record_text)
         record_hash = (rec.content_hash or "").strip()
+        registry_hash_verified = rec.content_verified and validContentHash(record_hash)
         text_hash = ""
         content_verified = False
         if record_text != "":
             text_hash = atodata.HashText(record_text)
-            content_verified = text_hash != "" and text_hash.lower() != EMPTY_CONTENT_HASH_V2
-        content_hash = record_hash
-        if text_hash != "":
-            content_hash = text_hash
+            content_verified = registry_hash_verified and text_hash == record_hash
+        content_hash = record_hash if registry_hash_verified else ""
         prev = previous_by_id.get(record_id) if use_previous else None
 
         preserved_verified = False
         preserved_skill = ""
-        if not content_verified and use_previous:
+        if not content_verified and registry_hash_verified and use_previous:
             if prev is not None:
                 if prev.skills:
                     preserved_skill = prev.skills[0]
@@ -1557,6 +1556,8 @@ def ValidateSourceCoverage(root: str) -> Optional[RuntimeError]:
         if rec is None:
             return RuntimeError(f"coverage has unknown source_id {entry.source_id}")
         if entry.status == StatusVerified:
+            if not rec.content_verified:
+                return RuntimeError(f"verified source not marked verified in registry {entry.source_id}")
             if not validContentHash(entry.content_hash):
                 return RuntimeError(f"verified source missing valid hash {entry.source_id}")
             if entry.content_hash.strip() != (rec.content_hash or "").strip():
