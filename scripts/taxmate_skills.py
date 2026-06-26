@@ -9,7 +9,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import atodata
 import skillgen
@@ -23,7 +23,7 @@ def command_root() -> str:
     return atodata.SkillRoot()
 
 
-def _exit_json(payload: Dict[str, Any], err: Exception | None) -> int:
+def _exit_json(payload: Dict[str, Any], err: Optional[Exception]) -> int:
     if err is not None:
         out = {"ok": False, "error": str(err)}
         print(json.dumps(out, indent=2))
@@ -59,7 +59,7 @@ def _source_url(row: Dict[str, Any]) -> str:
     return str(row.get("url") or row.get("URL") or "")
 
 
-def _check_generation(root: str, checked_at: str) -> Tuple[int, Exception | None]:
+def _check_generation(root: str, checked_at: str) -> Tuple[int, Optional[Exception]]:
     work_root = Path(tempfile.mkdtemp(prefix="taxmate-australia-skills-check-"))
     try:
         atodata.CopyDir(
@@ -134,7 +134,7 @@ def _audit(root: str, output: str, fmt: str, check_only: bool) -> int:
     return _exit_json({"audit": "source_coverage"}, None)
 
 
-def run(argv: List[str] | None = None) -> int:
+def run(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="TaxMate skills command")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -214,7 +214,7 @@ def run(argv: List[str] | None = None) -> int:
     raise SystemExit(f"unsupported command {args.command}")
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     return run(argv)
 
 

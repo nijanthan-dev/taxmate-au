@@ -8,7 +8,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import atodata
 import skillgen
@@ -17,7 +17,7 @@ import skillgen
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
 
 
-def run(argv: List[str] | None = None) -> int:
+def run(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Validate TaxMate Australia repository checks")
     if argv is None:
         import sys
@@ -85,7 +85,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     return finish(root, checks, registry, True)
 
 
-def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifest_err: Exception | None, manifest_text: str) -> None:
+def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifest_err: Optional[Exception], manifest_text: str) -> None:
     add("codex_plugin_manifest_exists", manifest_err is None, str(manifest_err) if manifest_err else "")
     add(
         "public_manifest_polished",
@@ -126,7 +126,7 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
 def add_skill_and_documentation_checks(
     root: str,
     add,
-    manifest_skill_err: Exception | None,
+    manifest_skill_err: Optional[Exception],
     required_skills: List[str],
     missing_skills: List[str],
     bad_frontmatter: List[str],
@@ -183,7 +183,7 @@ def add_source_coverage_checks(
     add,
     registry,
     coverage: skillgen.SourceCoverage,
-    coverage_err: Exception | None,
+    coverage_err: Optional[Exception],
 ) -> None:
     add("source_coverage_exists", coverage_err is None, "")
     if coverage_err is not None:
@@ -253,7 +253,7 @@ def add_runtime_binary_checks(root: str, add) -> None:
     add("no_go_source", len(find_by_suffix(root, ".go")) == 0, "")
 
 
-def is_valid_exception_safe(fn) -> Exception | None:
+def is_valid_exception_safe(fn) -> Optional[Exception]:
     try:
         fn()
         return None
@@ -429,7 +429,7 @@ def has_public_disclaimers(text: str) -> bool:
     return all(item in lower for item in needles)
 
 
-def parse_frontmatter(text: str) -> Dict[str, str] | None:
+def parse_frontmatter(text: str) -> Optional[Dict[str, str]]:
     if not text.startswith("---\n"):
         return None
     end = text.find("\n---\n", 4)
@@ -560,7 +560,7 @@ def matches_canonical_or_blank(local: skillgen.Source, canonical: str) -> bool:
     return (local.url or "").strip() == canonical or (local.final_url or "").strip() == canonical
 
 
-def generation_is_deterministic(root: str) -> Tuple[bool, Exception | None]:
+def generation_is_deterministic(root: str) -> Tuple[bool, Optional[Exception]]:
     import shutil
 
     work_root = tempfile.mkdtemp(prefix="taxmate-validate-generation-check-")
@@ -590,7 +590,7 @@ def required_topics() -> List[str]:
     return [topic.slug for topic in skillgen.Topics()]
 
 
-def load_per_skill_sources(root: str, skills: List[str]) -> Tuple[Dict[str, Dict[str, skillgen.Source]] | None, Exception | None]:
+def load_per_skill_sources(root: str, skills: List[str]) -> Tuple[Optional[Dict[str, Dict[str, skillgen.Source]]], Optional[Exception]]:
     per_skill: Dict[str, Dict[str, skillgen.Source]] = {}
     for topic in skills:
         path = os.path.join(root, "skills", topic, "references", "sources.json")
@@ -761,7 +761,7 @@ def stale_seed_replacements() -> Dict[str, List[str]]:
     }
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     return run(argv)
 
 

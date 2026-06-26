@@ -9,10 +9,10 @@ import json
 import os
 import re
 import shutil
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import atodata
 
@@ -627,7 +627,7 @@ class _GenerationRow:
     values: Dict[str, List[ValueFact]] = field(default_factory=dict)
 
 
-def Generate(opts: Options | dict) -> GenerationReport:
+def Generate(opts: Union[Options, dict]) -> GenerationReport:
     if isinstance(opts, dict):
         opts = Options(**opts)
     if not opts.root:
@@ -1150,7 +1150,7 @@ def canonicalURL(raw: str) -> str:
     return rebuilt.geturl()
 
 
-def BuildSourceCoverage(report: GenerationReport | List[Source]) -> SourceCoverage:
+def BuildSourceCoverage(report: Union[GenerationReport, List[Source]]) -> SourceCoverage:
     if isinstance(report, GenerationReport):
         sources = report.sources
     else:
@@ -1227,7 +1227,7 @@ def WriteCoverageReport(root: str, format: str) -> bytes:
     coverage = LoadSourceCoverage(root)
     summary = Audit(root, coverage)
     if format == "json":
-        body = json.dumps({"summary": summary.__dict__, "source_coverage": {"sources": [_coverage_entry_to_json(e) for e in coverage.sources]}}, indent=2)
+        body = json.dumps({"summary": asdict(summary), "source_coverage": {"sources": [_coverage_entry_to_json(e) for e in coverage.sources]}}, indent=2)
         return (body + "\n").encode("utf-8")
     if format == "":
         format = "markdown"

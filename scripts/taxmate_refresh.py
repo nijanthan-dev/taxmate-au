@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import atodata
 
@@ -95,7 +95,7 @@ def run(argv: List[str]) -> int:
     return 0
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     if argv is None:
         import sys
 

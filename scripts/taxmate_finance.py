@@ -201,100 +201,18 @@ def analyze_csv(path: str, mode: str) -> Report:
 
 def write_json(report: Report, out) -> None:
     payload = {
-        "GeneratedAt": report.generated_at,
-        "Mode": report.mode,
-        "Source": report.source,
-        "Transactions": [asdict(tx) for tx in report.transactions],
-        "Findings": [asdict(f) for f in report.findings],
-        "Summary": [asdict(s) for s in report.summary],
-        "BASSummary": asdict(report.bas_summary),
-        "ScenarioChecks": [asdict(s) for s in report.scenario_checks],
-        "HealthChecks": [asdict(h) for h in report.health_checks],
-        "Caveats": report.caveats,
-        "ATOQueries": report.ato_refresh_queries,
+        "generated_at": report.generated_at,
+        "mode": report.mode,
+        "source": report.source,
+        "transactions": [asdict(tx) for tx in report.transactions],
+        "findings": [asdict(f) for f in report.findings],
+        "summary": [asdict(s) for s in report.summary],
+        "bas_summary": asdict(report.bas_summary),
+        "scenario_checks": [asdict(s) for s in report.scenario_checks],
+        "health_checks": [asdict(h) for h in report.health_checks],
+        "caveats": report.caveats,
+        "ato_refresh_queries": report.ato_refresh_queries,
     }
-    payload["Transactions"] = [
-        {
-            "Row": tx["row"],
-            "Date": tx["date"],
-            "Description": tx["description"],
-            "Amount": tx["amount"],
-            "GST": tx["gst"],
-            "Direction": tx["direction"],
-            "Owner": tx["owner"],
-            "Account": tx["account"],
-            "Category": tx["category"],
-            "Purpose": tx["purpose"],
-            "Evidence": tx["evidence"],
-            "ABN": tx["abn"],
-            "Source": tx["source"],
-            "Asset": tx["asset"],
-            "Units": tx["units"],
-            "Raw": tx["raw"],
-        }
-        for tx in payload["Transactions"]
-    ]
-    payload["Findings"] = [
-        {
-            "Row": f["row"],
-            "Owner": f["owner"],
-            "Description": f["description"],
-            "Amount": f["amount"],
-            "Direction": f["direction"],
-            "Bucket": f["bucket"],
-            "TaxTreatment": f["tax_treatment"],
-            "ClaimPercent": f["claim_percent"],
-            "ClaimAmount": f["claim_amount"],
-            "GSTCreditCandidate": f["gst_credit_candidate"],
-            "GSTCreditAmount": f["gst_credit_amount"],
-            "Confidence": f["confidence"],
-            "Reasons": f["reasons"],
-            "RecordsNeeded": f["records_needed"],
-            "AccountantReview": f["accountant_review"],
-        }
-        for f in payload["Findings"]
-    ]
-    payload["Summary"] = [
-        {
-            "Owner": s["owner"],
-            "Bucket": s["bucket"],
-            "Treatment": s["treatment"],
-            "GrossAmount": s["gross_amount"],
-            "ClaimAmount": s["claim_amount"],
-            "GSTCandidate": s["gst_candidate"],
-            "Rows": s["rows"],
-        }
-        for s in payload["Summary"]
-    ]
-    payload["BASSummary"] = {
-        "BusinessExpenseGross": report.bas_summary.business_expense_gross,
-        "GSTCreditCandidate": report.bas_summary.gst_credit_candidate,
-        "BusinessIncomeGross": report.bas_summary.business_income_gross,
-        "GSTCollectedCandidate": report.bas_summary.gst_collected_candidate,
-        "NilBASLikely": report.bas_summary.nil_bas_likely,
-        "ReviewNote": report.bas_summary.review_note,
-    }
-    payload["ScenarioChecks"] = [
-        {
-            "Name": s["name"],
-            "BaseAmount": s["base_amount"],
-            "WhatIf": s["what_if"],
-            "Result": s["result"],
-            "ReviewNote": s["review_note"],
-        }
-        for s in payload["ScenarioChecks"]
-    ]
-    payload["HealthChecks"] = [
-        {
-            "Name": h["name"],
-            "Passed": h["passed"],
-            "Severity": h["severity"],
-            "Detail": h["detail"],
-            "Rows": h["rows"],
-            "Advice": h["advice"],
-        }
-        for h in payload["HealthChecks"]
-    ]
     json.dump(payload, out, indent=2)
     out.write("\n")
 

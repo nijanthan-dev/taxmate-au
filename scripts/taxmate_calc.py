@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 SG_RATE_2025_26 = 12.0
 FBT_RATE_2025_26 = 47.0
@@ -277,7 +277,7 @@ def months_held(acquired: str, disposed: str) -> int:
     return int((d - a).days / 30.4375)
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     if not argv:
         print("usage: taxmate-australia-calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]", file=sys.stderr)
