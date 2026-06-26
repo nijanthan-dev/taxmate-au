@@ -17,6 +17,7 @@ import atodata
 import skillgen
 import taxmate_calc
 import taxmate_finance
+import taxmate_refresh
 import taxmate_skills
 
 
@@ -264,7 +265,9 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("calc_rejects_non_finite_numbers", calc_rejects_non_finite_numbers(), "")
     add("finance_csv_rejects_non_finite_numbers", finance_csv_rejects_non_finite_numbers(), "")
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
+    add("refresh_query_no_match_is_read_only", refresh_query_no_match_is_read_only(root), "")
     add("skills_refresh_unknown_topic_is_noop", skills_refresh_unknown_topic_is_noop(root), "")
+    add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -1009,6 +1012,28 @@ def refresh_errors_use_python_formatting(root: str) -> bool:
     return '"%v"' not in text and "'%v'" not in text
 
 
+def refresh_query_no_match_is_read_only(root: str) -> bool:
+    original = taxmate_refresh.atodata.SaveRegistry
+
+    def fail_save_registry(_root: str, _registry) -> None:
+        raise RuntimeError("SaveRegistry should not run when refresh query matches no records")
+
+    taxmate_refresh.atodata.SaveRegistry = fail_save_registry
+    out = io.StringIO()
+    err = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = taxmate_refresh.run(["--query", "zzzzzzz-no-match"])
+        if code != 0:
+            return False
+        payload = json.loads(out.getvalue())
+        return payload.get("matched") == 0 and payload.get("changed") == 0
+    except Exception:
+        return False
+    finally:
+        taxmate_refresh.atodata.SaveRegistry = original
+
+
 def skills_refresh_unknown_topic_is_noop(root: str) -> bool:
     original = taxmate_skills.atodata.LoadRegistry
 
@@ -1023,6 +1048,18 @@ def skills_refresh_unknown_topic_is_noop(root: str) -> bool:
         return False
     finally:
         taxmate_skills.atodata.LoadRegistry = original
+
+
+def finance_record_rows_classify_before_income() -> bool:
+    tx = taxmate_finance.Transaction(
+        row=2,
+        description="Private health premium",
+        amount=120.0,
+        direction="income",
+        category="private health",
+    )
+    finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
+    return finding.bucket == "private_health" and finding.tax_treatment == "tax_return_info_only"
 
 
 def validate_json_uses_check_field() -> bool:

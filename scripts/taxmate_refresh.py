@@ -79,11 +79,12 @@ def run(argv: List[str]) -> int:
             changed += 1
         results.append(item.to_dict())
 
-    try:
-        atodata.SaveRegistry(root, registry)
-    except Exception as exc:
-        atodata.Errorf("%s", exc)
-        return 1
+    if selected:
+        try:
+            atodata.SaveRegistry(root, registry)
+        except Exception as exc:
+            atodata.Errorf("%s", exc)
+            return 1
 
     atodata.WriteJSON(
         {

@@ -359,9 +359,6 @@ def classify(tx: Transaction, mode: str) -> Finding:
         direction=tx.direction,
     )
 
-    if tx.direction == "income":
-        classify_income(finding, tx, text)
-        return finding
     if contains_any(text, *private_health_terms):
         set_finding(
             finding,
@@ -402,6 +399,9 @@ def classify(tx: Transaction, mode: str) -> Finding:
             "DRP statement",
             "AMIT cost-base adjustments",
         ]
+        return finding
+    if tx.direction == "income":
+        classify_income(finding, tx, text)
         return finding
     if contains_any(text, *software_terms):
         if is_business(tx, text):
