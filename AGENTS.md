@@ -6,8 +6,10 @@
 - Keep tax logic in `runtime/skills/research`, `runtime/skills/finance-review`, `runtime/skills/calculators`, and shared Python runtime.
 - Keep `skills/workbook` and `skills/taxpack` as output layers only.
 - Keep this as a complete Codex plugin with runtime plus portable skills.
+- Public plugin metadata must describe the bash+Python runtime, not a Go backend.
 - Do not reintroduce Go source, Go modules, Go commands, Go build/test docs, or `gomod` automation.
 - Do not add Go tooling to devcontainers, CI, dependency automation, or contributor docs unless a Go manifest is restored.
+- Validation must scan plugin metadata for stale Go runtime claims, not only toolchain commands.
 - Dependency automation must match committed manifests. Remove stale ecosystem entries when their manifest is removed.
 - Keep source state in `data/ato_knowledge_base/source_registry.json` and `data/ato_knowledge_base/source_coverage.json`.
 - Do not reintroduce migration artifacts, `source_index`, `source_manifest`, committed raw snapshots, or `data/ato_knowledge_base/text`.

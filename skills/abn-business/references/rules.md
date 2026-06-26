@@ -79,10 +79,24 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
+- Home-based business and CGT implications
+  - Source ID: ato-45530346d241
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-and-cgt-implications
+  - Source last updated: 2026-02-02T13:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Deductions for repairs, maintenance and replacement expenses
   - Source ID: ato-4584f994a1ff
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-repairs-maintenance-and-replacement-expenses
   - Source last updated: 2024-06-19T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
+- Home-based businesses expenses – company or trust
+  - Source ID: ato-4666a628bc7c
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-businesses-expenses-company-or-trust
+  - Source last updated: 2025-05-06T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
@@ -135,6 +149,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
+- Deductions for home-based business expenses
+  - Source ID: ato-833204ee94c2
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses
+  - Source last updated: 2026-06-17T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Deductions for digital product expenses
   - Source ID: ato-8b7033a3c26a
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-digital-product-expenses
@@ -146,6 +167,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source ID: ato-a656f37f40f7
   - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/small-business-technology-investment-boost
   - Source last updated: 2024-06-19T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
+- Home-based business expenses – sole trader or partnership
+  - Source ID: ato-aa24577ab271
+  - URL: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership
+  - Source last updated: 2026-05-26T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 

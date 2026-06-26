@@ -208,6 +208,7 @@ def add_source_coverage_checks(
     add("metadata_only_sources_not_claimed_as_verified", not metadata_only_marked_as_verified(root, coverage), "")
     add("source_records_match_per_skill", source_coverage_matches_skill_files(root, coverage), "")
     add("bank_account_investment_source_routed", bank_account_investment_source_routed(coverage), "")
+    add("home_business_sources_routed", home_business_sources_routed(coverage), "")
     add("source_record_count", len(registry.records) >= 290, str(len(registry.records)))
     add("source_scope_present", bool(registry.scope), "")
     add("scope_summary_exists", file_exists(os.path.join(data_dir, "SCOPE_SUMMARY.md")), "")
@@ -264,6 +265,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("no_go_source", len(find_by_suffix(root, ".go")) == 0, "")
     go_tooling_hits = stale_go_tooling_hits(root)
     add("no_go_tooling_config", len(go_tooling_hits) == 0, "; ".join(go_tooling_hits))
+    go_runtime_claim_hits = stale_go_runtime_claim_hits(root)
+    add("public_metadata_no_go_runtime_claims", len(go_runtime_claim_hits) == 0, "; ".join(go_runtime_claim_hits))
 
 
 def is_valid_exception_safe(fn) -> Optional[Exception]:
@@ -360,8 +363,15 @@ def public_doc_files(root: str) -> List[str]:
         os.path.join(root, ".agents", "plugins", "marketplace.json"),
         os.path.join(root, "agents", "openai.yaml"),
         os.path.join(root, "plugin.lock.json"),
+        os.path.join(root, ".gitleaks.toml"),
+        os.path.join(root, "SECURITY.md"),
+        os.path.join(root, "CONTRIBUTING.md"),
         os.path.join(root, "docs", "PLUGIN_SCANNER.md"),
         os.path.join(root, "docs", "PUBLICATION_CHECKLIST.md"),
+        os.path.join(root, "docs", "INSTALLATION.md"),
+        os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"),
+        os.path.join(root, "docs", "DEVELOPMENT.md"),
+        os.path.join(root, "docs", "SKILL_GENERATION.md"),
     ]
     for base in (os.path.join(root, "skills"), os.path.join(root, "wrappers")):
         for path in find_by_suffix(base, ""):
@@ -554,6 +564,17 @@ def bank_account_investment_source_routed(coverage: skillgen.SourceCoverage) -> 
     return False
 
 
+def home_business_sources_routed(coverage: skillgen.SourceCoverage) -> bool:
+    matched = 0
+    for entry in coverage.sources:
+        if "home-based-business-expenses" not in entry.original_url and "home-based-business-expenses" not in entry.canonical_url:
+            continue
+        matched += 1
+        if "abn-business" not in entry.skills:
+            return False
+    return matched > 0
+
+
 def source_matches_per_skill(
     entry: skillgen.SourceCoverageEntry,
     per_skill: Dict[str, Dict[str, skillgen.Source]],
@@ -599,11 +620,11 @@ def current_values_preserved_without_cache(root: str) -> bool:
     import shutil
 
     value_files = current_value_files(root)
-    if not value_files:
-        return False
     work_root = tempfile.mkdtemp(prefix="taxmate-validate-values-preserved-")
     try:
         skillgen.Generate(skillgen.Options(root=root, output_root=work_root))
+        if not value_files:
+            return len(current_value_files(work_root)) == 0
         for rel in value_files:
             expected = Path(os.path.join(root, rel)).read_bytes().strip()
             generated = Path(os.path.join(work_root, rel)).read_bytes().strip()
@@ -620,13 +641,15 @@ def stale_current_values_detected(root: str) -> bool:
     import shutil
 
     value_files = current_value_files(root)
-    if not value_files:
-        return False
     expected_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-expected-")
     generated_root = tempfile.mkdtemp(prefix="taxmate-validate-stale-generated-")
     try:
         copy_generated_check_inputs(root, expected_root, generated_root)
-        os.remove(os.path.join(generated_root, value_files[0]))
+        if value_files:
+            os.remove(os.path.join(generated_root, value_files[0]))
+        else:
+            stale_rel = os.path.join("skills", required_topics()[0], "references", "current-values.json")
+            write_stale_current_values(os.path.join(expected_root, stale_rel))
         return skillgen.CompareGeneratedArtifacts(expected_root, generated_root) is not None
     except Exception:
         return False
@@ -659,6 +682,11 @@ def copy_generated_check_inputs(root: str, expected_root: str, generated_root: s
     atodata.CopyDir(os.path.join(expected_root, "data", "ato_knowledge_base"), os.path.join(generated_root, "data", "ato_knowledge_base"))
 
 
+def write_stale_current_values(path: str) -> None:
+    Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
+    Path(path).write_text("[]\n", encoding="utf-8")
+
+
 def current_value_files(root: str) -> List[str]:
     out: List[str] = []
     for skill in required_topics():
@@ -670,7 +698,20 @@ def current_value_files(root: str) -> List[str]:
 
 def stale_go_tooling_hits(root: str) -> List[str]:
     hits: List[str] = []
-    for rel in [
+    for rel in go_tooling_scan_files():
+        hits.extend(text_hits(root, rel, go_tooling_needles()))
+    return hits
+
+
+def stale_go_runtime_claim_hits(root: str) -> List[str]:
+    hits: List[str] = []
+    for rel in public_runtime_claim_scan_files():
+        hits.extend(text_hits(root, rel, go_runtime_claim_needles()))
+    return hits
+
+
+def go_tooling_scan_files() -> List[str]:
+    return [
         os.path.join(".devcontainer", "Dockerfile"),
         os.path.join(".devcontainer", "devcontainer.json"),
         "docker-compose.dev.yml",
@@ -680,24 +721,60 @@ def stale_go_tooling_hits(root: str) -> List[str]:
         os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
         os.path.join(".github", "dependabot.yml"),
         os.path.join(".github", "dependabot.yaml"),
-    ]:
-        path = os.path.join(root, rel)
-        text = read_text(path).lower()
-        if not text:
-            continue
-        for needle in [
-            "devcontainers/go",
-            "golang.go",
-            "gomodcache",
-            "gocache",
-            "go version",
-            "go test",
-            "go build",
-            "go run",
-            "package-ecosystem: gomod",
-        ]:
-            if needle in text:
-                hits.append(f"{rel}:{needle}")
+    ]
+
+
+def public_runtime_claim_scan_files() -> List[str]:
+    return [
+        os.path.join(".codex-plugin", "plugin.json"),
+        os.path.join(".agents", "plugins", "marketplace.json"),
+        os.path.join("agents", "openai.yaml"),
+        "plugin.lock.json",
+        ".gitleaks.toml",
+        "README.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+        os.path.join("docs", "DEVELOPMENT.md"),
+        os.path.join("docs", "FULL_PLUGIN_INSTALL.md"),
+        os.path.join("docs", "INSTALLATION.md"),
+        os.path.join("docs", "PUBLICATION_CHECKLIST.md"),
+    ]
+
+
+def go_tooling_needles() -> List[str]:
+    return [
+        "devcontainers/go",
+        "golang.go",
+        "gomodcache",
+        "gocache",
+        "go version",
+        "go test",
+        "go build",
+        "go run",
+        "package-ecosystem: gomod",
+    ]
+
+
+def go_runtime_claim_needles() -> List[str]:
+    return [
+        "shared go backend",
+        "go backend",
+        "go runtime",
+        "go toolchain",
+        "go-based",
+        "golang backend",
+        "golang runtime",
+    ]
+
+
+def text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
+    text = read_text(os.path.join(root, rel)).lower()
+    hits: List[str] = []
+    if not text:
+        return hits
+    for needle in needles:
+        if needle in text:
+            hits.append(f"{rel}:{needle}")
     return hits
 
 

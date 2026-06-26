@@ -41,7 +41,7 @@ if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Dev
   fail "private machine path leaked into public docs"
 fi
 
-if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
+if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
   fail "legacy public identity leaked"
 fi
 

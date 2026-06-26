@@ -204,7 +204,7 @@ def run(argv: Optional[List[str]] = None) -> int:
             skillgen.Validate(root)
             return _exit_json({"valid": True}, None)
         except Exception as exc:
-            return _exit_json({"valid": True}, exc)
+            return _exit_json({"valid": False}, exc)
 
     raise SystemExit(f"unsupported command {args.command}")
 

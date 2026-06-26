@@ -1,4 +1,4 @@
-title = "TaxMate AU Gitleaks config"
+title = "TaxMate Australia Gitleaks config"
 
 [allowlist]
 description = "ATO source snapshots can contain public website scripts and identifiers."

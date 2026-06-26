@@ -3461,24 +3461,26 @@
       "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "work-from-home"
+        "abn-business"
       ],
       "references": [
-        "skills/work-from-home/references/rules.md",
-        "skills/work-from-home/references/sources.json"
+        "skills/abn-business/references/rules.md",
+        "skills/abn-business/references/sources.json"
       ],
       "covered_concepts": [
-        "WFH",
-        "actual cost",
-        "actual-cost-method",
-        "fixed rate",
-        "fixed-rate-method",
-        "home office",
-        "home-based-business",
-        "occupancy",
-        "occupancy-expenses",
-        "work from home",
-        "working-from-home-expenses"
+        "ABN",
+        "PSI",
+        "assessable-income",
+        "business expense",
+        "business loss",
+        "business-deductions",
+        "business-losses",
+        "hobby",
+        "income-and-deductions-for-business",
+        "motor-vehicle",
+        "non-commercial",
+        "personal-services-income",
+        "sole trader"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -3565,24 +3567,26 @@
       "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "work-from-home"
+        "abn-business"
       ],
       "references": [
-        "skills/work-from-home/references/rules.md",
-        "skills/work-from-home/references/sources.json"
+        "skills/abn-business/references/rules.md",
+        "skills/abn-business/references/sources.json"
       ],
       "covered_concepts": [
-        "WFH",
-        "actual cost",
-        "actual-cost-method",
-        "fixed rate",
-        "fixed-rate-method",
-        "home office",
-        "home-based-business",
-        "occupancy",
-        "occupancy-expenses",
-        "work from home",
-        "working-from-home-expenses"
+        "ABN",
+        "PSI",
+        "assessable-income",
+        "business expense",
+        "business loss",
+        "business-deductions",
+        "business-losses",
+        "hobby",
+        "income-and-deductions-for-business",
+        "motor-vehicle",
+        "non-commercial",
+        "personal-services-income",
+        "sole trader"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -5874,24 +5878,26 @@
       "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "work-from-home"
+        "abn-business"
       ],
       "references": [
-        "skills/work-from-home/references/rules.md",
-        "skills/work-from-home/references/sources.json"
+        "skills/abn-business/references/rules.md",
+        "skills/abn-business/references/sources.json"
       ],
       "covered_concepts": [
-        "WFH",
-        "actual cost",
-        "actual-cost-method",
-        "fixed rate",
-        "fixed-rate-method",
-        "home office",
-        "home-based-business",
-        "occupancy",
-        "occupancy-expenses",
-        "work from home",
-        "working-from-home-expenses"
+        "ABN",
+        "PSI",
+        "assessable-income",
+        "business expense",
+        "business loss",
+        "business-deductions",
+        "business-losses",
+        "hobby",
+        "income-and-deductions-for-business",
+        "motor-vehicle",
+        "non-commercial",
+        "personal-services-income",
+        "sole trader"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",
@@ -7183,24 +7189,26 @@
       "content_hash": "",
       "status": "metadata_only",
       "skills": [
-        "work-from-home"
+        "abn-business"
       ],
       "references": [
-        "skills/work-from-home/references/rules.md",
-        "skills/work-from-home/references/sources.json"
+        "skills/abn-business/references/rules.md",
+        "skills/abn-business/references/sources.json"
       ],
       "covered_concepts": [
-        "WFH",
-        "actual cost",
-        "actual-cost-method",
-        "fixed rate",
-        "fixed-rate-method",
-        "home office",
-        "home-based-business",
-        "occupancy",
-        "occupancy-expenses",
-        "work from home",
-        "working-from-home-expenses"
+        "ABN",
+        "PSI",
+        "assessable-income",
+        "business expense",
+        "business loss",
+        "business-deductions",
+        "business-losses",
+        "hobby",
+        "income-and-deductions-for-business",
+        "motor-vehicle",
+        "non-commercial",
+        "personal-services-income",
+        "sole trader"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",

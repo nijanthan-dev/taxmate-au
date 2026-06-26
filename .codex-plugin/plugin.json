@@ -19,8 +19,8 @@
     "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "longDescription": "TaxMate Australia turns messy tax inputs into clear, conservative preparation workflows for Australian taxpayers and ABN operators. It combines official ATO source refresh, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a shared Go backend. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
-    "shortDescription": "ATO-backed Australian tax-prep workflow for Codex and Claude",
+    "longDescription": "TaxMate Australia turns messy tax inputs into clear, conservative preparation workflows for Australian taxpayers and ABN operators. It combines official ATO source refresh, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a bash and Python runtime. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "shortDescription": "ATO-backed Australian tax-prep workflow for Codex",
     "websiteURL": "https://www.ato.gov.au/"
   },
   "keywords": [
@@ -36,7 +36,6 @@
     "cgt",
     "super",
     "accountant",
-    "claude",
     "plugin",
     "tax prep"
   ],

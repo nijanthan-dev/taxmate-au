@@ -830,7 +830,7 @@ def writeTopic(root: str, source_root: str, topic_obj: Topic, sources: List[Sour
     writeText(os.path.join(ref_dir, "evidence.md"), evidenceMarkdown(topic_obj, sources))
     writeJSON(os.path.join(ref_dir, "sources.json"), [_source_to_json(src) for src in sources])
 
-    values = mergeAndFilterValues(source_root, topic_obj.slug, values)
+    values = mergeAndFilterValues(source_root, topic_obj.slug, sources, values)
     if len(values) > 0:
         writeJSON(os.path.join(ref_dir, "current-values.json"), [_value_to_json(v) for v in values])
     else:
@@ -986,7 +986,7 @@ def assignTopic(rec: atodata.SourceRecord, text: str) -> tuple[Topic, int]:
     hay = (rec.url + " " + rec.final_url + " " + rec.title + " " + firstN(text, 12000)).lower()
     for rule in [
         ("working-from-home-expenses", "work-from-home"),
-        ("home-based-business-expenses", "work-from-home"),
+        ("home-based-business-expenses", "abn-business"),
         ("business-activity-statements-bas", "gst-bas"),
         ("gst-excise-and-indirect-taxes/gst", "gst-bas"),
         ("fringe-benefits-tax", "payg-employer"),
@@ -1059,7 +1059,8 @@ def ExtractMainText(src: bytes) -> str:
 
 
 SCALE_WORDS_RE = r"(?:thousand|million|billion|trillion)"
-CURRENCY_VALUE_RE = r"[$]\s?\d[\d,]*(?:\.\d+)?(?:[\s\u00a0\u202f]+" + SCALE_WORDS_RE + r")?"
+CURRENCY_AMOUNT_RE = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?"
+CURRENCY_VALUE_RE = r"[$]\s?" + CURRENCY_AMOUNT_RE + r"(?:[\s\u00a0\u202f]+" + SCALE_WORDS_RE + r")?"
 valueRE = re.compile(
     r"(?i)(\b\d{4}[-–]\d{2}\b|\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b|"
     + CURRENCY_VALUE_RE
@@ -1099,17 +1100,33 @@ def detectValues(topic: str, text: str, src: Source) -> List[ValueFact]:
     return out
 
 
-def mergeAndFilterValues(root: str, topic: str, values: List[ValueFact]) -> List[ValueFact]:
+def mergeAndFilterValues(root: str, topic: str, sources: List[Source], values: List[ValueFact]) -> List[ValueFact]:
     if len(values) == 0:
         path = os.path.join(root, "skills", topic, "references", "current-values.json")
         try:
             body = Path(path).read_text(encoding="utf-8")
             raw = json.loads(body)
-            values = [value_from_json(item) for item in raw]
+            values = [
+                value
+                for value in [value_from_json(item) for item in raw]
+                if currentValueMatchesSource(value, sources)
+            ]
         except Exception:
             values = []
     values = [preserveScaleWord(value) for value in values]
     return filterValuesWithPeriods(values)
+
+
+def currentValueMatchesSource(value: ValueFact, sources: List[Source]) -> bool:
+    value_url = canonicalURL(value.source_url)
+    for src in sources:
+        source_urls = {canonicalURL(src.url), canonicalURL(src.final_url)}
+        if value_url not in source_urls:
+            continue
+        if value.content_hash != src.content_hash:
+            continue
+        return True
+    return False
 
 
 def preserveScaleWord(value: ValueFact) -> ValueFact:
@@ -1752,6 +1769,10 @@ def inferSkillsFromURL(raw: str) -> List[str]:
 
 def valuesMissingPeriods(root: str) -> List[str]:
     missing: List[str] = []
+    sources_by_skill, err = loadPerSkillSourceAssignments(root)
+    if err is not None:
+        missing.append(f"current-values:sources-unavailable:{err}")
+        return missing
     for skill in requiredSkillSlugs():
         path = os.path.join(root, "skills", skill, "references", "current-values.json")
         try:
@@ -1764,8 +1785,14 @@ def valuesMissingPeriods(root: str) -> List[str]:
             continue
         for i, value in enumerate(raw):
             v = value_from_json(value)
+            if malformedCurrencyValue(v.value):
+                missing.append(f"{path}:{i}:malformed-currency-value")
+                continue
             if v.source_url == "" or v.source_title == "" or v.checked_at == "" or v.content_hash == "" or v.unit == "" or v.context == "":
                 missing.append(f"{path}:{i}:missing-provenance")
+                continue
+            if not currentValueMatchesSource(v, list(sources_by_skill.get(skill, {}).values())):
+                missing.append(f"{path}:{i}:source-not-assigned-to-skill")
                 continue
             if scaleWordMissing(v.value, v.context):
                 missing.append(f"{path}:{i}:scaled-value-truncated")
@@ -1773,6 +1800,13 @@ def valuesMissingPeriods(root: str) -> List[str]:
             if v.income_year == "" and (v.effective_from == "" or v.effective_to == ""):
                 missing.append(f"{path}:{i}:missing-period")
     return missing
+
+
+def malformedCurrencyValue(value: str) -> bool:
+    if "$" not in value:
+        return False
+    pattern = r"[$]\s?" + CURRENCY_AMOUNT_RE + r"(?:[\s\u00a0\u202f]+" + SCALE_WORDS_RE + r")?"
+    return re.fullmatch(pattern, normalizeSpace(value), flags=re.IGNORECASE) is None
 
 
 def scaleWordMissing(value: str, context: str) -> bool:
