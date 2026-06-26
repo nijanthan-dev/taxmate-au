@@ -35,7 +35,6 @@ def parse_bool_arg(value: str) -> bool:
     raise ValueError(f"invalid boolean value: {value!r}")
 
 
-
 def titlecase_tool(tool: str) -> str:
     mapping = {
         "bas": "bas",
@@ -278,8 +277,6 @@ def months_held(acquired: str, disposed: str) -> int:
     return int((d - a).days / 30.4375)
 
 
-
-
 def main(argv: List[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     if not argv:
@@ -337,6 +334,8 @@ def main(argv: List[str] | None = None) -> int:
         parser.add_argument("--periods", type=int, default=52)
         parser.add_argument(
             "--tax-free-threshold",
+            nargs="?",
+            const=True,
             type=parse_bool_arg,
             default=True,
             metavar="(true|false)",
