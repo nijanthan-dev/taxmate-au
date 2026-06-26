@@ -207,6 +207,7 @@ def add_source_coverage_checks(
     add("verified_sources_have_content_hash", all_verified_sources_have_hash(coverage), "")
     add("metadata_only_sources_not_claimed_as_verified", not metadata_only_marked_as_verified(root, coverage), "")
     add("source_records_match_per_skill", source_coverage_matches_skill_files(root, coverage), "")
+    add("bank_account_investment_source_routed", bank_account_investment_source_routed(coverage), "")
     add("source_record_count", len(registry.records) >= 290, str(len(registry.records)))
     add("source_scope_present", bool(registry.scope), "")
     add("scope_summary_exists", file_exists(os.path.join(data_dir, "SCOPE_SUMMARY.md")), "")
@@ -543,6 +544,14 @@ def source_coverage_matches_skill_files(root: str, coverage: skillgen.SourceCove
             if entry.status not in (skillgen.StatusVerified, skillgen.StatusMetadataOnly):
                 return False
     return True
+
+
+def bank_account_investment_source_routed(coverage: skillgen.SourceCoverage) -> bool:
+    target = "investing-in-bank-accounts-and-income-bonds"
+    for entry in coverage.sources:
+        if target in entry.original_url or target in entry.canonical_url:
+            return "shares-etfs-managed-funds" in entry.skills
+    return False
 
 
 def source_matches_per_skill(

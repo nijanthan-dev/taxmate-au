@@ -51,6 +51,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Source content status: not verified this run. treat claims as metadata-only and verify before relying
 
+- Investing in bank accounts and income bonds
+  - Source ID: ato-4c6c7ee85a4b
+  - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/investing-in-bank-accounts-and-income-bonds
+  - Source last updated: 2026-06-21T14:00:00.000+00:00
+  - Checked at: 2026-06-23T09:04:57Z
+  - Source content status: not verified this run. treat claims as metadata-only and verify before relying
+
 - Trust non-assessable payments (CGT event E4)
   - Source ID: ato-5015e6c89c28
   - URL: https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/trust-non-assessable-payments-cgt-event-e4

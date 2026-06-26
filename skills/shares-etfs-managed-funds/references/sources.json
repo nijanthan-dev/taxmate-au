@@ -90,6 +90,21 @@
     "assignment_reason": "matched topic metadata; source content not extracted"
   },
   {
+    "source_id": "ato-4c6c7ee85a4b",
+    "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/investing-in-bank-accounts-and-income-bonds",
+    "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/investing-in-bank-accounts-and-income-bonds",
+    "title": "Investing in bank accounts and income bonds",
+    "last_updated": "2026-06-21T14:00:00.000+00:00",
+    "checked_at": "2026-06-23T09:04:57Z",
+    "content_hash": "",
+    "assigned_skill": "shares-etfs-managed-funds",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "metadata_only",
+    "reason": "",
+    "assignment_reason": "matched topic metadata; source content not extracted"
+  },
+  {
     "source_id": "ato-5015e6c89c28",
     "url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/trust-non-assessable-payments-cgt-event-e4",
     "final_url": "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/trust-non-assessable-payments-cgt-event-e4",

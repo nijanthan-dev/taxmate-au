@@ -19,6 +19,7 @@ Missing or altered evidence means `Insufficient evidence` or `Accountant review`
 - ato-23bc20060a77 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments (metadata_only)
 - ato-330a5b644c5b from https://www.ato.gov.au/individuals-and-families/investments-and-assets/shares-funds-and-trusts/investing-in-shares/obtaining-shares (metadata_only)
 - ato-38dc7d86de55 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/dividend-reinvestment-plans (metadata_only)
+- ato-4c6c7ee85a4b from https://www.ato.gov.au/individuals-and-families/investments-and-assets/investing-in-bank-accounts-and-income-bonds (metadata_only)
 - ato-5015e6c89c28 from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/trust-non-assessable-payments-cgt-event-e4 (metadata_only)
 - ato-64b2bb4a43aa from https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/demergers-cgt-rollover-for-shareholders-and-unit-holders (metadata_only)
 - ato-78a333d5f41d from https://www.ato.gov.au/individuals-and-families/investments-and-assets/shares-funds-and-trusts (metadata_only)

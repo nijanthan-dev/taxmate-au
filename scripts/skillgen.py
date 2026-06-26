@@ -569,7 +569,7 @@ def Topics() -> List[Topic]:
             ["shares", "ETF", "managed fund", "AMIT", "DRP", "dividend", "distribution"],
             "shares, ETFs, managed funds, investment income and related CGT records",
             "crypto, rental property, or non-investment CGT",
-            ["shares", "similar-investments", "investing-in-shares", "managed-investment", "dividend", "distribution", "trust-non-assessable", "share-buy-backs", "demergers"],
+            ["shares", "similar-investments", "investing-in-shares", "bank-accounts", "income-bonds", "managed-investment", "dividend", "distribution", "trust-non-assessable", "share-buy-backs", "demergers"],
             ["DRP", "AMIT", "trust adjustments", "capital losses", "share trading versus investing"],
         ),
         topic(
@@ -995,6 +995,7 @@ def assignTopic(rec: atodata.SourceRecord, text: str) -> tuple[Topic, int]:
         ("taxable-payments-annual-report", "payg-employer"),
         ("tax-rates-and-codes", "payg-employer"),
         ("crypto-asset", "crypto-assets"),
+        ("investing-in-bank-accounts-and-income-bonds", "shares-etfs-managed-funds"),
         ("shares-and-similar-investments", "shares-etfs-managed-funds"),
         ("shares-funds-and-trusts", "shares-etfs-managed-funds"),
         ("property-and-capital-gains-tax", "property-rental-cgt"),
