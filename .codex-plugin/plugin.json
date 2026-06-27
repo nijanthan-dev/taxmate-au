@@ -2,7 +2,7 @@
   "author": {
     "name": "TaxMate Australia Maintainers"
   },
-  "description": "TaxMate Australia helps Australian users move from records to accountant-ready tax prep outputs with ATO-backed research, conservative treatment rules, and clear review flags for ambiguous items.",
+  "description": "TaxMate Australia helps Australian users move from tax records to accountant-ready prep outputs with ATO-backed research, GST/BAS and CGT triage, conservative treatment rules, and clear review flags.",
   "homepage": "https://github.com/nijanthan-dev/taxmate-australia",
   "interface": {
     "brandColor": "#1B5E20",
@@ -19,25 +19,29 @@
     "displayName": "TaxMate Australia",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "longDescription": "TaxMate Australia turns messy tax inputs into clear, conservative preparation workflows for Australian taxpayers and ABN operators. It combines official ATO source refresh, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a bash and Python runtime. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
-    "shortDescription": "ATO-backed Australian tax-prep workflow for Codex",
+    "longDescription": "TaxMate Australia turns messy tax records into clear, conservative preparation workflows for Australian taxpayers, ABN operators, and accountant handoff. It combines official ATO source refresh, GST/BAS and CGT triage, transaction review, calculator scaffolds, and output-focused skills (workbook and taxpack) on a bash and Python runtime. It supports Codex full-plugin workflows and portable skill use in Claude Code, Cowork, and OpenAgentSkill CLI. It is a preparation aid, not professional tax, legal, accounting, financial, BAS-agent, or registered-tax-agent advice, and is not affiliated with or endorsed by the Australian Taxation Office.",
+    "shortDescription": "ATO-backed Australian tax prep skills",
     "websiteURL": "https://github.com/nijanthan-dev/taxmate-australia"
   },
   "keywords": [
-    "australia",
-    "assistant",
+    "australian tax",
+    "tax prep",
     "codex",
+    "claude code",
+    "cowork",
+    "openagentskill",
     "ato",
-    "tax",
-    "bas",
     "gst",
+    "bas",
     "payg",
     "fbt",
     "cgt",
-    "super",
+    "superannuation",
+    "abn",
+    "sole trader",
     "accountant",
-    "plugin",
-    "tax prep"
+    "tax records",
+    "workbook"
   ],
   "license": "Apache-2.0",
   "name": "taxmate-australia",

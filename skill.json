@@ -1,20 +1,20 @@
 {
   "name": "TaxMate Australia",
   "slug": "taxmate-australia",
-  "description": "Complete Codex plugin for ATO-backed Australian tax prep, using a bash and Python runtime for conservative record review, evidence gaps, accountant handoff, and source-linked treatment flags.",
-  "tagline": "Bash+Python ATO-backed tax-prep plugin",
+  "description": "ATO-backed Australian tax prep skill pack and plugin using a bash and Python runtime for conservative record review, GST/BAS, CGT, evidence gaps, accountant handoff, and source-linked treatment flags.",
+  "tagline": "ATO-backed Australian tax prep skills",
   "category": "business",
   "tags": [
-    "australia",
-    "tax",
+    "australian-tax",
+    "tax-prep",
     "ato",
     "gst",
     "bas",
     "cgt",
     "payg",
-    "super",
+    "superannuation",
     "accountant",
-    "codex"
+    "agent-skills"
   ],
   "author": {
     "name": "TaxMate Australia Maintainers"

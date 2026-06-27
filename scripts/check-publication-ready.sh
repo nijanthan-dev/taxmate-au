@@ -23,6 +23,7 @@ fail() {
 [[ -f .github/ISSUE_TEMPLATE/feature_request.yml ]] || fail "missing feature issue template"
 [[ -f .github/ISSUE_TEMPLATE/config.yml ]] || fail "missing issue template config"
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
+[[ -f docs/DISCOVERY.md ]] || fail "missing discovery metadata guide"
 [[ -f hooks.json ]] || fail "missing hooks.json"
 [[ -f scripts/clean-source-cache.sh ]] || fail "missing source-cache cleaner"
 [[ -f scripts/codex-env-setup.sh ]] || fail "missing Codex environment setup"
@@ -165,6 +166,9 @@ if (openAgentSkill.license !== "Apache-2.0") fail("OpenAgentSkill license mismat
 if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime");
 if (openAgentSkill.category !== "business") fail("OpenAgentSkill category mismatch");
 if (!Array.isArray(openAgentSkill.tags) || openAgentSkill.tags.length === 0 || openAgentSkill.tags.length > 10) fail("OpenAgentSkill tags must be 1-10 entries");
+const requiredDiscoveryTags = ["australian-tax", "tax-prep", "ato", "gst", "bas", "cgt", "payg", "superannuation", "accountant", "agent-skills"];
+for (const tag of requiredDiscoveryTags) if (!openAgentSkill.tags.includes(tag)) fail(`OpenAgentSkill missing discovery tag ${tag}`);
+for (const staleTag of ["australia", "tax", "super"]) if (openAgentSkill.tags.includes(staleTag)) fail(`OpenAgentSkill stale generic tag ${staleTag}`);
 if (!Array.isArray(openAgentSkill.platforms) || !openAgentSkill.platforms.includes("Codex") || !openAgentSkill.platforms.includes("Claude Code") || !openAgentSkill.platforms.includes("Cowork") || !openAgentSkill.platforms.includes("OpenAgentSkill CLI")) fail("OpenAgentSkill platforms missing Codex/Claude Code/Cowork/CLI");
 if (!Array.isArray(openAgentSkill.agent_compatibility) || !openAgentSkill.agent_compatibility.includes("Codex") || !openAgentSkill.agent_compatibility.includes("Claude Code") || !openAgentSkill.agent_compatibility.includes("Cowork")) fail("OpenAgentSkill agent compatibility missing Codex/Claude Code/Cowork");
 if (openAgentSkill.install !== expectedInstall) fail("OpenAgentSkill install command mismatch");
@@ -239,8 +243,17 @@ for (const wrapper of packaging.runtimeOnlyPaths.filter((name) => name.startsWit
 }
 
 const readme = fs.readFileSync("README.md", "utf8");
-const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVELOPMENT.md", "docs/SKILL_GENERATION.md"];
+const discovery = fs.readFileSync("docs/DISCOVERY.md", "utf8");
+const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVELOPMENT.md", "docs/SKILL_GENERATION.md", "docs/DISCOVERY.md"];
 for (const doc of docs) if (!fs.existsSync(doc)) fail(`missing ${doc}`);
+for (const term of ["ATO-backed Australian tax prep", "GST/BAS", "CGT", "accountant-ready", "Codex", "Claude Code", "Cowork"]) {
+  if (!readme.includes(term)) fail(`README missing discovery term ${term}`);
+}
+for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "tax-records", "https://github.com/nijanthan-dev/taxmate-australia#readme"]) {
+  if (!discovery.includes(term)) fail(`DISCOVERY missing term ${term}`);
+}
+if (!plugin.interface.shortDescription.includes("ATO-backed Australian tax prep skills")) fail("plugin short description missing discovery copy");
+if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list")) fail("README missing primary npx skills list command");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia \\")) fail("README missing primary npx skills install command");
 if (!readme.includes("Use the capital-gains-tax skill") || !readme.includes("Use the gst-bas skill")) fail("README missing usage examples");
