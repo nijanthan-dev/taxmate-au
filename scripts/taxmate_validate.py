@@ -195,6 +195,7 @@ def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_t
         and all(isinstance(tag, str) and tag.strip() for tag in tags),
         "",
     )
+    add("openagentskill_discovery_tags_ready", discovery_tags_ready(tags), "")
     add(
         "openagentskill_install_ready",
         payload.get("install") == expected_install
@@ -300,6 +301,7 @@ def add_skill_and_documentation_checks(
     add("wrapper_invocations_use_australia_prefix", wrapper_invocations_use_australia_prefix(root), "")
     add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
     add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
+    add("discovery_metadata_documented", discovery_metadata_ready(root, readme_text), "")
 
 
 def add_public_disclaimer_checks(add, text: str) -> None:
@@ -515,6 +517,46 @@ def all_skill_descriptions_long(root: str, skills: List[str]) -> bool:
     return True
 
 
+def discovery_tags_ready(tags: Any) -> bool:
+    if not isinstance(tags, list):
+        return False
+    tag_set = {str(tag) for tag in tags}
+    required = {"australian-tax", "tax-prep", "ato", "gst", "bas", "cgt", "payg", "superannuation", "accountant", "agent-skills"}
+    stale = {"australia", "tax", "super"}
+    return required.issubset(tag_set) and not stale.intersection(tag_set)
+
+
+def discovery_metadata_ready(root: str, readme_text: str) -> bool:
+    discovery = read_text(os.path.join(root, "docs", "DISCOVERY.md"))
+    plugin = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
+    agent = read_text(os.path.join(root, "agents", "openai.yaml"))
+    required_readme_terms = [
+        "ATO-backed Australian tax prep",
+        "GST/BAS",
+        "CGT",
+        "accountant-ready",
+        "Codex",
+        "Claude Code",
+        "Cowork",
+    ]
+    required_discovery_terms = [
+        "GitHub About",
+        "claude-code",
+        "cowork",
+        "openagentskill",
+        "tax-records",
+        "https://github.com/nijanthan-dev/taxmate-australia#readme",
+    ]
+    return (
+        all(term in readme_text for term in required_readme_terms)
+        and all(term in discovery for term in required_discovery_terms)
+        and "ATO-backed Australian tax prep skills" in plugin
+        and "ATO-backed Australian tax prep skills" in agent
+        and '"assistant"' not in plugin
+        and '"super"' not in plugin
+    )
+
+
 def claude_skill_frontmatter_issues(root: str) -> List[str]:
     issues: List[str] = []
     for path in skill_doc_paths(root):
@@ -614,6 +656,7 @@ def public_doc_files(root: str) -> List[str]:
         os.path.join(root, "CONTRIBUTING.md"),
         os.path.join(root, "docs", "PLUGIN_SCANNER.md"),
         os.path.join(root, "docs", "PUBLICATION_CHECKLIST.md"),
+        os.path.join(root, "docs", "DISCOVERY.md"),
         os.path.join(root, "docs", "INSTALLATION.md"),
         os.path.join(root, "docs", "FULL_PLUGIN_INSTALL.md"),
         os.path.join(root, "docs", "DEVELOPMENT.md"),

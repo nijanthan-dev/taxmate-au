@@ -1,9 +1,17 @@
 # TaxMate Australia
 
-TaxMate Australia is a complete Codex plugin for Australian tax-prep review. It provides full runtime features, source-based generation, and conservative, source-linked workflows through the plugin architecture.
+TaxMate Australia is an ATO-backed Australian tax prep skill pack and plugin for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, and source-linked treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
+
+## What it helps with
+
+- Australian tax prep workflows for employees, ABN/sole-trader records, investments, rental property, crypto, superannuation, and private health.
+- ATO source refresh, source coverage checks, and generated topic skills with source URLs and checked-at dates.
+- GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing scaffolds.
+- Conservative finance review for CSV tax records, missing evidence, mixed-use items, and `Accountant review` queues.
+- Accountant-facing Excel workbook and taxpack outputs from reviewed data.
 
 ## Install in 60 seconds
 
@@ -13,7 +21,7 @@ Prerequisites:
 
 - Node.js 20 or newer.
 - Bash, Python 3.9+, Git, curl, and jq.
-- Codex for plugin-oriented workflows.
+- Codex for full plugin workflows; Claude Code, Cowork, or OpenAgentSkill CLI for portable skill workflows.
 
 - Clone and wire locally:
 
@@ -109,5 +117,6 @@ Portable skills are optional. Update/remove portable skills with the `skills@1.5
 - Full plugin setup: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md)
 - Optional portable install: [docs/INSTALLATION.md](docs/INSTALLATION.md)
 - Development: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- Discovery metadata: [docs/DISCOVERY.md](docs/DISCOVERY.md)
 - Skill generation: [docs/SKILL_GENERATION.md](docs/SKILL_GENERATION.md)
 - Disclaimer: [DISCLAIMER.md](DISCLAIMER.md)
