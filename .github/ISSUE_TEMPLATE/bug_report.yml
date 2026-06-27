@@ -7,6 +7,7 @@ body:
     id: summary
     attributes:
       label: Summary
+      description: What failed, using synthetic data only.
     validations:
       required: true
   - type: textarea
@@ -22,3 +23,31 @@ body:
       label: Expected behaviour
     validations:
       required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Area
+      options:
+        - Runtime
+        - Generated skill
+        - Finance review
+        - Calculator
+        - Source registry or coverage
+        - Plugin packaging
+        - CI or repo guardrail
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation run
+      description: Paste command names and results. Do not paste secrets or private records.
+    validations:
+      required: false

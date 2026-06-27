@@ -7,15 +7,31 @@ body:
     id: goal
     attributes:
       label: Goal
+      description: What should change and who it helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Area
+      options:
+        - Runtime
+        - Generated skill
+        - Finance review
+        - Calculator
+        - Source registry or coverage
+        - Plugin packaging
+        - CI or repo guardrail
+        - Documentation
     validations:
       required: true
   - type: textarea
     id: sources
     attributes:
       label: Source basis
-      description: Link official ATO or government sources where relevant.
+      description: Link official ATO or government sources where relevant. Use N/A for docs, CI, or repo-process requests.
     validations:
-      required: false
+      required: true
   - type: textarea
     id: safety
     attributes:
@@ -23,3 +39,10 @@ body:
       description: Explain what should remain Accountant review.
     validations:
       required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Expected validation
+      description: List docs, tests, generated artifacts, and checks expected for a PR.
+    validations:
+      required: false
