@@ -7,7 +7,7 @@ Use this file as the source of truth for public discovery copy across GitHub Abo
 Description:
 
 ```text
-ATO source-linked Australian tax prep skills for Codex, Claude Code, and Cowork: GST/BAS, CGT, evidence gaps, and accountant handoff.
+Australian tax prep skills linked to official ATO sources for Codex, Claude Code, and Cowork: GST/BAS, CGT, evidence gaps, and accountant handoff.
 ```
 
 Website:
@@ -41,7 +41,7 @@ tax-records
 
 ## Keyword Map
 
-- Primary: Australian tax prep, official ATO source-linked tax prep, tax records, accountant handoff.
+- Primary: Australian tax prep, tax prep linked to official ATO sources, tax records, accountant handoff.
 - Topic clusters: GST/BAS, CGT, PAYG, FBT, ABN, sole trader, superannuation, private health, crypto, rental property.
 - Agent/platform terms: Codex plugin, Claude Code skills, Cowork skills, OpenAgentSkill CLI.
 

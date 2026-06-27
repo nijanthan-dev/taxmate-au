@@ -51,7 +51,7 @@ export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
 Core commands:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "work from home"
 "$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --all
 "$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --recrawl
 "$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" validate
@@ -95,6 +95,6 @@ Read `SCOPE_SUMMARY.md`, search `source_registry.json` and `.cache/ato/text/`, t
 
 1. Read `data/ato_knowledge_base/SCOPE_SUMMARY.md`.
 2. Search `source_registry.json` and `.cache/ato/text/`.
-3. Run `"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "<topic>"`.
+3. Run `"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" refresh --query "work from home"`, replacing the query with the relevant topic.
 4. Re-read changed or relevant text.
 5. Answer with conclusion, conservative treatment, evidence needed, source URLs, and accountant-review flags.

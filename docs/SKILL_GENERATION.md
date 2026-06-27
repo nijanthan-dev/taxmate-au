@@ -19,11 +19,11 @@ Approved hosts are allowlisted in `scripts/atodata.py`. Downloaded content is tr
 
 ## Generated Outputs
 
-- `skills/<topic>/SKILL.md`: concise routing, facts, source workflow, output states, review flags, and anti-overclaim rules.
-- `skills/<topic>/references/rules.md`: source-backed scope and provenance.
-- `skills/<topic>/references/evidence.md`: records needed before classification.
-- `skills/<topic>/references/sources.json`: source URL, title, last-updated date, checked-at date, and content hash.
-- `skills/<topic>/references/current-values.json`: volatile values with provenance and reuse warning.
+- `skills/topic-name/SKILL.md`: concise routing, facts, source workflow, output states, review flags, and anti-overclaim rules.
+- `skills/topic-name/references/rules.md`: source-backed scope and provenance.
+- `skills/topic-name/references/evidence.md`: records needed before classification.
+- `skills/topic-name/references/sources.json`: source URL, title, last-updated date, checked-at date, and content hash.
+- `skills/topic-name/references/current-values.json`: volatile values with provenance and reuse warning.
 - `data/ato_knowledge_base/source_coverage.json`: global source coverage status by source and topic with verified/metadata-only/duplicate/excluded states.
 
 ## Dynamic Values

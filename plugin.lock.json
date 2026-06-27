@@ -12,7 +12,7 @@
         "type": "local",
         "path": "runtime/skills/calculators"
       },
-      "integrity": "sha256:c331fe5fb63ff6e8cba89630117fd53d9876b1a5f8905cd5d796503c80b5eeac"
+      "integrity": "sha256:1cf828fb7dc9b836050fec8d5f744918f067dc57faeaa80a63b4745bb8ceedad"
     },
     {
       "id": "finance-review",
@@ -21,7 +21,7 @@
         "type": "local",
         "path": "runtime/skills/finance-review"
       },
-      "integrity": "sha256:69e63dcb4b91361f748ec19e36fb155f43a2b40d30f80143f71ffa64ab37e878"
+      "integrity": "sha256:9f54d124fa603a74e2cc950da636375fe893ddd0b7ae5e7501c0245faeac5b14"
     },
     {
       "id": "research",
@@ -30,7 +30,7 @@
         "type": "local",
         "path": "runtime/skills/research"
       },
-      "integrity": "sha256:60324eb9ea6d6ff2c2ddf755f8eb3e631d4dde3b242a9282cff7fe9ded7a9224"
+      "integrity": "sha256:58c91815e45f4f4c3420a50b21b48fc8f8c38a58ae4c246b4bd6eb06ea8bd6a7"
     },
     {
       "id": "abn-business",
@@ -138,7 +138,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:9e90e69ad49ff9ac184cfe79c8a902662ab83f7fe8d81358ee0ce6868b3060ea"
+      "integrity": "sha256:9ac69d8a8a922e98c65424bb20955b295029eb18680ad14a6f07c3bcf79f20ab"
     },
     {
       "id": "taxpack",

@@ -535,7 +535,7 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     plugin = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
     agent = read_text(os.path.join(root, "agents", "openai.yaml"))
     required_readme_terms = [
-        "ATO source-linked Australian tax prep",
+        "linked to official ATO sources",
         "GST/BAS",
         "CGT",
         "accountant-ready",
@@ -554,8 +554,8 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     return (
         all(term in readme_text for term in required_readme_terms)
         and all(term in discovery for term in required_discovery_terms)
-        and "ATO source-linked Australian tax prep skills" in plugin
-        and "ATO source-linked Australian tax prep skills" in agent
+        and "Australian tax prep with ATO source links" in plugin
+        and "Australian tax prep with ATO source links" in agent
         and ("ATO-" + "backed") not in readme_text
         and ("ATO-" + "backed") not in discovery
         and ("ATO-" + "backed") not in plugin
@@ -1383,7 +1383,7 @@ def text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
     if not text:
         return hits
     for needle in needles:
-        if needle in text:
+        if needle.lower() in text:
             hits.append(f"{rel}:{needle}")
     return hits
 

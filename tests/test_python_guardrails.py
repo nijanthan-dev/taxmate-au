@@ -452,6 +452,15 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_release_config_tracks_manifest_versions(self) -> None:
         self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
 
+    def test_ato_endorsement_scan_is_case_insensitive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text("This is ATO-backed tax prep.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-backed"])
+
 
 if __name__ == "__main__":
     unittest.main()
