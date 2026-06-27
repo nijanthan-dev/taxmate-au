@@ -14,6 +14,7 @@ fail() {
 [[ -f README.md ]] || fail "missing README"
 [[ -f DISCLAIMER.md ]] || fail "missing DISCLAIMER.md"
 [[ -f LICENSE ]] || fail "missing LICENSE"
+[[ -f skill.json ]] || fail "missing OpenAgentSkill skill.json"
 [[ -f SECURITY.md ]] || fail "missing SECURITY.md"
 [[ -f CONTRIBUTING.md ]] || fail "missing CONTRIBUTING.md"
 [[ -f docs/PUBLICATION_CHECKLIST.md ]] || fail "missing publication checklist"
@@ -43,11 +44,11 @@ if git grep -nE 'public[-]work|taxmate-australia-public[-]work' -- . ':!data/ato
   fail "temporary staging name leaked"
 fi
 
-if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md .codex-plugin agents skills docs; then
+if git grep -nE '/Users/[[:alnum:]_.-]+|custom[_]apps/skills[_]and[_]plugins|Developer/custom[_]apps' -- README.md skill.json .codex-plugin agents skills docs; then
   fail "private machine path leaked into public docs"
 fi
 
-if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
+if git grep -nE 'taxmate-au($|[^s])|TaxMate AU($|[^s])|TAXMATE_AU_ROOT' -- README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md skill.json .gitleaks.toml docs .github .codex-plugin .agents agents skills wrappers plugin.lock.json; then
   fail "legacy public identity leaked"
 fi
 
@@ -55,6 +56,7 @@ git grep -Eq 'not (professional )?tax, legal, accounting, financial' -- README.m
 git grep -q 'not affiliated with' -- README.md DISCLAIMER.md .codex-plugin skills || fail "missing affiliation disclaimer"
 git grep -q 'does not lodge' -- DISCLAIMER.md || fail "missing lodgment disclaimer"
 git grep -q 'Accountant review' -- DISCLAIMER.md skills || fail "missing accountant-review boundary"
+grep -q 'APPENDIX: How to apply the Apache License to your work.' LICENSE || fail "Apache-2.0 license text missing standard appendix"
 
 node <<'NODE'
 const fs = require("fs");
@@ -63,6 +65,7 @@ const path = require("path");
 
 const root = process.cwd();
 const plugin = JSON.parse(fs.readFileSync(".codex-plugin/plugin.json", "utf8"));
+const openAgentSkill = JSON.parse(fs.readFileSync("skill.json", "utf8"));
 const publicManifest = JSON.parse(fs.readFileSync("config/public-skills.json", "utf8"));
 const packaging = JSON.parse(fs.readFileSync("config/skill-packaging.json", "utf8"));
 const publicSkills = publicManifest.portableSkills;
@@ -78,6 +81,19 @@ function fail(message) {
 if (publicManifest.skillsCliVersion !== "1.5.13") fail("skills CLI version must be pinned to 1.5.13");
 if (JSON.stringify(publicSkills) !== JSON.stringify(packaging.publicPortable)) fail("public skill manifests differ");
 if (plugin.interface.websiteURL !== plugin.repository) fail("plugin website must point to repository");
+const expectedInstall = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes";
+if (openAgentSkill.slug !== "taxmate-australia") fail("OpenAgentSkill slug mismatch");
+if (openAgentSkill.repository !== plugin.repository) fail("OpenAgentSkill repository mismatch");
+if (openAgentSkill.homepage !== plugin.homepage) fail("OpenAgentSkill homepage mismatch");
+if (openAgentSkill.license !== "Apache-2.0") fail("OpenAgentSkill license mismatch");
+if (!/bash/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`) || !/python/i.test(`${openAgentSkill.description} ${openAgentSkill.tagline}`)) fail("OpenAgentSkill metadata must describe bash and Python runtime");
+if (openAgentSkill.category !== "business") fail("OpenAgentSkill category mismatch");
+if (!Array.isArray(openAgentSkill.tags) || openAgentSkill.tags.length === 0 || openAgentSkill.tags.length > 10) fail("OpenAgentSkill tags must be 1-10 entries");
+if (!Array.isArray(openAgentSkill.platforms) || !openAgentSkill.platforms.includes("Codex") || !openAgentSkill.platforms.includes("OpenAgentSkill CLI")) fail("OpenAgentSkill platforms missing Codex/CLI");
+if (openAgentSkill.install !== expectedInstall) fail("OpenAgentSkill install command mismatch");
+if (!Array.isArray(openAgentSkill.install_targets) || !openAgentSkill.install_targets.some((target) => target.value === expectedInstall)) fail("OpenAgentSkill install target missing CLI command");
+if (!Array.isArray(openAgentSkill.do_not_use_for) || !openAgentSkill.do_not_use_for.some((item) => /lodgment|filing|submission/i.test(item))) fail("OpenAgentSkill safety boundaries missing lodgment refusal");
+if (!openAgentSkill.safety || openAgentSkill.safety.human_review_required !== true) fail("OpenAgentSkill human-review safety missing");
 
 for (const name of publicSkills) {
   const dir = path.join(root, "skills", name);
@@ -148,7 +164,9 @@ const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVEL
 for (const doc of docs) if (!fs.existsSync(doc)) fail(`missing ${doc}`);
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list")) fail("README missing primary npx skills list command");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia \\")) fail("README missing primary npx skills install command");
+if (!readme.includes("Use the capital-gains-tax skill") || !readme.includes("Use the gst-bas skill")) fail("README missing usage examples");
 if (readme.includes("official plugin discovery") || readme.includes("marketplace entry")) fail("README contains unverified marketplace claim");
+if (/openagentskill\.com\/badge|OpenAgentSkill badge/i.test(readme)) fail("README should not claim OpenAgentSkill approval before listing");
 for (const name of publicSkills) if (!readme.includes(`\`${name}\``)) fail(`README missing public skill ${name}`);
 NODE
 
