@@ -446,6 +446,9 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_gitleaks_has_no_broad_cache_allowlist(self) -> None:
         self.assertTrue(taxmate_validate.gitleaks_no_broad_cache_allowlist(str(ROOT)))
 
+    def test_release_workflow_auto_runs_after_green_ci(self) -> None:
+        self.assertTrue(taxmate_validate.release_workflow_auto_after_ci(str(ROOT)))
+
 
 if __name__ == "__main__":
     unittest.main()

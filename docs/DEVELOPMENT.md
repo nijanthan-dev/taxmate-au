@@ -121,12 +121,13 @@ Do not commit private user tax records.
 
 CI runs bash+python runtime checks, generated-source checks, environment guardrails, macOS smoke, publication validation, and Gitleaks.
 
-## Release (manual semver)
+## Release
 
-- After a successful merge to `main`, wait for main CI to pass, then run `[.github/workflows/release.yml](/.github/workflows/release.yml)` manually from `main`.
+- After a successful merge to `main`, main CI triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)` automatically.
+- The workflow can also be run manually from `main`.
 - The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
   - `feat!:` / `BREAKING CHANGE:` -> major
-- Run the workflow once to create or update the Release PR. After that PR is merged and main CI passes, run the workflow again from `main` to publish the GitHub release artifact.
+- The workflow creates or updates the Release PR. After that PR is merged and main CI passes, the workflow runs again and publishes the GitHub release artifact.

@@ -390,6 +390,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("refresh_errors_use_python_formatting", refresh_errors_use_python_formatting(root), "")
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
+    add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
     private_hits = tracked_private_path_hits(root)
     add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
     add("gitleaks_no_broad_cache_allowlist", gitleaks_no_broad_cache_allowlist(root), "")
@@ -1778,6 +1779,27 @@ def stale_bash5_prereq_hits(root: str) -> List[str]:
     ]:
         hits.extend(text_hits(root, rel, ["bash 5", "bash 5+"]))
     return hits
+
+
+def release_workflow_auto_after_ci(root: str) -> bool:
+    text = read_text(os.path.join(root, ".github", "workflows", "release.yml"))
+    required = [
+        "workflow_run:",
+        'workflows: ["CI"]',
+        "types: [completed]",
+        "branches: [main]",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.head_sha",
+        "steps.target.outputs.sha",
+        "--commit \"$TARGET_SHA\"",
+        "Require main unchanged",
+        "git ls-remote origin refs/heads/main",
+        "main moved from $TARGET_SHA",
+        "RELEASE_PLEASE_TOKEN",
+        "target-branch: main",
+    ]
+    return all(item in text for item in required)
 
 
 def refresh_query_no_match_is_read_only(root: str) -> bool:
