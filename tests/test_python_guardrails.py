@@ -449,6 +449,9 @@ class ValidatorAndCliTests(unittest.TestCase):
     def test_release_workflow_auto_runs_after_green_ci(self) -> None:
         self.assertTrue(taxmate_validate.release_workflow_auto_after_ci(str(ROOT)))
 
+    def test_release_config_tracks_manifest_versions(self) -> None:
+        self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
+
 
 if __name__ == "__main__":
     unittest.main()

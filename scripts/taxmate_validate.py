@@ -391,6 +391,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
     add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
+    add("release_config_tracks_manifest_versions", release_config_tracks_manifest_versions(root), "")
     private_hits = tracked_private_path_hits(root)
     add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
     add("gitleaks_no_broad_cache_allowlist", gitleaks_no_broad_cache_allowlist(root), "")
@@ -418,6 +419,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("public_metadata_no_go_runtime_claims", len(go_runtime_claim_hits) == 0, "; ".join(go_runtime_claim_hits))
     stale_cache_claim_hits = stale_committed_source_cache_claim_hits(root)
     add("public_docs_no_committed_source_cache_claims", len(stale_cache_claim_hits) == 0, "; ".join(stale_cache_claim_hits))
+    ato_claim_hits = ato_endorsement_claim_hits(root)
+    add("public_docs_no_ato_backing_claims", len(ato_claim_hits) == 0, "; ".join(ato_claim_hits))
 
 
 def is_valid_exception_safe(fn) -> Optional[Exception]:
@@ -532,7 +535,7 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     plugin = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
     agent = read_text(os.path.join(root, "agents", "openai.yaml"))
     required_readme_terms = [
-        "ATO-backed Australian tax prep",
+        "ATO source-linked Australian tax prep",
         "GST/BAS",
         "CGT",
         "accountant-ready",
@@ -546,13 +549,17 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         "cowork",
         "openagentskill",
         "tax-records",
-        "https://github.com/nijanthan-dev/taxmate-australia#readme",
+        "Leave blank until there is a dedicated external landing page.",
     ]
     return (
         all(term in readme_text for term in required_readme_terms)
         and all(term in discovery for term in required_discovery_terms)
-        and "ATO-backed Australian tax prep skills" in plugin
-        and "ATO-backed Australian tax prep skills" in agent
+        and "ATO source-linked Australian tax prep skills" in plugin
+        and "ATO source-linked Australian tax prep skills" in agent
+        and ("ATO-" + "backed") not in readme_text
+        and ("ATO-" + "backed") not in discovery
+        and ("ATO-" + "backed") not in plugin
+        and ("ATO-" + "backed") not in agent
         and '"assistant"' not in plugin
         and '"super"' not in plugin
     )
@@ -1284,6 +1291,19 @@ def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
     return hits
 
 
+def ato_endorsement_claim_hits(root: str) -> List[str]:
+    files = public_runtime_claim_scan_files() + [
+        os.path.join("agents", "openai.yaml"),
+        os.path.join("skills", "taxmate-australia", "SKILL.md"),
+        os.path.join("wrappers", "taxmate-australia", "SKILL.md"),
+    ]
+    banned = ["ATO-" + "backed", "ATO " + "backed", "backed by " + "ATO", "supported by " + "ATO"]
+    hits: List[str] = []
+    for rel in files:
+        hits.extend(text_hits(root, rel, banned))
+    return hits
+
+
 def go_tooling_scan_files() -> List[str]:
     return [
         ".gitignore",
@@ -1798,8 +1818,50 @@ def release_workflow_auto_after_ci(root: str) -> bool:
         "main moved from $TARGET_SHA",
         "RELEASE_PLEASE_TOKEN",
         "target-branch: main",
+        "config-file: release-please-config.json",
+        "manifest-file: .release-please-manifest.json",
     ]
     return all(item in text for item in required)
+
+
+def release_config_tracks_manifest_versions(root: str) -> bool:
+    config, config_err = read_json_file(os.path.join(root, "release-please-config.json"))
+    manifest, manifest_err = read_json_file(os.path.join(root, ".release-please-manifest.json"))
+    plugin, plugin_err = read_json_file(os.path.join(root, ".codex-plugin", "plugin.json"))
+    skill, skill_err = read_json_file(os.path.join(root, "skill.json"))
+    lock, lock_err = read_json_file(os.path.join(root, "plugin.lock.json"))
+    if any(err is not None for err in [config_err, manifest_err, plugin_err, skill_err, lock_err]):
+        return False
+
+    version = plugin.get("version")
+    if not (version == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
+        return False
+    if not isinstance(version, str) or not version.startswith("0."):
+        return False
+
+    root_package = config.get("packages", {}).get(".")
+    if not isinstance(root_package, dict):
+        return False
+    extra_files = root_package.get("extra-files")
+    if not isinstance(extra_files, list):
+        return False
+
+    required = {
+        (".codex-plugin/plugin.json", "$.version"),
+        ("skill.json", "$.version"),
+        ("plugin.lock.json", "$.pluginVersion"),
+    }
+    seen = set()
+    for item in extra_files:
+        if isinstance(item, dict) and item.get("type") == "json":
+            seen.add((item.get("path"), item.get("jsonpath")))
+
+    return (
+        config.get("release-type") == "simple"
+        and config.get("bump-minor-pre-major") is True
+        and root_package.get("include-component-in-tag") is False
+        and required.issubset(seen)
+    )
 
 
 def refresh_query_no_match_is_read_only(root: str) -> bool:
