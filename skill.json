@@ -1,0 +1,70 @@
+{
+  "name": "TaxMate Australia",
+  "slug": "taxmate-australia",
+  "description": "Complete Codex plugin for ATO-backed Australian tax prep, using a bash and Python runtime for conservative record review, evidence gaps, accountant handoff, and source-linked treatment flags.",
+  "tagline": "Bash+Python ATO-backed tax-prep plugin",
+  "category": "business",
+  "tags": [
+    "australia",
+    "tax",
+    "ato",
+    "gst",
+    "bas",
+    "cgt",
+    "payg",
+    "super",
+    "accountant",
+    "codex"
+  ],
+  "author": {
+    "name": "TaxMate Australia Maintainers"
+  },
+  "repository": "https://github.com/nijanthan-dev/taxmate-australia",
+  "homepage": "https://github.com/nijanthan-dev/taxmate-australia",
+  "license": "Apache-2.0",
+  "version": "0.1.0",
+  "platforms": [
+    "Codex",
+    "Claude Code",
+    "OpenAgentSkill CLI"
+  ],
+  "install": "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes",
+  "install_targets": [
+    {
+      "id": "openagentskill-cli",
+      "label": "CLI",
+      "kind": "command",
+      "value": "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes"
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "kind": "agent-prompt",
+      "value": "Install TaxMate Australia from https://github.com/nijanthan-dev/taxmate-australia. Read README.md, DISCLAIMER.md, and the relevant SKILL.md files first. Treat it as a preparation aid only: do not provide professional advice and do not lodge, file, submit, transmit, or finalise anything with the ATO or any government agency."
+    }
+  ],
+  "agent_compatibility": [
+    "Codex",
+    "Claude Code"
+  ],
+  "suited_tasks": [
+    "Review Australian tax records conservatively",
+    "Identify evidence gaps and Accountant review items",
+    "Draft accountant-facing workbook and taxpack outputs",
+    "Refresh and cite official ATO source pages"
+  ],
+  "do_not_use_for": [
+    "ATO lodgment, filing, submission, transmission, or finalisation",
+    "Professional tax, legal, accounting, financial, BAS-agent, registered-tax-agent, or investment advice",
+    "Bypassing evidence requirements, hiding income, overclaiming deductions, or fabricating records"
+  ],
+  "safety": {
+    "human_review_required": true,
+    "risk_level": "review_before_use",
+    "notes": [
+      "Preparation aid only",
+      "Not affiliated with or endorsed by the ATO",
+      "Ambiguous, mixed-use, GST/BAS, CGT, FBT, home-business, pre-revenue, business-versus-hobby, and non-commercial-loss items must stay flagged Accountant review"
+    ]
+  }
+}

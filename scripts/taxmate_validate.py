@@ -48,6 +48,7 @@ def validate(root: str) -> Tuple[Dict[str, Any], bool]:
     manifest, manifest_err = read_plugin_manifest(root)
     manifest_text = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
     add_plugin_manifest_checks(root, add, manifest, manifest_err, manifest_text)
+    add_openagentskill_checks(root, add, manifest, readme_text=read_text(os.path.join(root, "README.md")))
 
     required_skills, manifest_skill_err = public_portable_skills(root)
     skill_text, missing_skills, bad_frontmatter = load_skill_docs(root, required_skills)
@@ -136,6 +137,78 @@ def add_plugin_manifest_checks(root: str, add, manifest: Dict[str, str], manifes
         file_exists(os.path.join(root, "README.md"))
         and file_exists(os.path.join(root, "DISCLAIMER.md"))
         and file_exists(os.path.join(root, "docs", "PUBLICATION_CHECKLIST.md")),
+        "",
+    )
+
+
+def add_openagentskill_checks(root: str, add, manifest: Dict[str, str], readme_text: str) -> None:
+    payload, err = read_json_file(os.path.join(root, "skill.json"))
+    add("openagentskill_manifest_exists", err is None, str(err) if err else "")
+    if err is not None:
+        return
+
+    expected_install = "npx skills@1.5.13 add nijanthan-dev/taxmate-australia --agent codex --global --skill '*' --yes"
+    tags = payload.get("tags")
+    platforms = payload.get("platforms")
+    install_targets = payload.get("install_targets")
+    do_not_use_for = payload.get("do_not_use_for")
+    safety = payload.get("safety")
+
+    add(
+        "openagentskill_identity_matches_plugin",
+        payload.get("slug") == "taxmate-australia"
+        and payload.get("repository") == manifest.get("repository")
+        and payload.get("homepage") == manifest.get("homepage")
+        and payload.get("license") == "Apache-2.0",
+        "",
+    )
+    openagentskill_public_text = f"{payload.get('description', '')} {payload.get('tagline', '')}".lower()
+    add(
+        "openagentskill_runtime_documented",
+        "bash" in openagentskill_public_text and "python" in openagentskill_public_text,
+        "",
+    )
+    add(
+        "openagentskill_submission_metadata_ready",
+        payload.get("category") == "business"
+        and isinstance(tags, list)
+        and 0 < len(tags) <= 10
+        and all(isinstance(tag, str) and tag.strip() for tag in tags),
+        "",
+    )
+    add(
+        "openagentskill_install_ready",
+        payload.get("install") == expected_install
+        and isinstance(platforms, list)
+        and "Codex" in platforms
+        and "OpenAgentSkill CLI" in platforms
+        and isinstance(install_targets, list)
+        and any(isinstance(target, dict) and target.get("value") == expected_install for target in install_targets),
+        "",
+    )
+    add(
+        "openagentskill_safety_boundaries",
+        isinstance(do_not_use_for, list)
+        and any("lodgment" in str(item).lower() or "submission" in str(item).lower() for item in do_not_use_for)
+        and isinstance(safety, dict)
+        and safety.get("human_review_required") is True,
+        "",
+    )
+    add(
+        "openagentskill_readme_examples_ready",
+        "npx skills@1.5.13 add nijanthan-dev/taxmate-australia" in readme_text
+        and "Use the capital-gains-tax skill" in readme_text
+        and "Use the gst-bas skill" in readme_text
+        and "OpenAgentSkill badge" not in readme_text
+        and "openagentskill.com/badge" not in readme_text.lower(),
+        "",
+    )
+    license_text = read_text(os.path.join(root, "LICENSE"))
+    add(
+        "apache_license_detectable",
+        "Apache License" in license_text
+        and "Version 2.0, January 2004" in license_text
+        and "APPENDIX: How to apply the Apache License to your work." in license_text,
         "",
     )
 
@@ -351,7 +424,7 @@ def read_plugin_manifest(root: str) -> Tuple[Dict[str, str], Optional[Exception]
     except Exception as exc:
         return {}, exc
     out: Dict[str, str] = {}
-    for key in ("name", "version", "skills", "repository"):
+    for key in ("name", "version", "skills", "repository", "homepage"):
         value = raw.get(key)
         if isinstance(value, str):
             out[key] = value
@@ -379,6 +452,16 @@ def load_skill_docs(root: str, skills: List[str]) -> Tuple[str, List[str], List[
     return "\n".join(text_parts), missing, bad
 
 
+def read_json_file(path: str) -> Tuple[Dict[str, Any], Optional[Exception]]:
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {}, exc
+    if not isinstance(payload, dict):
+        return {}, ValueError(f"expected object JSON: {path}")
+    return payload, None
+
+
 def all_skill_descriptions_long(root: str, skills: List[str]) -> bool:
     for skill in skills:
         path = os.path.join(root, "skills", skill, "SKILL.md")
@@ -403,6 +486,7 @@ def public_doc_files(root: str) -> List[str]:
     files = [
         os.path.join(root, "README.md"),
         os.path.join(root, "DISCLAIMER.md"),
+        os.path.join(root, "skill.json"),
         os.path.join(root, ".codex-plugin", "plugin.json"),
         os.path.join(root, ".agents", "plugins", "marketplace.json"),
         os.path.join(root, "agents", "openai.yaml"),

@@ -3,6 +3,8 @@
 Use this before publishing TaxMate Australia outside a local install.
 
 - Confirm legal license and repository URL.
+- Confirm `skill.json` is present for OpenAgentSkill submission readiness.
+- Confirm root `LICENSE` is detected as Apache-2.0 by GitHub.
 - Confirm `DISCLAIMER.md` is present and linked from README.
 - Confirm no wording implies ATO, Commonwealth, state revenue office, insurer, super fund, or financial-institution endorsement.
 - Confirm plugin manifest matches marketplace schema:
@@ -12,6 +14,8 @@ Use this before publishing TaxMate Australia outside a local install.
   - plugin entry in marketplace is explicit (`name`, `source`, `policy`, `category`).
 - if publishing, add `.agents/plugins/marketplace.json` sample and point `source.path` to an actual path for this repository.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
+- Confirm README has install commands and usage examples suitable for OpenAgentSkill review.
+- Do not add an OpenAgentSkill badge until the listing is approved.
 - Run `./scripts/taxmate validate` and require every check to pass (`score: 100.0`).
 - Refresh or recrawl ATO sources near release date.
 - Confirm source pack contains only official ATO pages and expected state revenue routing notes.
