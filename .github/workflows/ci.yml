@@ -57,6 +57,18 @@ jobs:
       - run: test -f .codex-plugin/plugin.json
       - run: test -f hooks.json
       - run: test -f scripts/clean-source-cache.sh
+      - run: test -f scripts/codex-env-setup.sh
+      - run: test -f scripts/codex-env-cleanup.sh
+      - run: test -f scripts/codex-env-full-check.sh
+      - run: test -f scripts/codex-cloud-post-task-cleanup.sh
+      - run: bash -n scripts/codex-env-setup.sh
+      - run: bash -n scripts/codex-env-cleanup.sh
+      - run: bash -n scripts/codex-env-full-check.sh
+      - run: bash -n scripts/codex-cloud-post-task-cleanup.sh
+      - run: bash -n scripts/test-codex-env-cleanup.sh
+      - run: bash -n scripts/test-codex-env-setup-clean.sh
+      - run: bash scripts/test-codex-env-cleanup.sh
+      - run: bash scripts/test-codex-env-setup-clean.sh
       - run: test -f data/ato_knowledge_base/source_registry.json
       - run: test -f data/ato_knowledge_base/source_coverage.json
       - run: test -f config/public-skills.json

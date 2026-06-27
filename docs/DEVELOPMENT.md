@@ -28,13 +28,32 @@ Use one setup for Codex Cloud and laptop-local workflows.
 
 1. Open this repo in your Codex cloud workspace.
 2. Ensure the workspace checks out the repository at runtime.
-3. Run bootstrap checks (or your preferred command set):
+3. Use this setup script:
 
 ```bash
-bash scripts/bootstrap-dev-env.sh
+set -euo pipefail
+bash scripts/codex-env-setup.sh
+bash scripts/codex-env-cleanup.sh
 ```
 
-This gives a deterministic contributor environment matching CI expectations.
+4. Use this maintenance script:
+
+```bash
+set -euo pipefail
+bash scripts/codex-env-setup.sh
+bash scripts/codex-env-cleanup.sh
+```
+
+Codex Cloud currently exposes setup and maintenance fields. This gives a deterministic contributor environment matching CI expectations and removes generated cache/build noise when new or cached containers are prepared.
+
+### Local environment parity
+
+Run the same command sets locally:
+
+```bash
+bash scripts/codex-env-setup.sh
+bash scripts/codex-env-cleanup.sh
+```
 
 ### Runtime execution
 
