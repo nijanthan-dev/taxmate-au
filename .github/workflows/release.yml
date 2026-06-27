@@ -1,27 +1,18 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
   release:
     name: Release
-    if: >
-      (github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: release-${{ github.ref }}
@@ -30,8 +21,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Require green CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed="$(gh run list --workflow CI --branch main --commit "$GITHUB_SHA" --json conclusion,status --jq 'map(select(.status == "completed" and .conclusion == "success")) | length')"
+          if [ "$passed" = "0" ]; then
+            echo "No successful CI run found for $GITHUB_SHA on main."
+            exit 1
+          fi
+      - name: Require release token
+        env:
+          RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_PLEASE_TOKEN" ]; then
+            echo "Set RELEASE_PLEASE_TOKEN to a token allowed to create release pull requests."
+            exit 1
+          fi
       - uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           release-type: simple
-          package-name: taxmate-australia

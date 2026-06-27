@@ -717,26 +717,26 @@ def direction(row: List[str], header: Dict[str, int], amount: float) -> str:
 
 def signed_amount(row: List[str], header: Dict[str, int]) -> str:
     errors: List[ValueError] = []
+    debit = 0.0
+    credit = 0.0
     debit_value = get(row, header, "debit", "withdrawal", "spent")
     if debit_value and not money_placeholder(debit_value):
         try:
             debit = parse_money(debit_value)
         except ValueError as exc:
             errors.append(exc)
-        else:
-            if debit != 0:
-                return f"{-abs(debit):.2f}"
     credit_value = get(row, header, "credit", "deposit", "received")
     if credit_value and not money_placeholder(credit_value):
         try:
             credit = parse_money(credit_value)
         except ValueError as exc:
             errors.append(exc)
-        else:
-            if credit != 0:
-                return f"{abs(credit):.2f}"
     if errors:
         raise errors[0]
+    if debit != 0:
+        return f"{-abs(debit):.2f}"
+    if credit != 0:
+        return f"{abs(credit):.2f}"
     return ""
 
 

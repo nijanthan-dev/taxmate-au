@@ -19,6 +19,7 @@ PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate skills audit --check
 scripts/check-publication-ready.sh
 gitleaks detect --source . --redact --no-banner
+gitleaks dir . --redact --no-banner
 ```
 
 ## Cloud (Codex) and local build environments (Mac-independent)
@@ -90,6 +91,7 @@ PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
 ./scripts/taxmate skills audit --check
 scripts/check-publication-ready.sh
 gitleaks detect --source . --redact --no-banner
+gitleaks dir . --redact --no-banner
 ```
 
 ### Codex usage in container
@@ -119,11 +121,12 @@ Do not commit private user tax records.
 
 CI runs bash+python runtime checks, generated-source checks, environment guardrails, macOS smoke, publication validation, and Gitleaks.
 
-## Release (semver on merge to main)
+## Release (manual semver)
 
-- Every successful merge to `main` triggers `[.github/workflows/release.yml](/.github/workflows/release.yml)` after CI completes for that commit.
+- After a successful merge to `main`, wait for main CI to pass, then run `[.github/workflows/release.yml](/.github/workflows/release.yml)` manually from `main`.
+- The workflow requires `RELEASE_PLEASE_TOKEN`, a repo secret whose token can create release pull requests and write contents/issues.
 - Versions are calculated from Conventional Commits:
   - `feat:` -> minor
   - `fix:` / `perf:` -> patch
   - `feat!:` / `BREAKING CHANGE:` -> major
-- Release notes/changelog and GitHub release artifacts are generated automatically when release-worthy commits are present.
+- Run the workflow once to create or update the Release PR. After that PR is merged and main CI passes, run the workflow again from `main` to publish the GitHub release artifact.
