@@ -119,6 +119,18 @@ class FinanceTests(unittest.TestCase):
         self.assertEqual(rows[0].amount, 120.50)
         self.assertEqual(rows[0].direction, "income")
 
+    def test_csv_fallback_rejects_malformed_debit_even_with_credit(self) -> None:
+        body = "date,description,debit,credit,gst\n2026-01-01,Refund,bad,120.50,0\n"
+
+        with self.assertRaises(ValueError):
+            taxmate_finance.read_csv(io.StringIO(body))
+
+    def test_csv_fallback_rejects_malformed_credit_even_with_debit(self) -> None:
+        body = "date,description,debit,credit,gst\n2026-01-01,Desk,120.50,bad,0\n"
+
+        with self.assertRaises(ValueError):
+            taxmate_finance.read_csv(io.StringIO(body))
+
     def test_csv_optional_gst_units_placeholders_are_zero(self) -> None:
         body = "date,description,amount,gst,units\n2026-01-01,Desk,-120.50,N/A,-\n"
 

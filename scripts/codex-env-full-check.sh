@@ -12,3 +12,4 @@ fi
 bash scripts/codex-env-setup.sh
 bash scripts/check-publication-ready.sh
 gitleaks detect --source . --redact --no-banner
+gitleaks dir . --redact --no-banner
