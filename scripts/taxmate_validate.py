@@ -1866,19 +1866,30 @@ def public_skills_errors_are_reported() -> bool:
 
 
 def fetch_http_error_preserves_status() -> bool:
-    original = atodata.urllib.request.urlopen
+    original = atodata.subprocess.run
 
-    def fake_urlopen(*_args, **_kwargs):
-        raise atodata.HTTPError("https://www.ato.gov.au/missing", 404, "missing", {}, io.BytesIO(b"not found"))
+    def fake_run(command, **_kwargs):
+        output_path = command[command.index("--output") + 1]
+        Path(output_path).write_bytes(b"not found")
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            b"404\nhttps://www.ato.gov.au/missing",
+            b"",
+        )
 
-    atodata.urllib.request.urlopen = fake_urlopen
+    atodata.subprocess.run = fake_run
     try:
         fetched = atodata.Fetch("https://www.ato.gov.au/missing")
-        return fetched.status == 404 and fetched.body == b"not found"
+        return (
+            fetched.status == 404
+            and fetched.final_url == "https://www.ato.gov.au/missing"
+            and fetched.body == b"not found"
+        )
     except Exception:
         return False
     finally:
-        atodata.urllib.request.urlopen = original
+        atodata.subprocess.run = original
 
 
 def finance_csv_trims_leading_space() -> bool:
