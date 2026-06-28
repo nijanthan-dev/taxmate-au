@@ -2444,6 +2444,72 @@ def taxpack_guide_html_contract() -> bool:
         and 'class="tab red review"' in direct_conflict_body
         and "<b>Accountant review queue:</b> Row R4: Accountant review." in direct_conflict_body
     )
+    falsey = taxmate_taxpack.guide_item(
+        {
+            "number": 0,
+            "ato_area": 0,
+            "question": False,
+            "answer": 0,
+            "why_included": 0,
+            "checked_at": 0,
+            "status": "Evidence",
+            "tab_title": 0,
+            "tab_text": 0,
+        }
+    )
+    falsey_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Falsey value regression.",
+            items=[falsey],
+        )
+    )
+    falsey_ok = (
+        falsey.number == "0"
+        and falsey.ato_area == "0"
+        and falsey.question == "false"
+        and falsey.answer == "0"
+        and falsey.why_included == "0"
+        and falsey.checked_at == "0"
+        and falsey.tab_title == "0"
+        and falsey.tab_text == "0"
+        and "<td>0</td>" in falsey_body
+        and "<td>false</td>" in falsey_body
+        and "<b>0</b>" in falsey_body
+        and "<p>0</p>" in falsey_body
+        and "Checked 0" in falsey_body
+    )
+    direct_falsey = taxmate_taxpack.GuideItem(
+        number=0,
+        ato_area=0,
+        question=False,
+        answer=0,
+        why_included=0,
+        source_urls=[0],
+        checked_at=0,
+        status="Evidence",
+        status_kind="evidence",
+        tab_title=0,
+        tab_text=0,
+        tab_kind="evidence",
+    )
+    direct_falsey_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct falsey value regression.",
+            items=[direct_falsey],
+        )
+    )
+    direct_falsey_ok = (
+        "<td>0</td>" in direct_falsey_body
+        and "<td>false</td>" in direct_falsey_body
+        and '<span class="source-url">0</span>' in direct_falsey_body
+        and "<b>0</b>" in direct_falsey_body
+        and "<p>0</p>" in direct_falsey_body
+        and 'data-anchor="row-1-0"' in direct_falsey_body
+    )
     return (
         quoted_ok
         and duplicate_anchors == ["row-1-D1", "row-2-D1"]
@@ -2453,6 +2519,8 @@ def taxpack_guide_html_contract() -> bool:
         and blank_review_ok
         and direct_blank_ok
         and direct_conflict_ok
+        and falsey_ok
+        and direct_falsey_ok
     )
 
 

@@ -1105,6 +1105,73 @@ class TaxpackGuideTests(unittest.TestCase):
                 self.assertEqual(expected, item.status)
                 self.assertNotEqual(alias, item.status)
 
+    def test_guide_preserves_falsey_display_values(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": 0,
+                "ato_area": 0,
+                "question": False,
+                "answer": 0,
+                "why_included": 0,
+                "checked_at": 0,
+                "status": "Evidence",
+                "tab_title": 0,
+                "tab_text": 0,
+            }
+        )
+
+        self.assertEqual("0", item.number)
+        self.assertEqual("0", item.ato_area)
+        self.assertEqual("false", item.question)
+        self.assertEqual("0", item.answer)
+        self.assertEqual("0", item.why_included)
+        self.assertEqual("0", item.checked_at)
+        self.assertEqual("0", item.tab_title)
+        self.assertEqual("0", item.tab_text)
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Falsey value regression.",
+                items=[item],
+            )
+        )
+        self.assertIn("<td>0</td>", body)
+        self.assertIn("<td>false</td>", body)
+        self.assertIn("<b>0</b>", body)
+        self.assertIn("<p>0</p>", body)
+        self.assertIn("Checked 0", body)
+
+        direct = taxmate_taxpack.GuideItem(
+            number=0,
+            ato_area=0,
+            question=False,
+            answer=0,
+            why_included=0,
+            source_urls=[0],
+            checked_at=0,
+            status="Evidence",
+            status_kind="evidence",
+            tab_title=0,
+            tab_text=0,
+            tab_kind="evidence",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct falsey value regression.",
+                items=[direct],
+            )
+        )
+        self.assertIn("<td>0</td>", body)
+        self.assertIn("<td>false</td>", body)
+        self.assertIn("<span class=\"source-url\">0</span>", body)
+        self.assertIn("<b>0</b>", body)
+        self.assertIn("<p>0</p>", body)
+        self.assertIn("data-anchor=\"row-1-0\"", body)
+
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
         bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")

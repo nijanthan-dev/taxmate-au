@@ -28,6 +28,7 @@
 - Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
 - Output layers must never let stale or conflicting lower-risk fields downgrade an explicit or review-like `Accountant review`; review status wins over evidence/used/ATO-label/skipped fields in rendered output, tabs, filters, queues, and validation.
 - Output-layer review queues and side tabs must never render blank review items; fall back to row number/status when explanation fields are missing.
+- Output-layer display fields must preserve valid falsey values such as numeric `0` and boolean `false`; use explicit missing/`None` checks instead of truthy fallbacks.
 - Taxpack guide changes must add local guardrails for the whole bug class before review: conflicting status fields, source provenance visibility, generated dates, duplicate/unsafe anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
 - After PR review feedback, do not commit, push, or request another Codex review until same-class scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, and publication checks.
 - Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.

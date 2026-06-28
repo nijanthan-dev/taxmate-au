@@ -23,6 +23,7 @@
 - It preserves source URLs, effective periods, evidence status, and `Accountant review` flags.
 - If output fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Output-layer review queues and side tabs must keep review items visible even when explanatory text is missing.
+- Output layers must preserve valid falsey values such as numeric `0` and boolean `false`.
 - It requires current verification for volatile values when web access is available.
 - If a needed topic skill or reliable source is unavailable, state the limitation and mark the item `Accountant review`.
 - It must not use repository binaries, local repository data, plugin manifests, marketplace JSON, or environment variables.

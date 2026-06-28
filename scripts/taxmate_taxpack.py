@@ -132,11 +132,11 @@ def load_guide_data(path: Optional[str]) -> GuideData:
     items = [guide_item(raw) for raw in payload.get("items", [])]
     if not items:
         raise ValueError("guide input must include at least one item")
-    generated_date = str(payload.get("generated_date") or default_generated_date())
+    generated_date = text_value(payload, "generated_date", default_generated_date())
     return GuideData(
-        income_year=str(payload.get("income_year") or DEFAULT_INCOME_YEAR),
+        income_year=text_value(payload, "income_year", DEFAULT_INCOME_YEAR),
         generated_date=generated_date,
-        summary_note=str(payload.get("summary_note") or sample_payload()["summary_note"]),
+        summary_note=text_value(payload, "summary_note", sample_payload()["summary_note"]),
         items=items,
     )
 
@@ -152,21 +152,21 @@ def read_json(path: str) -> Dict[str, Any]:
 def guide_item(raw: Dict[str, Any]) -> GuideItem:
     if not isinstance(raw, dict):
         raise ValueError("guide items must be JSON objects")
-    number = str(raw.get("number") or "").strip()
+    number = text_value(raw, "number").strip()
     if not number:
         raise ValueError("guide item missing number")
     status_kind = item_status_kind(raw)
     tab_kind = item_tab_kind(raw, status_kind)
-    tab_title = str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}")
-    tab_text = str(raw.get("tab_text") or raw.get("why_included") or fallback_tab_text(number, status_kind))
+    tab_title = first_text(raw, ["tab_title"], f"Row {number} {short_status(status_kind)}")
+    tab_text = first_text(raw, ["tab_text", "why_included"], fallback_tab_text(number, status_kind))
     return GuideItem(
         number=number,
-        ato_area=str(raw.get("ato_area") or ""),
-        question=str(raw.get("question") or ""),
-        answer=str(raw.get("answer") or ""),
-        why_included=str(raw.get("why_included") or ""),
+        ato_area=text_value(raw, "ato_area"),
+        question=text_value(raw, "question"),
+        answer=text_value(raw, "answer"),
+        why_included=text_value(raw, "why_included"),
         source_urls=source_urls(raw),
-        checked_at=str(raw.get("checked_at") or ""),
+        checked_at=text_value(raw, "checked_at"),
         status=canonical_status(status_kind),
         status_kind=status_kind,
         tab_title=tab_title,
@@ -176,19 +176,39 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
 
 
 def item_status_kind(raw: Dict[str, Any]) -> str:
-    status_kind = known_kind(str(raw.get("status_kind") or ""))
-    status = known_kind(str(raw.get("status") or ""))
-    tab_kind = known_kind(str(raw.get("tab_kind") or ""))
+    status_kind = known_kind(raw.get("status_kind"))
+    status = known_kind(raw.get("status"))
+    tab_kind = known_kind(raw.get("tab_kind"))
     if status_kind == "review" or status == "review" or tab_kind == "review":
         return "review"
     return status_kind or status or "review"
 
 
 def item_tab_kind(raw: Dict[str, Any], status_kind: str) -> str:
-    tab_kind = normal_kind(str(raw.get("tab_kind") or status_kind))
+    tab_value = text_value(raw, "tab_kind", status_kind)
+    tab_kind = normal_kind(tab_value)
     if status_kind == "review":
         return "review"
     return tab_kind
+
+
+_MISSING = object()
+
+
+def text_value(raw: Dict[str, Any], key: str, default: str = "") -> str:
+    value = raw.get(key, _MISSING)
+    if value is _MISSING or value is None:
+        return default
+    text = scalar_text(value)
+    return text if text.strip() else default
+
+
+def first_text(raw: Dict[str, Any], keys: List[str], default: str = "") -> str:
+    for key in keys:
+        text = text_value(raw, key)
+        if text:
+            return text
+    return default
 
 
 def fallback_tab_text(number: str, status_kind: str) -> str:
@@ -197,24 +217,24 @@ def fallback_tab_text(number: str, status_kind: str) -> str:
 
 def source_urls(raw: Dict[str, Any]) -> List[str]:
     urls: List[str] = []
-    single = str(raw.get("source_url") or "").strip()
+    single = text_value(raw, "source_url").strip()
     if single:
         urls.append(single)
     multiple = raw.get("source_urls")
     if isinstance(multiple, list):
         for item in multiple:
-            url = str(item or "").strip()
+            url = "" if item is None else str(item).strip()
             if url and url not in urls:
                 urls.append(url)
     return urls
 
 
-def normal_kind(value: str) -> str:
+def normal_kind(value: Any) -> str:
     return known_kind(value) or "review"
 
 
-def known_kind(value: str) -> Optional[str]:
-    key = value.strip().lower().replace("_", "-").replace(" ", "-")
+def known_kind(value: Any) -> Optional[str]:
+    key = scalar_text(value).strip().lower().replace("_", "-").replace(" ", "-")
     if key in ANSWER_STATUS_KEYS:
         return "answer"
     if key in ATO_STATUS_KEYS:
@@ -251,8 +271,9 @@ def canonical_status(kind: str) -> str:
     return "Accountant review"
 
 
-def short_status(value: str) -> str:
-    key = value.strip().lower().replace("_", " ")
+def short_status(value: Any) -> str:
+    text = scalar_text(value)
+    key = text.strip().lower().replace("_", " ")
     slug = key.replace(" ", "-")
     if "evidence" in key:
         return "Evidence"
@@ -262,7 +283,7 @@ def short_status(value: str) -> str:
         return "N/A skipped"
     if key in {"answer", "answer used", "used"}:
         return "Used"
-    return value.strip() or "Review"
+    return text.strip() or "Review"
 
 
 def default_generated_date() -> str:
@@ -328,7 +349,7 @@ def render_item_tab(item: GuideItem, row_index: int) -> str:
 
 
 def review_text(item: GuideItem) -> str:
-    return item.tab_text.strip() or fallback_tab_text(item.number, effective_status_kind(item))
+    return scalar_text(item.tab_text).strip() or fallback_tab_text(item.number, effective_status_kind(item))
 
 
 def effective_status_kind(item: GuideItem) -> str:
@@ -348,7 +369,7 @@ def effective_tab_kind(item: GuideItem) -> str:
 
 
 def row_anchor(item: GuideItem, row_index: int) -> str:
-    return f"row-{row_index}-{html.escape(item.number, quote=True)}"
+    return f"row-{row_index}-{html.escape(scalar_text(item.number), quote=True)}"
 
 
 def status_class(kind: str) -> str:
@@ -399,8 +420,16 @@ def strip_scripts(output: str) -> str:
     return output[:start] + output[end + len("</script>") :]
 
 
-def esc(value: str) -> str:
-    return html.escape(value, quote=True)
+def scalar_text(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def esc(value: Any) -> str:
+    return html.escape(scalar_text(value), quote=True)
 
 
 HTML_TEMPLATE = """<!doctype html>

@@ -16,6 +16,7 @@
 - Preserve reviewed treatment, source URLs, income year, effective period, evidence status, and `Accountant review` flags.
 - If reviewed output fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Review queues must keep review items visible even when explanatory text is missing.
+- Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
 - Separate taxpayer, spouse/partner, joint, entity, employee, ABN/business, GST/BAS, investment, super, private health, and property records.
 - Keep source rows visible. Use formulas only for transparent totals.
 - Do not mark BAS nil when GST credits or GST collected are present.

@@ -27,6 +27,7 @@ Read `references/rules.md` before creating a workbook structure.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a workbook appear submission-ready.
 - If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Review queues must not show blank review items; use row number/status fallback when explanation fields are missing.
+- Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
 
 ## Workbook Shape
 

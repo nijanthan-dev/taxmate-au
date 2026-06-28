@@ -17,6 +17,7 @@
 - If guide input fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Guide rows with supplied source URLs or checked-at dates must keep that provenance visible in the worksheet.
 - Review queues and side tabs must keep review items visible even when explanatory text is missing.
+- Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
 - ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
 - Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
 - Do not silently drop uncertain rows.

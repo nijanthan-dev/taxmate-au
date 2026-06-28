@@ -26,6 +26,7 @@ Read `references/rules.md` before creating handoff packs.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a pack appear submission-ready.
 - If input fields conflict, `Accountant review` wins. Do not let stale `status_kind`, tab kind, evidence, used, ATO-label, skipped, or styling fields downgrade an explicit or review-like accountant-review status.
 - Review queues and guide side tabs must not show blank review items; use row number/status fallback when explanation fields are missing.
+- Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
 - Do not fill, modify, or present official ATO PDFs as completed returns.
 
 ## Rules

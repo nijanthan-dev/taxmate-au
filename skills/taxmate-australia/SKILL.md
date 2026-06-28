@@ -49,9 +49,10 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 7. Preserve every `Accountant review` flag.
    If fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 8. Keep output-layer review queues and side tabs visible; use row number/status fallback when explanation fields are missing.
-9. Keep source URLs and effective periods visible.
-10. Do not guess when sources conflict, facts are incomplete, or verification fails.
-11. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
+9. Preserve valid falsey output values such as numeric `0` and boolean `false`.
+10. Keep source URLs and effective periods visible.
+11. Do not guess when sources conflict, facts are incomplete, or verification fails.
+12. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
 
 ## Mandatory Accountant Review
 

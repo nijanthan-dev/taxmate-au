@@ -138,7 +138,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:73c0246c00107c1c9cf03abf4dde8228dd8c09f09417af2ba83b5378843c43c0"
+      "integrity": "sha256:5a4300aa845e8a3176c0d741b7a1ca2a3935fbb6ba2fddb60dc776ca1b4614b6"
     },
     {
       "id": "taxpack",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:d684cfcfcd5ad1c4e248967bffefa890619da77b045b51cf8e7556ba22302ad5"
+      "integrity": "sha256:9a285507505c2eb23aeb0639a8bc393b9158bd05ce7d0d0e412d15b25d6cee51"
     },
     {
       "id": "work-from-home",
@@ -165,7 +165,7 @@
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:a1638d7d8173ef6718f154485154f3a5d048d516ab96694213c7f39ea086c538"
+      "integrity": "sha256:722fcb086feba5b5b81f31e6c09653cad939c8c62de34852d7db366630ca6c7b"
     }
   ]
 }
