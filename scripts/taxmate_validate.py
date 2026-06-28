@@ -21,6 +21,7 @@ import taxmate_calc
 import taxmate_finance
 import taxmate_refresh
 import taxmate_skills
+import taxmate_taxpack
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
@@ -403,6 +404,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
+    add("taxpack_guide_html_contract", taxpack_guide_html_contract(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -2136,6 +2138,38 @@ def finance_investment_income_outranks_business_tag() -> bool:
     )
     finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
     return finding.bucket == "investment_income" and finding.tax_treatment == "tax_statement_record"
+
+
+def taxpack_guide_html_contract() -> bool:
+    try:
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_data(None))
+    except Exception:
+        return False
+
+    required = [
+        "Self-prepared guide PDF",
+        "Prepared by user",
+        "Not an ATO form",
+        "Not fileable",
+        "background:#fff0f1",
+        "background:#eef5ff",
+        "background:#effbf4",
+        "background:#fff7dc",
+        "left:-64px",
+        "spotlight-target",
+        "hide-tabs",
+        "only-review",
+        "only-evidence",
+    ]
+    if not all(item in body for item in required):
+        return False
+    if "target-dot" in body or "border-radius:50%" in body:
+        return False
+    if ("Prepared by " + "TaxMate") in body:
+        return False
+    targets = set(re.findall(r'data-target="([^"]+)"', body))
+    anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
+    return bool(targets) and targets.issubset(anchors)
 
 
 def validate_json_uses_check_field() -> bool:

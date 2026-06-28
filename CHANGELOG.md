@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.1.2...v0.2.0) (2026-06-28)
+
+
+### Features
+
+* add self-prepared ATO-aligned HTML guide output
+
 ## [0.1.2](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.1.1...v0.1.2) (2026-06-28)
 
 

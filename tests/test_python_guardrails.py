@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,7 @@ import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
+import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
 
 
@@ -467,6 +469,9 @@ class ValidatorAndCliTests(unittest.TestCase):
             else:
                 taxmate.os.environ["TAXMATE_AUSTRALIA_ROOT"] = original
 
+    def test_launcher_exposes_taxpack_command(self) -> None:
+        self.assertEqual(taxmate.COMMANDS["taxpack"], "taxmate_taxpack.py")
+
     def test_finish_report_has_check_names(self) -> None:
         checks = [{"check": "sample", "passed": True, "detail": ""}]
 
@@ -662,6 +667,80 @@ class ValidatorAndCliTests(unittest.TestCase):
             hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
 
         self.assertEqual(hits, ["README.md:ATO-approved"])
+
+
+class TaxpackGuideTests(unittest.TestCase):
+    def test_sample_guide_matches_approved_tab_contract(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("Self-prepared guide PDF", body)
+        self.assertIn("Prepared by user", body)
+        self.assertIn("Not an ATO form", body)
+        self.assertIn("Not fileable", body)
+        self.assertIn("--bg:#e9eef4", body)
+        self.assertIn("background:#fff0f1", body)
+        self.assertIn("background:#eef5ff", body)
+        self.assertIn("background:#effbf4", body)
+        self.assertIn("background:#fff7dc", body)
+        self.assertIn("left:-64px", body)
+        self.assertIn("spotlight-target", body)
+        self.assertIn("show all tabs", body.lower())
+        self.assertIn("hide tabs", body.lower())
+        self.assertNotIn("target-dot", body)
+        self.assertNotIn("border-radius:50%", body)
+        self.assertNotIn("Prepared by " + "TaxMate", body)
+
+    def test_guide_tabs_resolve_to_existing_anchors(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+        body = taxmate_taxpack.render_html(data)
+        targets = set(re.findall(r'data-target="([^"]+)"', body))
+        anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
+
+        self.assertTrue(targets)
+        self.assertEqual(set(), targets - anchors)
+
+    def test_custom_guide_input_escapes_values_and_shortens_status(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "generated_date": "28 Jun 2026",
+            "items": [
+                {
+                    "number": "9",
+                    "ato_area": "Other <area>",
+                    "question": "Need review?",
+                    "answer": "User says <yes>",
+                    "why_included": "Complex & mixed-use.",
+                    "status": "Accountant review",
+                    "status_kind": "accountant_review",
+                    "tab_title": "Row 9 review",
+                    "tab_text": "Review before copying.",
+                    "tab_kind": "review",
+                }
+            ],
+        }
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            json.dump(payload, handle)
+            input_path = handle.name
+        try:
+            data = taxmate_taxpack.load_guide_data(input_path)
+        finally:
+            Path(input_path).unlink()
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("Other &lt;area&gt;", body)
+        self.assertIn("User says &lt;yes&gt;", body)
+        self.assertIn("<span class=\"status review-badge\">Review</span>", body)
+
+    def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+        bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")
+
+        with self.assertRaises(ValueError):
+            taxmate_taxpack.assert_visible_boundaries(bad)
 
 
 if __name__ == "__main__":

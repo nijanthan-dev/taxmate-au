@@ -14,7 +14,8 @@
 
 - Taxpack is output-only. It does not lodge, file, or create final advice.
 - Include reviewed summaries, source URLs, evidence status, income-year labels, open questions, and `Accountant review` queues.
-- Keep official forms or labels draft-only unless a qualified reviewer has approved the underlying data.
+- ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
+- Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
 - Do not silently drop uncertain rows.
 
 ## Accountant review required

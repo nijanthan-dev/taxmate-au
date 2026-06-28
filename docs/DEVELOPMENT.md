@@ -64,6 +64,7 @@ Run runtime commands with the bash+python stack:
 ```bash
 ./scripts/taxmate refresh --help
 ./scripts/taxmate finance --help
+./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html
 ./scripts/taxmate validate
 ```
 

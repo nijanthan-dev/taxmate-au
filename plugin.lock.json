@@ -1,7 +1,7 @@
 {
   "lockVersion": 1,
   "pluginId": "com.github.nijanthan-dev.taxmate-australia",
-  "pluginVersion": "0.1.2",
+  "pluginVersion": "0.2.0",
   "generatedBy": "TaxMate Australia Maintainers",
   "generatedAt": "2026-06-23T00:00:00Z",
   "skills": [
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:4cd966e0e703bffd6905a42c2340836336941bbd40cd496d8e11f4e61fed5173"
+      "integrity": "sha256:e0cd0ca49493e6cb1881de292e79c09890240e7f06de83e8082186b8eda90130"
     },
     {
       "id": "work-from-home",

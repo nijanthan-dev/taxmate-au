@@ -24,6 +24,17 @@ Run runtime commands through the bash launcher (python runtime under the hood):
 ./scripts/taxmate refresh --help
 ```
 
+Render the self-prepared guide HTML users can save as PDF:
+
+```bash
+./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
+./scripts/taxmate taxpack guide-html \
+  --input /tmp/taxmate-guide-input.json \
+  --output /tmp/taxmate-guide.html
+```
+
+The guide is a custom preparation aid. Users manually copy reviewed values into myTax, a paper ATO form, or provide it to an accountant.
+
 The same commands also work by calling the Python module directly:
 
 ```bash
