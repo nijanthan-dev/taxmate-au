@@ -2261,11 +2261,81 @@ def taxpack_guide_html_contract() -> bool:
         and '<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>' in sourced_body
         and sourced_body.count(f'<span class="source-url">{source_url}</span>') == 1
     )
+    stale_kinds = ["evidence", "answer", "ato", "skipped", "grey"]
+    downgraded_badges = [
+        '<span class="status gap">Evidence</span>',
+        '<span class="status used">Used</span>',
+        '<span class="status label">ATO label</span>',
+        '<span class="status skipped">N/A skipped</span>',
+    ]
+    conflicting_ok = True
+    for status_kind in stale_kinds:
+        for tab_kind in stale_kinds:
+            conflicting = taxmate_taxpack.guide_item(
+                {
+                    "number": "R1",
+                    "ato_area": "Other",
+                    "question": "Conflicting status?",
+                    "answer": "User-entered value",
+                    "why_included": "Explicit review status must not be downgraded.",
+                    "status": "Accountant review",
+                    "status_kind": status_kind,
+                    "tab_kind": tab_kind,
+                    "tab_text": "Conflicting status fields require accountant review.",
+                }
+            )
+            conflicting_body = taxmate_taxpack.render_html(
+                taxmate_taxpack.GuideData(
+                    income_year="2025-26",
+                    generated_date=taxmate_taxpack.default_generated_date(),
+                    summary_note="Conflicting status regression.",
+                    items=[conflicting],
+                )
+            )
+            if not (
+                conflicting.status_kind == "review"
+                and conflicting.tab_kind == "review"
+                and '<span class="status review-badge">Accountant review</span>' in conflicting_body
+                and 'class="tab red review"' in conflicting_body
+                and "<b>Accountant review queue:</b> Conflicting status fields require accountant review." in conflicting_body
+                and not any(badge in conflicting_body for badge in downgraded_badges)
+            ):
+                conflicting_ok = False
+    for review_field in ("status", "status_kind", "tab_kind"):
+        raw = {
+            "number": "R1",
+            "ato_area": "Other",
+            "question": "Split status?",
+            "answer": "User-entered value",
+            "why_included": "Any explicit review field must control output.",
+            "status": "Evidence",
+            "status_kind": "evidence",
+            "tab_kind": "evidence",
+            "tab_text": "One field still requires accountant review.",
+        }
+        raw[review_field] = "Accountant review"
+        conflicting = taxmate_taxpack.guide_item(raw)
+        conflicting_body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date=taxmate_taxpack.default_generated_date(),
+                summary_note="Split status regression.",
+                items=[conflicting],
+            )
+        )
+        if not (
+            conflicting.status_kind == "review"
+            and conflicting.tab_kind == "review"
+            and "<b>Accountant review queue:</b> One field still requires accountant review." in conflicting_body
+            and not any(badge in conflicting_body for badge in downgraded_badges)
+        ):
+            conflicting_ok = False
     return (
         quoted_ok
         and duplicate_anchors == ["row-1-D1", "row-2-D1"]
         and duplicate_targets == ["row-1-D1", "row-2-D1"]
         and sourced_ok
+        and conflicting_ok
     )
 
 

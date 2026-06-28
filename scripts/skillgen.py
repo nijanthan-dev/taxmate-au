@@ -881,7 +881,10 @@ def writeOutputLayers(root: str) -> None:
         os.makedirs(ref_dir, exist_ok=True)
         body = "# Generated Topic Inputs\n\n"
         body += "Workbook and taxpack are output layers only. They must consume reviewed classifications from topic skills and must not invent tax treatment.\n\n"
-        body += "- Preserve `Accountant review` flags.\n- Preserve source URLs and checked-at dates.\n- Do not turn raw transactions into lodging-ready claims from source extracts alone.\n"
+        body += "- Preserve `Accountant review` flags.\n"
+        body += "- If input fields conflict, `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
+        body += "- Preserve source URLs and checked-at dates.\n"
+        body += "- Do not turn raw transactions into lodging-ready claims from source extracts alone.\n"
         writeText(os.path.join(ref_dir, "topic-inputs.md"), body)
 
 

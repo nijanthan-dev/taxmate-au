@@ -155,8 +155,8 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
     number = str(raw.get("number") or "").strip()
     if not number:
         raise ValueError("guide item missing number")
-    status_kind = normal_kind(str(raw.get("status_kind") or raw.get("status") or "review"))
-    tab_kind = normal_kind(str(raw.get("tab_kind") or status_kind))
+    status_kind = item_status_kind(raw)
+    tab_kind = item_tab_kind(raw, status_kind)
     return GuideItem(
         number=number,
         ato_area=str(raw.get("ato_area") or ""),
@@ -171,6 +171,22 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         tab_text=str(raw.get("tab_text") or raw.get("why_included") or ""),
         tab_kind=tab_kind,
     )
+
+
+def item_status_kind(raw: Dict[str, Any]) -> str:
+    status_kind = known_kind(str(raw.get("status_kind") or ""))
+    status = known_kind(str(raw.get("status") or ""))
+    tab_kind = known_kind(str(raw.get("tab_kind") or ""))
+    if status_kind == "review" or status == "review" or tab_kind == "review":
+        return "review"
+    return status_kind or status or "review"
+
+
+def item_tab_kind(raw: Dict[str, Any], status_kind: str) -> str:
+    tab_kind = normal_kind(str(raw.get("tab_kind") or status_kind))
+    if status_kind == "review":
+        return "review"
+    return tab_kind
 
 
 def source_urls(raw: Dict[str, Any]) -> List[str]:
