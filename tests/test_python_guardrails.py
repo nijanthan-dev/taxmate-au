@@ -733,7 +733,7 @@ class TaxpackGuideTests(unittest.TestCase):
 
         self.assertIn("Other &lt;area&gt;", body)
         self.assertIn("User says &lt;yes&gt;", body)
-        self.assertIn("<span class=\"status review-badge\">Review</span>", body)
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
 
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
