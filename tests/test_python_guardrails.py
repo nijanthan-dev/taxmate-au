@@ -768,6 +768,31 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("No review-only items supplied.", body)
         self.assertNotIn("<span class=\"status review-badge\">", body)
 
+    def test_guide_defaults_unknown_status_labels_to_review(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "11",
+                "ato_area": "Other",
+                "question": "Ready to claim?",
+                "answer": "User-entered value",
+                "why_included": "Freeform status should not look final.",
+                "status": "Claimable",
+                "tab_text": "Unknown status needs review.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Unknown status regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+        self.assertIn("Unknown status needs review.", body)
+        self.assertNotIn(">Claimable<", body)
+
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)
         bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")

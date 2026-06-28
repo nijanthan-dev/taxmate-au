@@ -21,6 +21,10 @@ FORBIDDEN_VISIBLE_PHRASES = [
     "submit this guide",
     "submit this PDF",
 ]
+ANSWER_STATUS_KEYS = {"answer", "answer-used", "used", "green"}
+ATO_STATUS_KEYS = {"ato", "ato-label", "label", "blue"}
+EVIDENCE_STATUS_KEYS = {"evidence", "evidence-needed", "missing-evidence", "yellow"}
+REVIEW_STATUS_KEYS = {"review", "accountant-review", "red"}
 SKIPPED_STATUS_KEYS = {
     "skipped",
     "skip",
@@ -144,13 +148,14 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         raise ValueError("guide item missing number")
     status_kind = normal_kind(str(raw.get("status_kind") or raw.get("status") or "review"))
     tab_kind = normal_kind(str(raw.get("tab_kind") or status_kind))
+    raw_status = str(raw.get("status") or status_kind)
     return GuideItem(
         number=number,
         ato_area=str(raw.get("ato_area") or ""),
         question=str(raw.get("question") or ""),
         answer=str(raw.get("answer") or ""),
         why_included=str(raw.get("why_included") or ""),
-        status=short_status(str(raw.get("status") or status_kind)),
+        status=display_status(raw_status, status_kind),
         status_kind=status_kind,
         tab_title=str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}"),
         tab_text=str(raw.get("tab_text") or raw.get("why_included") or ""),
@@ -159,18 +164,28 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
 
 
 def normal_kind(value: str) -> str:
+    return known_kind(value) or "review"
+
+
+def known_kind(value: str) -> Optional[str]:
     key = value.strip().lower().replace("_", "-").replace(" ", "-")
-    if key in {"answer", "answer-used", "used", "green"}:
+    if key in ANSWER_STATUS_KEYS:
         return "answer"
-    if key in {"ato", "ato-label", "label", "blue"}:
+    if key in ATO_STATUS_KEYS:
         return "ato"
-    if key in {"evidence", "evidence-needed", "missing-evidence", "yellow"}:
+    if key in EVIDENCE_STATUS_KEYS:
         return "evidence"
-    if key in {"review", "accountant-review", "red"}:
+    if key in REVIEW_STATUS_KEYS:
         return "review"
     if key in SKIPPED_STATUS_KEYS:
         return "skipped"
-    return "review"
+    return None
+
+
+def display_status(value: str, status_kind: str) -> str:
+    if status_kind == "review" and known_kind(value) is None:
+        return "Accountant review"
+    return short_status(value)
 
 
 def short_status(value: str) -> str:
