@@ -26,6 +26,7 @@ Read `references/rules.md` before creating a workbook structure.
 - Refuse requests to submit workbook content to the ATO. Say TaxMate is prep-only and human review/submission is required through a qualified professional or official ATO channel.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a workbook appear submission-ready.
 - If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+- Review queues must not show blank review items; use row number/status fallback when explanation fields are missing.
 
 ## Workbook Shape
 
@@ -51,6 +52,7 @@ Default tabs:
 - Separate primary taxpayer, spouse or partner, joint, and entity records.
 - Preserve gross, GST, GST-exclusive, claim %, claim amount, evidence, source URL, and review status.
 - Put ambiguous rows in `Accountant Review`.
+- Before treating workbook output fixes as review-ready, cover parsed rows and direct workbook-row paths in tests and validation.
 - Do not silently drop rows.
 - Do not mark BAS nil when GST credits or GST collected exist.
 - Use formulas only for transparent totals; keep source rows visible.

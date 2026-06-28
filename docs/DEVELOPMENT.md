@@ -22,6 +22,15 @@ gitleaks detect --source . --redact --no-banner
 gitleaks dir . --redact --no-banner
 ```
 
+## Review feedback loop
+
+Before requesting another Codex review after review feedback:
+
+- Scan the whole same bug class, not only the commented line.
+- Cover parser and direct renderer/workbook-row paths.
+- Update AGENTS, relevant skills, generated docs, tests, validator, and plugin lock when behavior changes.
+- Regenerate skills, run publication checks, and run secret scans.
+
 ## Cloud (Codex) and local build environments (Mac-independent)
 
 Use one setup for Codex Cloud and laptop-local workflows.

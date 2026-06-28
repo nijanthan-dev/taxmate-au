@@ -16,6 +16,7 @@
 - Include reviewed summaries, source URLs, evidence status, income-year labels, open questions, and `Accountant review` queues.
 - If guide input fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Guide rows with supplied source URLs or checked-at dates must keep that provenance visible in the worksheet.
+- Review queues and side tabs must keep review items visible even when explanatory text is missing.
 - ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
 - Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
 - Do not silently drop uncertain rows.
@@ -23,4 +24,5 @@
 ## Accountant review required
 
 - Any unresolved treatment, missing evidence, BAS/GST, CGT, FBT, home-business, pre-revenue, mixed-use, non-commercial-loss, business-versus-hobby, or lodgment-position item.
-- Validation must cover conflicts that could hide an accountant-review flag from the row badge, side tab, review-only filter, or review queue.
+- Validation must cover conflicts or blanks that could hide an accountant-review flag from the row badge, side tab, review-only filter, or review queue.
+- Review-feedback fixes must cover both parsed input and direct renderer paths before review is requested again.

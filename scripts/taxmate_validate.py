@@ -2367,12 +2367,92 @@ def taxpack_guide_html_contract() -> bool:
             and not any(badge in conflicting_body for badge in downgraded_badges)
         ):
             conflicting_ok = False
+    blank_review = taxmate_taxpack.guide_item(
+        {
+            "number": "R2",
+            "ato_area": "Other",
+            "question": "Blank review explanation?",
+            "answer": "User-entered value",
+            "status": "Accountant review",
+            "status_kind": "review",
+            "tab_kind": "review",
+        }
+    )
+    blank_review_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Blank review regression.",
+            items=[blank_review],
+        )
+    )
+    blank_review_ok = (
+        blank_review.tab_text == "Row R2: Accountant review."
+        and "<b>Accountant review queue:</b> Row R2: Accountant review." in blank_review_body
+        and "<p>Row R2: Accountant review.</p>" in blank_review_body
+    )
+    direct_blank = taxmate_taxpack.GuideItem(
+        number="R3",
+        ato_area="Other",
+        question="Direct blank review?",
+        answer="User-entered value",
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review",
+        status_kind="review",
+        tab_title="Row R3 direct review",
+        tab_text="",
+        tab_kind="review",
+    )
+    direct_blank_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct blank review regression.",
+            items=[direct_blank],
+        )
+    )
+    direct_blank_ok = (
+        "<b>Accountant review queue:</b> Row R3: Accountant review." in direct_blank_body
+        and "<p>Row R3: Accountant review.</p>" in direct_blank_body
+    )
+    direct_conflict = taxmate_taxpack.GuideItem(
+        number="R4",
+        ato_area="Other",
+        question="Direct conflicting review?",
+        answer="User-entered value",
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review required",
+        status_kind="evidence",
+        tab_title="Row R4 direct conflict",
+        tab_text="",
+        tab_kind="answer",
+    )
+    direct_conflict_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct conflict regression.",
+            items=[direct_conflict],
+        )
+    )
+    direct_conflict_ok = (
+        '<span class="status review-badge">Accountant review</span>' in direct_conflict_body
+        and 'class="tab red review"' in direct_conflict_body
+        and "<b>Accountant review queue:</b> Row R4: Accountant review." in direct_conflict_body
+    )
     return (
         quoted_ok
         and duplicate_anchors == ["row-1-D1", "row-2-D1"]
         and duplicate_targets == ["row-1-D1", "row-2-D1"]
         and sourced_ok
         and conflicting_ok
+        and blank_review_ok
+        and direct_blank_ok
+        and direct_conflict_ok
     )
 
 

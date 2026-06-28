@@ -1005,6 +1005,80 @@ class TaxpackGuideTests(unittest.TestCase):
                 self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
                 self.assertIn("<b>Accountant review queue:</b> Review-like label requires accountant review.", body)
 
+        blank_review = taxmate_taxpack.guide_item(
+            {
+                "number": "13",
+                "ato_area": "Other",
+                "question": "Blank review explanation?",
+                "answer": "User-entered value",
+                "status": "Accountant review",
+                "status_kind": "review",
+                "tab_kind": "review",
+            }
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Blank review regression.",
+                items=[blank_review],
+            )
+        )
+        self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
+        self.assertIn("<b>Accountant review queue:</b> Row 13: Accountant review.", body)
+        self.assertIn("<p>Row 13: Accountant review.</p>", body)
+
+        direct_blank = taxmate_taxpack.GuideItem(
+            number="14",
+            ato_area="Other",
+            question="Direct blank review?",
+            answer="User-entered value",
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review",
+            status_kind="review",
+            tab_title="Row 14 direct review",
+            tab_text="",
+            tab_kind="review",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct blank review regression.",
+                items=[direct_blank],
+            )
+        )
+        self.assertIn("<b>Accountant review queue:</b> Row 14: Accountant review.", body)
+        self.assertIn("<p>Row 14: Accountant review.</p>", body)
+
+        direct_conflict = taxmate_taxpack.GuideItem(
+            number="15",
+            ato_area="Other",
+            question="Direct conflicting review?",
+            answer="User-entered value",
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review required",
+            status_kind="evidence",
+            tab_title="Row 15 direct conflict",
+            tab_text="",
+            tab_kind="answer",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct conflict regression.",
+                items=[direct_conflict],
+            )
+        )
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+        self.assertIn("class=\"tab red review\"", body)
+        self.assertIn("<b>Accountant review queue:</b> Row 15: Accountant review.", body)
+
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {
             "red": "Accountant review",

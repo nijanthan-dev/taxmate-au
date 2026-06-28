@@ -157,6 +157,8 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         raise ValueError("guide item missing number")
     status_kind = item_status_kind(raw)
     tab_kind = item_tab_kind(raw, status_kind)
+    tab_title = str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}")
+    tab_text = str(raw.get("tab_text") or raw.get("why_included") or fallback_tab_text(number, status_kind))
     return GuideItem(
         number=number,
         ato_area=str(raw.get("ato_area") or ""),
@@ -167,8 +169,8 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         checked_at=str(raw.get("checked_at") or ""),
         status=canonical_status(status_kind),
         status_kind=status_kind,
-        tab_title=str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}"),
-        tab_text=str(raw.get("tab_text") or raw.get("why_included") or ""),
+        tab_title=tab_title,
+        tab_text=tab_text,
         tab_kind=tab_kind,
     )
 
@@ -187,6 +189,10 @@ def item_tab_kind(raw: Dict[str, Any], status_kind: str) -> str:
     if status_kind == "review":
         return "review"
     return tab_kind
+
+
+def fallback_tab_text(number: str, status_kind: str) -> str:
+    return f"Row {number}: {canonical_status(status_kind)}."
 
 
 def source_urls(raw: Dict[str, Any]) -> List[str]:
@@ -268,9 +274,9 @@ def render_html(data: GuideData) -> str:
     rows = "\n".join(render_row(item, row_index) for row_index, item in indexed_items)
     row_tabs = "\n".join(render_item_tab(item, row_index) for row_index, item in indexed_items)
     review_items = [
-        item.tab_text
+        review_text(item)
         for item in data.items
-        if item.status_kind == "review" or item.tab_kind == "review"
+        if effective_status_kind(item) == "review" or effective_tab_kind(item) == "review"
     ]
     review_queue = "; ".join(review_items) if review_items else "No review-only items supplied."
     output = HTML_TEMPLATE.format(
@@ -287,6 +293,7 @@ def render_html(data: GuideData) -> str:
 
 def render_row(item: GuideItem, row_index: int) -> str:
     anchor = row_anchor(item, row_index)
+    item_status_kind = effective_status_kind(item)
     return (
         "<tr>"
         f"<td>{esc(item.number)}</td>"
@@ -295,7 +302,7 @@ def render_row(item: GuideItem, row_index: int) -> str:
         f"<td>{esc(item.answer)}</td>"
         f"<td>{esc(item.why_included)}</td>"
         f"<td class=\"provenance\">{render_provenance(item)}</td>"
-        f'<td data-anchor="{anchor}"><span class="status {status_class(item.status_kind)}">{esc(item.status)}</span></td>'
+        f'<td data-anchor="{anchor}"><span class="status {status_class(item_status_kind)}">{esc(canonical_status(item_status_kind))}</span></td>'
         "</tr>"
     )
 
@@ -308,15 +315,36 @@ def render_provenance(item: GuideItem) -> str:
 
 
 def render_item_tab(item: GuideItem, row_index: int) -> str:
-    color = tab_color(item.tab_kind)
-    extra = " review" if item.tab_kind == "review" else ""
-    extra += " evidence" if item.tab_kind in {"evidence", "answer"} else ""
+    item_tab_kind = effective_tab_kind(item)
+    color = tab_color(item_tab_kind)
+    extra = " review" if item_tab_kind == "review" else ""
+    extra += " evidence" if item_tab_kind in {"evidence", "answer"} else ""
     return (
         f'<div class="tab {color}{extra}" data-target="{row_anchor(item, row_index)}">'
         f"<b>{esc(item.tab_title)}</b>"
-        f"<p>{esc(item.tab_text)}</p>"
+        f"<p>{esc(review_text(item))}</p>"
         "</div>"
     )
+
+
+def review_text(item: GuideItem) -> str:
+    return item.tab_text.strip() or fallback_tab_text(item.number, effective_status_kind(item))
+
+
+def effective_status_kind(item: GuideItem) -> str:
+    status_kind = normal_kind(item.status_kind)
+    status = normal_kind(item.status)
+    tab_kind = normal_kind(item.tab_kind)
+    if status_kind == "review" or status == "review" or tab_kind == "review":
+        return "review"
+    return status_kind
+
+
+def effective_tab_kind(item: GuideItem) -> str:
+    status_kind = effective_status_kind(item)
+    if status_kind == "review":
+        return "review"
+    return normal_kind(item.tab_kind or status_kind)
 
 
 def row_anchor(item: GuideItem, row_index: int) -> str:

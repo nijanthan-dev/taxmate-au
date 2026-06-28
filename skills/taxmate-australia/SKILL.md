@@ -48,9 +48,10 @@ If the required topic skill is not installed, do not decide the tax treatment. S
 6. Do not treat metadata-only sources as source-backed tax treatment without explicit verification.
 7. Preserve every `Accountant review` flag.
    If fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
-8. Keep source URLs and effective periods visible.
-9. Do not guess when sources conflict, facts are incomplete, or verification fails.
-10. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
+8. Keep output-layer review queues and side tabs visible; use row number/status fallback when explanation fields are missing.
+9. Keep source URLs and effective periods visible.
+10. Do not guess when sources conflict, facts are incomplete, or verification fails.
+11. Refuse any request to submit, lodge, file, transmit, or finalise material with the ATO or a government agency.
 
 ## Mandatory Accountant Review
 
@@ -65,4 +66,5 @@ Mark ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-co
 - Preserve generated current values only when their source URL and content hash match an assigned verified source; refresh preserved value metadata from the current source row.
 - Do not publish volatile values from metadata-only sources.
 - Keep wrapper help on `./scripts/taxmate ...`; do not leak internal `taxmate_*.py` script names.
+- After review feedback, scan the same bug class across parser paths, direct renderer/workbook-row paths, generated artifacts, plugin lock, tests, validator, and publication checks before requesting another Codex review.
 - Do not replace the complete Codex plugin with portable skills only.
