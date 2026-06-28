@@ -27,7 +27,7 @@ Read `references/rules.md` before creating a workbook structure.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a workbook appear submission-ready.
 - If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Review queues must not show blank review items; use row number/status fallback when explanation fields are missing.
-- Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
+- Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
 
 ## Workbook Shape
 
@@ -53,7 +53,7 @@ Default tabs:
 - Separate primary taxpayer, spouse or partner, joint, and entity records.
 - Preserve gross, GST, GST-exclusive, claim %, claim amount, evidence, source URL, and review status.
 - Put ambiguous rows in `Accountant Review`.
-- Before treating workbook output fixes as review-ready, cover parsed rows and direct workbook-row paths in tests and validation.
+- Before treating workbook output fixes as review-ready, cover parsed rows, file-backed data, and direct workbook-row paths in tests and validation.
 - Do not silently drop rows.
 - Do not mark BAS nil when GST credits or GST collected exist.
 - Use formulas only for transparent totals; keep source rows visible.

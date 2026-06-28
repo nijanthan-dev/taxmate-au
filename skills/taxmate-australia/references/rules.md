@@ -23,7 +23,7 @@
 - It preserves source URLs, effective periods, evidence status, and `Accountant review` flags.
 - If output fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Output-layer review queues and side tabs must keep review items visible even when explanatory text is missing.
-- Output layers must preserve valid falsey values such as numeric `0` and boolean `false`.
+- Output layers must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
 - It requires current verification for volatile values when web access is available.
 - If a needed topic skill or reliable source is unavailable, state the limitation and mark the item `Accountant review`.
 - It must not use repository binaries, local repository data, plugin manifests, marketplace JSON, or environment variables.
@@ -37,4 +37,4 @@
 ## Accountant review required
 
 - Any ambiguous, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, non-commercial-loss, business-versus-hobby, missing-source, conflicting-source, or incomplete-fact issue.
-- Review-feedback fixes must cover the same bug class across parser paths, direct renderer/workbook-row paths, generated artifacts, tests, validator, and plugin lock before review is requested again.
+- Review-feedback fixes must cover the same bug class across parser paths, direct renderer/workbook-row paths, file-backed data, generated artifacts, tests, validator, plugin lock, and docs/skills/AGENTS guardrails before review is requested again.

@@ -26,7 +26,7 @@ Read `references/rules.md` before creating handoff packs.
 - Keep `Accountant review` flags visible. Do not remove review flags to make a pack appear submission-ready.
 - If input fields conflict, `Accountant review` wins. Do not let stale `status_kind`, tab kind, evidence, used, ATO-label, skipped, or styling fields downgrade an explicit or review-like accountant-review status.
 - Review queues and guide side tabs must not show blank review items; use row number/status fallback when explanation fields are missing.
-- Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`.
+- Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
 - Do not fill, modify, or present official ATO PDFs as completed returns.
 
 ## Rules
@@ -37,7 +37,8 @@ Read `references/rules.md` before creating handoff packs.
 - Keep source URLs and checked-at dates visible in guide rows when supplied.
 - For guide rows, preserve accountant-review status in the row badge, side tab, filters, and review queue even if other fields are stale or conflict.
 - For guide rows, keep review side tabs and review queue entries visible even when `tab_text` and rationale fields are blank.
-- Before treating guide output fixes as review-ready, cover parsed JSON rows and direct renderer rows in tests and validation.
+- Before treating guide output fixes as review-ready, cover parsed JSON rows, file-backed guide data, and direct renderer rows in tests and validation.
+- Falsey-value regressions must cover top-level guide metadata, row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem` construction.
 - For guide PDFs, reference ATO labels and income-year wording, but keep the output clearly custom, manual, and non-lodgment.
 - Tell users to copy reviewed answers into myTax, paper ATO forms, or give the pack to an accountant.
 - Refuse any request to lodge, submit, file, transmit, or finalise the pack with the ATO.

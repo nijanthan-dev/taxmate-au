@@ -303,6 +303,8 @@ def add_skill_and_documentation_checks(
     add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
     add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
     add("discovery_metadata_documented", discovery_metadata_ready(root, readme_text), "")
+    review_guardrail_gaps = review_feedback_guardrail_gaps(root)
+    add("review_feedback_guardrails_documented", len(review_guardrail_gaps) == 0, "; ".join(review_guardrail_gaps))
 
 
 def add_public_disclaimer_checks(add, text: str) -> None:
@@ -829,6 +831,75 @@ def has_public_disclaimers(text: str) -> bool:
     ]
     lower = text.lower()
     return all(item in lower for item in needles)
+
+
+def review_feedback_guardrail_gaps(root: str) -> List[str]:
+    required = {
+        "AGENTS.md": [
+            "spawn or reuse a focused explorer",
+            "source URL lists",
+            "checked-at provenance",
+            "docs/skills/AGENTS guardrails",
+        ],
+        "docs/DEVELOPMENT.md": [
+            "Use a focused explorer/subagent",
+            "file-backed data",
+            "falsey output bugs",
+        ],
+        ".github/pull_request_template.md": [
+            "same-class scan completed before requesting review",
+            "docs/skills/AGENTS guardrails updated",
+        ],
+        "skills/taxmate-australia/SKILL.md": [
+            "docs/skills/AGENTS guardrails",
+            "top-level metadata",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxmate-australia/references/rules.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+        ],
+        "skills/taxpack/SKILL.md": [
+            "file-backed guide data",
+            "Falsey-value regressions",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxpack/references/rules.md": [
+            "file-backed guide data",
+            "Falsey-value regressions",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxpack/references/topic-inputs.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+            "list fields",
+            "direct constructors",
+        ],
+        "skills/workbook/SKILL.md": [
+            "file-backed data",
+            "raw string conversion",
+        ],
+        "skills/workbook/references/rules.md": [
+            "file-backed data",
+            "raw string conversion",
+        ],
+        "skills/workbook/references/topic-inputs.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+            "list fields",
+            "direct constructors",
+        ],
+    }
+    gaps: List[str] = []
+    for rel_path, needles in required.items():
+        body = read_text(os.path.join(root, rel_path))
+        for needle in needles:
+            if needle not in body:
+                gaps.append(f"{rel_path}:{needle}")
+    return gaps
 
 
 def parse_frontmatter(text: str) -> Optional[Dict[str, str]]:
@@ -2455,6 +2526,7 @@ def taxpack_guide_html_contract() -> bool:
             "status": "Evidence",
             "tab_title": 0,
             "tab_text": 0,
+            "source_urls": [False],
         }
     )
     falsey_body = taxmate_taxpack.render_html(
@@ -2474,11 +2546,43 @@ def taxpack_guide_html_contract() -> bool:
         and falsey.checked_at == "0"
         and falsey.tab_title == "0"
         and falsey.tab_text == "0"
+        and falsey.source_urls == ["false"]
         and "<td>0</td>" in falsey_body
         and "<td>false</td>" in falsey_body
         and "<b>0</b>" in falsey_body
         and "<p>0</p>" in falsey_body
         and "Checked 0" in falsey_body
+        and '<span class="source-url">false</span>' in falsey_body
+    )
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
+        json.dump(
+            {
+                "income_year": 0,
+                "generated_date": False,
+                "summary_note": 0,
+                "items": [
+                    {
+                        "number": 0,
+                        "ato_area": 0,
+                        "question": False,
+                        "answer": 0,
+                        "why_included": 0,
+                        "status": "Evidence",
+                    }
+                ],
+            },
+            handle,
+        )
+        handle.flush()
+        falsey_file = taxmate_taxpack.load_guide_data(handle.name)
+    falsey_file_body = taxmate_taxpack.render_html(falsey_file)
+    falsey_file_ok = (
+        falsey_file.income_year == "0"
+        and falsey_file.generated_date == "false"
+        and falsey_file.summary_note == "0"
+        and "Income year 0" in falsey_file_body
+        and "Generated false" in falsey_file_body
+        and "0</p>" in falsey_file_body
     )
     direct_falsey = taxmate_taxpack.GuideItem(
         number=0,
@@ -2508,7 +2612,34 @@ def taxpack_guide_html_contract() -> bool:
         and '<span class="source-url">0</span>' in direct_falsey_body
         and "<b>0</b>" in direct_falsey_body
         and "<p>0</p>" in direct_falsey_body
+        and "Checked 0" in direct_falsey_body
         and 'data-anchor="row-1-0"' in direct_falsey_body
+    )
+    direct_blank_false_number = taxmate_taxpack.GuideItem(
+        number=False,
+        ato_area="Other",
+        question="Direct false number?",
+        answer=0,
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review",
+        status_kind="review",
+        tab_title="Direct false number",
+        tab_text="",
+        tab_kind="review",
+    )
+    direct_blank_false_number_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct false number fallback.",
+            items=[direct_blank_false_number],
+        )
+    )
+    direct_blank_false_number_ok = (
+        "Row false: Accountant review." in direct_blank_false_number_body
+        and 'data-anchor="row-1-false"' in direct_blank_false_number_body
     )
     return (
         quoted_ok
@@ -2520,7 +2651,9 @@ def taxpack_guide_html_contract() -> bool:
         and direct_blank_ok
         and direct_conflict_ok
         and falsey_ok
+        and falsey_file_ok
         and direct_falsey_ok
+        and direct_blank_false_number_ok
     )
 
 

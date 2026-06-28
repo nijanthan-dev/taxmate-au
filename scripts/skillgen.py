@@ -884,8 +884,9 @@ def writeOutputLayers(root: str) -> None:
         body += "- Preserve `Accountant review` flags.\n"
         body += "- If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.\n"
         body += "- If explanation fields are blank, review queues must fall back to row number/status instead of rendering blank review items.\n"
-        body += "- Preserve valid falsey output values such as numeric `0` and boolean `false`.\n"
-        body += "- Review-feedback fixes must cover parsed input and direct renderer/workbook-row paths before another review is requested.\n"
+        body += "- Preserve valid falsey output values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.\n"
+        body += "- Review-feedback fixes must cover parsed input, file-backed data, direct renderer/workbook-row paths, generated artifacts, tests, validator, and docs/skills/AGENTS guardrails before another review is requested.\n"
+        body += "- Falsey output fixes must cover metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.\n"
         body += "- Preserve source URLs and checked-at dates.\n"
         body += "- Do not turn raw transactions into lodging-ready claims from source extracts alone.\n"
         writeText(os.path.join(ref_dir, "topic-inputs.md"), body)

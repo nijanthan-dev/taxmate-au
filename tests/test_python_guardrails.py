@@ -1117,6 +1117,7 @@ class TaxpackGuideTests(unittest.TestCase):
                 "status": "Evidence",
                 "tab_title": 0,
                 "tab_text": 0,
+                "source_urls": [False],
             }
         )
 
@@ -1128,6 +1129,7 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertEqual("0", item.checked_at)
         self.assertEqual("0", item.tab_title)
         self.assertEqual("0", item.tab_text)
+        self.assertEqual(["false"], item.source_urls)
 
         body = taxmate_taxpack.render_html(
             taxmate_taxpack.GuideData(
@@ -1142,6 +1144,37 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<b>0</b>", body)
         self.assertIn("<p>0</p>", body)
         self.assertIn("Checked 0", body)
+        self.assertIn("<span class=\"source-url\">false</span>", body)
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
+            json.dump(
+                {
+                    "income_year": 0,
+                    "generated_date": False,
+                    "summary_note": 0,
+                    "items": [
+                        {
+                            "number": 0,
+                            "ato_area": 0,
+                            "question": False,
+                            "answer": 0,
+                            "why_included": 0,
+                            "status": "Evidence",
+                        }
+                    ],
+                },
+                handle,
+            )
+            handle.flush()
+            data = taxmate_taxpack.load_guide_data(handle.name)
+
+        self.assertEqual("0", data.income_year)
+        self.assertEqual("false", data.generated_date)
+        self.assertEqual("0", data.summary_note)
+        body = taxmate_taxpack.render_html(data)
+        self.assertIn("Income year 0", body)
+        self.assertIn("Generated false", body)
+        self.assertIn("0</p>", body)
 
         direct = taxmate_taxpack.GuideItem(
             number=0,
@@ -1170,7 +1203,33 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("<span class=\"source-url\">0</span>", body)
         self.assertIn("<b>0</b>", body)
         self.assertIn("<p>0</p>", body)
+        self.assertIn("Checked 0", body)
         self.assertIn("data-anchor=\"row-1-0\"", body)
+
+        direct_blank = taxmate_taxpack.GuideItem(
+            number=False,
+            ato_area="Other",
+            question="Direct false number?",
+            answer=0,
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review",
+            status_kind="review",
+            tab_title="Direct false number",
+            tab_text="",
+            tab_kind="review",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct false number fallback.",
+                items=[direct_blank],
+            )
+        )
+        self.assertIn("Row false: Accountant review.", body)
+        self.assertIn("data-anchor=\"row-1-false\"", body)
 
     def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
         data = taxmate_taxpack.load_guide_data(None)

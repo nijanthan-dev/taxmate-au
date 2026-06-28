@@ -28,9 +28,11 @@
 - Generated topic skills must keep source workflow, anti-overclaim rules, current-value provenance, and `Accountant review` flags.
 - Output layers must never let stale or conflicting lower-risk fields downgrade an explicit or review-like `Accountant review`; review status wins over evidence/used/ATO-label/skipped fields in rendered output, tabs, filters, queues, and validation.
 - Output-layer review queues and side tabs must never render blank review items; fall back to row number/status when explanation fields are missing.
-- Output-layer display fields must preserve valid falsey values such as numeric `0` and boolean `false`; use explicit missing/`None` checks instead of truthy fallbacks.
+- Output-layer display fields must preserve valid falsey values such as numeric `0` and boolean `false`; use explicit missing/`None` checks and shared scalar conversion instead of truthy fallbacks or raw `str(...)`.
+- Falsey-value fixes must cover top-level guide metadata, parsed row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem`/workbook row construction.
 - Taxpack guide changes must add local guardrails for the whole bug class before review: conflicting status fields, source provenance visibility, generated dates, duplicate/unsafe anchors, neutral mixed-area headings, prep-only wording, and tab target integrity.
-- After PR review feedback, do not commit, push, or request another Codex review until same-class scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, and publication checks.
+- After PR review feedback, spawn or reuse a focused explorer for same-class scan when the bug class may recur outside the commented line; close that agent after incorporating findings.
+- After PR review feedback, do not commit, push, or request another Codex review until same-class scan findings are integrated or explicitly ruled out, including parser paths, direct renderer/workbook-row construction paths, generated artifacts, plugin lock, tests, validator, publication checks, and docs/skills/AGENTS guardrails.
 - Preserved `current-values.json` entries must match an assigned verified source URL and content hash, and must be refreshed to the current source title, last-updated date, and checked-at date.
 - Do not preserve a current value from metadata-only sources or by accepting a valid value hash against a blank source hash.
 - Wrapper help must show `./scripts/taxmate ...` commands, not internal `taxmate_*.py` script names.

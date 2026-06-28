@@ -40,25 +40,25 @@ SKIPPED_STATUS_KEYS = {
 
 @dataclass
 class GuideItem:
-    number: str
-    ato_area: str
-    question: str
-    answer: str
-    why_included: str
-    source_urls: List[str]
-    checked_at: str
-    status: str
-    status_kind: str
-    tab_title: str
-    tab_text: str
-    tab_kind: str
+    number: Any
+    ato_area: Any
+    question: Any
+    answer: Any
+    why_included: Any
+    source_urls: List[Any]
+    checked_at: Any
+    status: Any
+    status_kind: Any
+    tab_title: Any
+    tab_text: Any
+    tab_kind: Any
 
 
 @dataclass
 class GuideData:
-    income_year: str
-    generated_date: str
-    summary_note: str
+    income_year: Any
+    generated_date: Any
+    summary_note: Any
     items: List[GuideItem]
 
 
@@ -211,8 +211,8 @@ def first_text(raw: Dict[str, Any], keys: List[str], default: str = "") -> str:
     return default
 
 
-def fallback_tab_text(number: str, status_kind: str) -> str:
-    return f"Row {number}: {canonical_status(status_kind)}."
+def fallback_tab_text(number: Any, status_kind: str) -> str:
+    return f"Row {scalar_text(number)}: {canonical_status(status_kind)}."
 
 
 def source_urls(raw: Dict[str, Any]) -> List[str]:
@@ -223,7 +223,7 @@ def source_urls(raw: Dict[str, Any]) -> List[str]:
     multiple = raw.get("source_urls")
     if isinstance(multiple, list):
         for item in multiple:
-            url = "" if item is None else str(item).strip()
+            url = scalar_text(item).strip()
             if url and url not in urls:
                 urls.append(url)
     return urls
@@ -330,8 +330,9 @@ def render_row(item: GuideItem, row_index: int) -> str:
 
 def render_provenance(item: GuideItem) -> str:
     parts = [f'<span class="source-url">{esc(url)}</span>' for url in item.source_urls]
-    if item.checked_at:
-        parts.append(f'<span class="checked-at">Checked {esc(item.checked_at)}</span>')
+    checked_at = scalar_text(item.checked_at).strip()
+    if checked_at:
+        parts.append(f'<span class="checked-at">Checked {esc(checked_at)}</span>')
     return "<br>".join(parts) if parts else "-"
 
 
