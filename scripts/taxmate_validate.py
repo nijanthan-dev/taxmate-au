@@ -2167,9 +2167,38 @@ def taxpack_guide_html_contract() -> bool:
         return False
     if ("Prepared by " + "TaxMate") in body:
         return False
+    if "function findTarget" not in body or "tab.dataset.target+'" in body:
+        return False
     targets = set(re.findall(r'data-target="([^"]+)"', body))
     anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
-    return bool(targets) and targets.issubset(anchors)
+    if not targets or not targets.issubset(anchors):
+        return False
+
+    quoted = taxmate_taxpack.guide_item(
+        {
+            "number": 'D"1',
+            "ato_area": "Other",
+            "question": "Quoted number?",
+            "answer": "User-entered value",
+            "why_included": "Selector escape regression.",
+            "status": "Evidence",
+            "tab_text": "Quoted row number should not break tabs.",
+        }
+    )
+    quoted_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Selector regression.",
+            items=[quoted],
+        )
+    )
+    return (
+        'data-anchor="row-D&quot;1"' in quoted_body
+        and 'data-target="row-D&quot;1"' in quoted_body
+        and "findTarget(spread,tab.dataset.target)" in quoted_body
+        and "tab.dataset.target+'" not in quoted_body
+    )
 
 
 def validate_json_uses_check_field() -> bool:

@@ -707,6 +707,34 @@ class TaxpackGuideTests(unittest.TestCase):
 
         self.assertTrue(targets)
         self.assertEqual(set(), targets - anchors)
+        self.assertIn("function findTarget", body)
+        self.assertNotIn("querySelector('[data-anchor=\"'+tab.dataset.target", body)
+
+    def test_guide_does_not_query_user_controlled_anchor_selectors(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "D\"1",
+                "ato_area": "Other",
+                "question": "Quoted number?",
+                "answer": "User-entered value",
+                "why_included": "Selector escape regression.",
+                "status": "Evidence",
+                "tab_text": "Quoted row number should not break tabs.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Selector regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn('data-anchor="row-D&quot;1"', body)
+        self.assertIn('data-target="row-D&quot;1"', body)
+        self.assertIn("findTarget(spread,tab.dataset.target)", body)
+        self.assertNotIn("tab.dataset.target+'", body)
 
     def test_custom_guide_input_escapes_values_and_shortens_status(self) -> None:
         payload = {
