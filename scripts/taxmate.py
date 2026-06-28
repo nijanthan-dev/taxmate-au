@@ -16,6 +16,7 @@ COMMANDS = {
     "finance": "taxmate_finance.py",
     "refresh": "taxmate_refresh.py",
     "skills": "taxmate_skills.py",
+    "taxpack": "taxmate_taxpack.py",
     "validate": "taxmate_validate.py",
 }
 

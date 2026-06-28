@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
+TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, ATO-aligned manual guide PDFs, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
@@ -12,6 +12,7 @@ TaxMate Australia is an Australian tax prep skill pack and plugin linked to offi
 - GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing scaffolds.
 - Conservative finance review for CSV tax records, missing evidence, mixed-use items, and `Accountant review` queues.
 - Accountant-facing Excel workbook and taxpack outputs from reviewed data.
+- ATO-aligned manual guide PDFs that help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
 
 ## Install in 60 seconds
 
@@ -48,6 +49,18 @@ Run a full runtime command:
 ```bash
 ./scripts/taxmate skills generate
 ```
+
+Create a self-prepared HTML guide users can save as PDF from their browser:
+
+```bash
+./scripts/taxmate taxpack sample-json --output /tmp/taxmate-guide-input.json
+./scripts/taxmate taxpack guide-html \
+  --input /tmp/taxmate-guide-input.json \
+  --output /tmp/taxmate-guide.html
+```
+
+Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the same guide layout and hides the preview toolbar.
+Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps those provenance fields visible in the worksheet.
 
 Optional: install one or more portable skills for ad-hoc use without checkout:
 

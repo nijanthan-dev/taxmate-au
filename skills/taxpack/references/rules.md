@@ -14,9 +14,17 @@
 
 - Taxpack is output-only. It does not lodge, file, or create final advice.
 - Include reviewed summaries, source URLs, evidence status, income-year labels, open questions, and `Accountant review` queues.
-- Keep official forms or labels draft-only unless a qualified reviewer has approved the underlying data.
+- If guide input fields conflict, preserve the most conservative state: explicit or review-like `Accountant review` overrides stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
+- Guide rows with supplied source URLs or checked-at dates must keep that provenance visible in the worksheet.
+- Review queues and side tabs must keep review items visible even when explanatory text is missing.
+- Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
+- ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
+- Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
 - Do not silently drop uncertain rows.
 
 ## Accountant review required
 
 - Any unresolved treatment, missing evidence, BAS/GST, CGT, FBT, home-business, pre-revenue, mixed-use, non-commercial-loss, business-versus-hobby, or lodgment-position item.
+- Validation must cover conflicts or blanks that could hide an accountant-review flag from the row badge, side tab, review-only filter, or review queue.
+- Review-feedback fixes must cover parsed input, file-backed guide data, and direct renderer paths before review is requested again.
+- Falsey-value regressions must cover top-level guide metadata, row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem` construction.

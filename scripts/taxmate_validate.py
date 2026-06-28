@@ -21,6 +21,7 @@ import taxmate_calc
 import taxmate_finance
 import taxmate_refresh
 import taxmate_skills
+import taxmate_taxpack
 
 
 EMPTY_CONTENT = skillgen.EmptyContentHashValue
@@ -302,6 +303,8 @@ def add_skill_and_documentation_checks(
     add("plugin_lock_skill_paths_exist", plugin_lock_skill_paths_exist(root), "")
     add("wrapper_fallback_skill_paths_exist", wrapper_fallback_skill_paths_exist(root), "")
     add("discovery_metadata_documented", discovery_metadata_ready(root, readme_text), "")
+    review_guardrail_gaps = review_feedback_guardrail_gaps(root)
+    add("review_feedback_guardrails_documented", len(review_guardrail_gaps) == 0, "; ".join(review_guardrail_gaps))
 
 
 def add_public_disclaimer_checks(add, text: str) -> None:
@@ -403,6 +406,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("finance_record_rows_classify_before_income", finance_record_rows_classify_before_income(), "")
     add("finance_investment_income_classifies_as_income", finance_investment_income_classifies_as_income(), "")
     add("finance_investment_income_outranks_business_tag", finance_investment_income_outranks_business_tag(), "")
+    add("taxpack_guide_html_contract", taxpack_guide_html_contract(), "")
     add("validate_json_uses_check_field", validate_json_uses_check_field(), "")
     add("recrawl_link_host_filter_strict", recrawl_link_host_filter_strict(), "")
     add("super_seed_matches_registry", super_seed_matches_registry(registry), "")
@@ -827,6 +831,75 @@ def has_public_disclaimers(text: str) -> bool:
     ]
     lower = text.lower()
     return all(item in lower for item in needles)
+
+
+def review_feedback_guardrail_gaps(root: str) -> List[str]:
+    required = {
+        "AGENTS.md": [
+            "spawn or reuse a focused explorer",
+            "source URL lists",
+            "checked-at provenance",
+            "docs/skills/AGENTS guardrails",
+        ],
+        "docs/DEVELOPMENT.md": [
+            "Use a focused explorer/subagent",
+            "file-backed data",
+            "falsey output bugs",
+        ],
+        ".github/pull_request_template.md": [
+            "same-class scan completed before requesting review",
+            "docs/skills/AGENTS guardrails updated",
+        ],
+        "skills/taxmate-australia/SKILL.md": [
+            "docs/skills/AGENTS guardrails",
+            "top-level metadata",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxmate-australia/references/rules.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+        ],
+        "skills/taxpack/SKILL.md": [
+            "file-backed guide data",
+            "Falsey-value regressions",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxpack/references/rules.md": [
+            "file-backed guide data",
+            "Falsey-value regressions",
+            "source URL lists",
+            "checked-at provenance",
+        ],
+        "skills/taxpack/references/topic-inputs.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+            "list fields",
+            "direct constructors",
+        ],
+        "skills/workbook/SKILL.md": [
+            "file-backed data",
+            "raw string conversion",
+        ],
+        "skills/workbook/references/rules.md": [
+            "file-backed data",
+            "raw string conversion",
+        ],
+        "skills/workbook/references/topic-inputs.md": [
+            "file-backed data",
+            "docs/skills/AGENTS guardrails",
+            "list fields",
+            "direct constructors",
+        ],
+    }
+    gaps: List[str] = []
+    for rel_path, needles in required.items():
+        body = read_text(os.path.join(root, rel_path))
+        for needle in needles:
+            if needle not in body:
+                gaps.append(f"{rel_path}:{needle}")
+    return gaps
 
 
 def parse_frontmatter(text: str) -> Optional[Dict[str, str]]:
@@ -2136,6 +2209,452 @@ def finance_investment_income_outranks_business_tag() -> bool:
     )
     finding = taxmate_finance.classify(tx, taxmate_finance.ModeStrict)
     return finding.bucket == "investment_income" and finding.tax_treatment == "tax_statement_record"
+
+
+def taxpack_guide_html_contract() -> bool:
+    try:
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_data(None))
+    except Exception:
+        return False
+
+    required = [
+        "Self-prepared guide PDF",
+        "Prepared by user",
+        "Not an ATO form",
+        "Not fileable",
+        "background:#fff0f1",
+        "background:#eef5ff",
+        "background:#effbf4",
+        "background:#fff7dc",
+        "left:-64px",
+        "spotlight-target",
+        "hide-tabs",
+        "only-review",
+        "only-evidence",
+        "Tax items and review flags",
+        "ATO-aligned manual copy worksheet",
+        "<th>Source</th>",
+        "source-url",
+        "Checked 2026-06-23T09:04:57Z",
+    ]
+    if not all(item in body for item in required):
+        return False
+    if "Deductions and review flags" in body or "ATO-aligned deduction worksheet" in body:
+        return False
+    if "target-dot" in body or "border-radius:50%" in body:
+        return False
+    if ("Prepared by " + "TaxMate") in body:
+        return False
+    if "function findTarget" not in body or "tab.dataset.target+'" in body:
+        return False
+    targets = set(re.findall(r'data-target="([^"]+)"', body))
+    anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
+    if not targets or not targets.issubset(anchors):
+        return False
+
+    quoted = taxmate_taxpack.guide_item(
+        {
+            "number": 'D"1',
+            "ato_area": "Other",
+            "question": "Quoted number?",
+            "answer": "User-entered value",
+            "why_included": "Selector escape regression.",
+            "status": "Evidence",
+            "tab_text": "Quoted row number should not break tabs.",
+        }
+    )
+    quoted_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Selector regression.",
+            items=[quoted],
+        )
+    )
+    quoted_ok = (
+        'data-anchor="row-1-D&quot;1"' in quoted_body
+        and 'data-target="row-1-D&quot;1"' in quoted_body
+        and "findTarget(spread,tab.dataset.target)" in quoted_body
+        and "tab.dataset.target+'" not in quoted_body
+    )
+    duplicate = taxmate_taxpack.guide_item(
+        {
+            "number": "D1",
+            "ato_area": "Other",
+            "question": "Duplicate number?",
+            "answer": "User-entered value",
+            "why_included": "Duplicate anchor regression.",
+            "status": "Evidence",
+            "tab_text": "Duplicate row should keep its own target.",
+        }
+    )
+    duplicate_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Duplicate regression.",
+            items=[duplicate, duplicate],
+        )
+    )
+    duplicate_anchors = re.findall(r'<td data-anchor="([^"]+)"', duplicate_body)
+    duplicate_targets = [
+        target
+        for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
+        if target.startswith("row-")
+    ]
+    source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
+    second_url = "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return"
+    sourced = taxmate_taxpack.guide_item(
+        {
+            "number": "S1",
+            "ato_area": "Other",
+            "question": "Has source?",
+            "answer": "User-entered value",
+            "why_included": "Source provenance regression.",
+            "source_url": source_url,
+            "source_urls": [source_url, second_url],
+            "checked_at": "2026-06-28T00:00:00Z",
+            "status": "Evidence",
+            "tab_text": "Source row should keep provenance.",
+        }
+    )
+    sourced_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Source regression.",
+            items=[sourced],
+        )
+    )
+    sourced_ok = (
+        f'<span class="source-url">{source_url}</span>' in sourced_body
+        and f'<span class="source-url">{second_url}</span>' in sourced_body
+        and '<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>' in sourced_body
+        and sourced_body.count(f'<span class="source-url">{source_url}</span>') == 1
+    )
+    stale_kinds = ["evidence", "answer", "ato", "skipped", "grey"]
+    downgraded_badges = [
+        '<span class="status gap">Evidence</span>',
+        '<span class="status used">Used</span>',
+        '<span class="status label">ATO label</span>',
+        '<span class="status skipped">N/A skipped</span>',
+    ]
+    conflicting_ok = True
+    for status_kind in stale_kinds:
+        for tab_kind in stale_kinds:
+            conflicting = taxmate_taxpack.guide_item(
+                {
+                    "number": "R1",
+                    "ato_area": "Other",
+                    "question": "Conflicting status?",
+                    "answer": "User-entered value",
+                    "why_included": "Explicit review status must not be downgraded.",
+                    "status": "Accountant review",
+                    "status_kind": status_kind,
+                    "tab_kind": tab_kind,
+                    "tab_text": "Conflicting status fields require accountant review.",
+                }
+            )
+            conflicting_body = taxmate_taxpack.render_html(
+                taxmate_taxpack.GuideData(
+                    income_year="2025-26",
+                    generated_date=taxmate_taxpack.default_generated_date(),
+                    summary_note="Conflicting status regression.",
+                    items=[conflicting],
+                )
+            )
+            if not (
+                conflicting.status_kind == "review"
+                and conflicting.tab_kind == "review"
+                and '<span class="status review-badge">Accountant review</span>' in conflicting_body
+                and 'class="tab red review"' in conflicting_body
+                and "<b>Accountant review queue:</b> Conflicting status fields require accountant review." in conflicting_body
+                and not any(badge in conflicting_body for badge in downgraded_badges)
+            ):
+                conflicting_ok = False
+    for review_field in ("status", "status_kind", "tab_kind"):
+        raw = {
+            "number": "R1",
+            "ato_area": "Other",
+            "question": "Split status?",
+            "answer": "User-entered value",
+            "why_included": "Any explicit review field must control output.",
+            "status": "Evidence",
+            "status_kind": "evidence",
+            "tab_kind": "evidence",
+            "tab_text": "One field still requires accountant review.",
+        }
+        raw[review_field] = "Accountant review"
+        conflicting = taxmate_taxpack.guide_item(raw)
+        conflicting_body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date=taxmate_taxpack.default_generated_date(),
+                summary_note="Split status regression.",
+                items=[conflicting],
+            )
+        )
+        if not (
+            conflicting.status_kind == "review"
+            and conflicting.tab_kind == "review"
+            and "<b>Accountant review queue:</b> One field still requires accountant review." in conflicting_body
+            and not any(badge in conflicting_body for badge in downgraded_badges)
+        ):
+            conflicting_ok = False
+    review_like_labels = [
+        "Accountant review required",
+        "Requires accountant review",
+        "Review required",
+        "Needs review",
+        "Tax agent review required",
+    ]
+    for label in review_like_labels:
+        conflicting = taxmate_taxpack.guide_item(
+            {
+                "number": "R1",
+                "ato_area": "Other",
+                "question": "Review-like label?",
+                "answer": "User-entered value",
+                "why_included": "Review-like status labels must not be downgraded.",
+                "status": label,
+                "status_kind": "evidence",
+                "tab_kind": "answer",
+                "tab_text": "Review-like label requires accountant review.",
+            }
+        )
+        conflicting_body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date=taxmate_taxpack.default_generated_date(),
+                summary_note="Review-like status regression.",
+                items=[conflicting],
+            )
+        )
+        if not (
+            conflicting.status_kind == "review"
+            and conflicting.tab_kind == "review"
+            and '<span class="status review-badge">Accountant review</span>' in conflicting_body
+            and "<b>Accountant review queue:</b> Review-like label requires accountant review." in conflicting_body
+            and not any(badge in conflicting_body for badge in downgraded_badges)
+        ):
+            conflicting_ok = False
+    blank_review = taxmate_taxpack.guide_item(
+        {
+            "number": "R2",
+            "ato_area": "Other",
+            "question": "Blank review explanation?",
+            "answer": "User-entered value",
+            "status": "Accountant review",
+            "status_kind": "review",
+            "tab_kind": "review",
+        }
+    )
+    blank_review_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Blank review regression.",
+            items=[blank_review],
+        )
+    )
+    blank_review_ok = (
+        blank_review.tab_text == "Row R2: Accountant review."
+        and "<b>Accountant review queue:</b> Row R2: Accountant review." in blank_review_body
+        and "<p>Row R2: Accountant review.</p>" in blank_review_body
+    )
+    direct_blank = taxmate_taxpack.GuideItem(
+        number="R3",
+        ato_area="Other",
+        question="Direct blank review?",
+        answer="User-entered value",
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review",
+        status_kind="review",
+        tab_title="Row R3 direct review",
+        tab_text="",
+        tab_kind="review",
+    )
+    direct_blank_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct blank review regression.",
+            items=[direct_blank],
+        )
+    )
+    direct_blank_ok = (
+        "<b>Accountant review queue:</b> Row R3: Accountant review." in direct_blank_body
+        and "<p>Row R3: Accountant review.</p>" in direct_blank_body
+    )
+    direct_conflict = taxmate_taxpack.GuideItem(
+        number="R4",
+        ato_area="Other",
+        question="Direct conflicting review?",
+        answer="User-entered value",
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review required",
+        status_kind="evidence",
+        tab_title="Row R4 direct conflict",
+        tab_text="",
+        tab_kind="answer",
+    )
+    direct_conflict_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct conflict regression.",
+            items=[direct_conflict],
+        )
+    )
+    direct_conflict_ok = (
+        '<span class="status review-badge">Accountant review</span>' in direct_conflict_body
+        and 'class="tab red review"' in direct_conflict_body
+        and "<b>Accountant review queue:</b> Row R4: Accountant review." in direct_conflict_body
+    )
+    falsey = taxmate_taxpack.guide_item(
+        {
+            "number": 0,
+            "ato_area": 0,
+            "question": False,
+            "answer": 0,
+            "why_included": 0,
+            "checked_at": 0,
+            "status": "Evidence",
+            "tab_title": 0,
+            "tab_text": 0,
+            "source_urls": [False],
+        }
+    )
+    falsey_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Falsey value regression.",
+            items=[falsey],
+        )
+    )
+    falsey_ok = (
+        falsey.number == "0"
+        and falsey.ato_area == "0"
+        and falsey.question == "false"
+        and falsey.answer == "0"
+        and falsey.why_included == "0"
+        and falsey.checked_at == "0"
+        and falsey.tab_title == "0"
+        and falsey.tab_text == "0"
+        and falsey.source_urls == ["false"]
+        and "<td>0</td>" in falsey_body
+        and "<td>false</td>" in falsey_body
+        and "<b>0</b>" in falsey_body
+        and "<p>0</p>" in falsey_body
+        and "Checked 0" in falsey_body
+        and '<span class="source-url">false</span>' in falsey_body
+    )
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
+        json.dump(
+            {
+                "income_year": 0,
+                "generated_date": False,
+                "summary_note": 0,
+                "items": [
+                    {
+                        "number": 0,
+                        "ato_area": 0,
+                        "question": False,
+                        "answer": 0,
+                        "why_included": 0,
+                        "status": "Evidence",
+                    }
+                ],
+            },
+            handle,
+        )
+        handle.flush()
+        falsey_file = taxmate_taxpack.load_guide_data(handle.name)
+    falsey_file_body = taxmate_taxpack.render_html(falsey_file)
+    falsey_file_ok = (
+        falsey_file.income_year == "0"
+        and falsey_file.generated_date == "false"
+        and falsey_file.summary_note == "0"
+        and "Income year 0" in falsey_file_body
+        and "Generated false" in falsey_file_body
+        and "0</p>" in falsey_file_body
+    )
+    direct_falsey = taxmate_taxpack.GuideItem(
+        number=0,
+        ato_area=0,
+        question=False,
+        answer=0,
+        why_included=0,
+        source_urls=[0],
+        checked_at=0,
+        status="Evidence",
+        status_kind="evidence",
+        tab_title=0,
+        tab_text=0,
+        tab_kind="evidence",
+    )
+    direct_falsey_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct falsey value regression.",
+            items=[direct_falsey],
+        )
+    )
+    direct_falsey_ok = (
+        "<td>0</td>" in direct_falsey_body
+        and "<td>false</td>" in direct_falsey_body
+        and '<span class="source-url">0</span>' in direct_falsey_body
+        and "<b>0</b>" in direct_falsey_body
+        and "<p>0</p>" in direct_falsey_body
+        and "Checked 0" in direct_falsey_body
+        and 'data-anchor="row-1-0"' in direct_falsey_body
+    )
+    direct_blank_false_number = taxmate_taxpack.GuideItem(
+        number=False,
+        ato_area="Other",
+        question="Direct false number?",
+        answer=0,
+        why_included="",
+        source_urls=[],
+        checked_at="",
+        status="Accountant review",
+        status_kind="review",
+        tab_title="Direct false number",
+        tab_text="",
+        tab_kind="review",
+    )
+    direct_blank_false_number_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Direct false number fallback.",
+            items=[direct_blank_false_number],
+        )
+    )
+    direct_blank_false_number_ok = (
+        "Row false: Accountant review." in direct_blank_false_number_body
+        and 'data-anchor="row-1-false"' in direct_blank_false_number_body
+    )
+    return (
+        quoted_ok
+        and duplicate_anchors == ["row-1-D1", "row-2-D1"]
+        and duplicate_targets == ["row-1-D1", "row-2-D1"]
+        and sourced_ok
+        and conflicting_ok
+        and blank_review_ok
+        and direct_blank_ok
+        and direct_conflict_ok
+        and falsey_ok
+        and falsey_file_ok
+        and direct_falsey_ok
+        and direct_blank_false_number_ok
+    )
 
 
 def validate_json_uses_check_field() -> bool:

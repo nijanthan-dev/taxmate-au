@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,7 @@ import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
 import taxmate_finance  # noqa: E402
+import taxmate_taxpack  # noqa: E402
 import taxmate_validate  # noqa: E402
 
 
@@ -467,6 +469,9 @@ class ValidatorAndCliTests(unittest.TestCase):
             else:
                 taxmate.os.environ["TAXMATE_AUSTRALIA_ROOT"] = original
 
+    def test_launcher_exposes_taxpack_command(self) -> None:
+        self.assertEqual(taxmate.COMMANDS["taxpack"], "taxmate_taxpack.py")
+
     def test_finish_report_has_check_names(self) -> None:
         checks = [{"check": "sample", "passed": True, "detail": ""}]
 
@@ -662,6 +667,576 @@ class ValidatorAndCliTests(unittest.TestCase):
             hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
 
         self.assertEqual(hits, ["README.md:ATO-approved"])
+
+
+class TaxpackGuideTests(unittest.TestCase):
+    def test_sample_guide_uses_current_generated_date(self) -> None:
+        self.assertNotIn("generated_date", taxmate_taxpack.sample_payload())
+        self.assertEqual(
+            taxmate_taxpack.default_generated_date(),
+            taxmate_taxpack.load_guide_data(None).generated_date,
+        )
+
+    def test_sample_guide_matches_approved_tab_contract(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("Self-prepared guide PDF", body)
+        self.assertIn("Prepared by user", body)
+        self.assertIn("Not an ATO form", body)
+        self.assertIn("Not fileable", body)
+        self.assertIn("--bg:#e9eef4", body)
+        self.assertIn("background:#fff0f1", body)
+        self.assertIn("background:#eef5ff", body)
+        self.assertIn("background:#effbf4", body)
+        self.assertIn("background:#fff7dc", body)
+        self.assertIn("left:-64px", body)
+        self.assertIn("spotlight-target", body)
+        self.assertIn("show all tabs", body.lower())
+        self.assertIn("hide tabs", body.lower())
+        self.assertIn("Tax items and review flags", body)
+        self.assertIn("ATO-aligned manual copy worksheet", body)
+        self.assertIn("<th>Source</th>", body)
+        self.assertIn("source-url", body)
+        self.assertIn("Checked 2026-06-23T09:04:57Z", body)
+        self.assertNotIn("Deductions and review flags", body)
+        self.assertNotIn("ATO-aligned deduction worksheet", body)
+        self.assertNotIn("target-dot", body)
+        self.assertNotIn("border-radius:50%", body)
+        self.assertNotIn("Prepared by " + "TaxMate", body)
+
+    def test_guide_tabs_resolve_to_existing_anchors(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+        body = taxmate_taxpack.render_html(data)
+        targets = set(re.findall(r'data-target="([^"]+)"', body))
+        anchors = set(re.findall(r'data-anchor="([^"]+)"', body))
+
+        self.assertTrue(targets)
+        self.assertEqual(set(), targets - anchors)
+        self.assertIn("function findTarget", body)
+        self.assertNotIn("querySelector('[data-anchor=\"'+tab.dataset.target", body)
+
+    def test_guide_does_not_query_user_controlled_anchor_selectors(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "D\"1",
+                "ato_area": "Other",
+                "question": "Quoted number?",
+                "answer": "User-entered value",
+                "why_included": "Selector escape regression.",
+                "status": "Evidence",
+                "tab_text": "Quoted row number should not break tabs.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Selector regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn('data-anchor="row-1-D&quot;1"', body)
+        self.assertIn('data-target="row-1-D&quot;1"', body)
+        self.assertIn("findTarget(spread,tab.dataset.target)", body)
+        self.assertNotIn("tab.dataset.target+'", body)
+
+    def test_guide_anchors_stay_unique_for_duplicate_item_numbers(self) -> None:
+        item_payload = {
+            "number": "D1",
+            "ato_area": "Other",
+            "question": "Duplicate number?",
+            "answer": "User-entered value",
+            "why_included": "Duplicate anchor regression.",
+            "status": "Evidence",
+            "tab_text": "Duplicate row should keep its own target.",
+        }
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Duplicate regression.",
+            items=[
+                taxmate_taxpack.guide_item(item_payload),
+                taxmate_taxpack.guide_item(item_payload),
+            ],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+        row_anchors = re.findall(r'<td data-anchor="([^"]+)"', body)
+        row_targets = [
+            target
+            for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', body)
+            if target.startswith("row-")
+        ]
+
+        self.assertEqual(["row-1-D1", "row-2-D1"], row_anchors)
+        self.assertEqual(["row-1-D1", "row-2-D1"], row_targets)
+        self.assertEqual(len(row_anchors), len(set(row_anchors)))
+
+    def test_custom_guide_input_escapes_values_and_shortens_status(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "generated_date": "28 Jun 2026",
+            "items": [
+                {
+                    "number": "9",
+                    "ato_area": "Other <area>",
+                    "question": "Need review?",
+                    "answer": "User says <yes>",
+                    "why_included": "Complex & mixed-use.",
+                    "status": "Accountant review",
+                    "status_kind": "accountant_review",
+                    "tab_title": "Row 9 review",
+                    "tab_text": "Review before copying.",
+                    "tab_kind": "review",
+                }
+            ],
+        }
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+            json.dump(payload, handle)
+            input_path = handle.name
+        try:
+            data = taxmate_taxpack.load_guide_data(input_path)
+        finally:
+            Path(input_path).unlink()
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("Other &lt;area&gt;", body)
+        self.assertIn("User says &lt;yes&gt;", body)
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+
+    def test_guide_preserves_source_provenance(self) -> None:
+        source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
+        second_url = "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return"
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "9",
+                "ato_area": "Other",
+                "question": "Has records?",
+                "answer": "User-entered value",
+                "why_included": "Source-backed handoff row.",
+                "source_url": source_url,
+                "source_urls": [source_url, second_url],
+                "checked_at": "2026-06-28T00:00:00Z",
+                "status": "Evidence",
+                "tab_text": "Keep records visible.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Provenance regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn(f'<span class="source-url">{source_url}</span>', body)
+        self.assertIn(f'<span class="source-url">{second_url}</span>', body)
+        self.assertIn('<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>', body)
+        self.assertEqual(1, body.count(f'<span class="source-url">{source_url}</span>'))
+
+    def test_guide_preserves_skipped_statuses(self) -> None:
+        payload = {
+            "income_year": "2025-26",
+            "generated_date": "28 Jun 2026",
+            "items": [
+                {
+                    "number": "10",
+                    "ato_area": "Other",
+                    "question": "Not applicable?",
+                    "answer": "Skipped by user",
+                    "why_included": "Question was not applicable.",
+                    "status": "N/A skipped",
+                    "status_kind": "grey",
+                    "tab_title": "Row 10 skipped",
+                    "tab_text": "Skipped item.",
+                    "tab_kind": "N/A skipped",
+                }
+            ],
+        }
+        data = taxmate_taxpack.GuideData(
+            income_year=payload["income_year"],
+            generated_date=payload["generated_date"],
+            summary_note="Skipped regression.",
+            items=[taxmate_taxpack.guide_item(payload["items"][0])],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("<span class=\"status skipped\">N/A skipped</span>", body)
+        self.assertIn("class=\"tab grey\"", body)
+        self.assertIn("No review-only items supplied.", body)
+        self.assertNotIn("<span class=\"status review-badge\">", body)
+
+    def test_guide_defaults_unknown_status_labels_to_review(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "11",
+                "ato_area": "Other",
+                "question": "Ready to claim?",
+                "answer": "User-entered value",
+                "why_included": "Freeform status should not look final.",
+                "status": "Claimable",
+                "tab_text": "Unknown status needs review.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Unknown status regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+        self.assertIn("Unknown status needs review.", body)
+        self.assertNotIn(">Claimable<", body)
+
+    def test_guide_review_status_wins_over_stale_kind_fields(self) -> None:
+        stale_kinds = ["evidence", "answer", "ato", "skipped", "grey"]
+        downgraded_badges = [
+            '<span class="status gap">Evidence</span>',
+            '<span class="status used">Used</span>',
+            '<span class="status label">ATO label</span>',
+            '<span class="status skipped">N/A skipped</span>',
+        ]
+
+        for status_kind in stale_kinds:
+            for tab_kind in stale_kinds:
+                with self.subTest(status_kind=status_kind, tab_kind=tab_kind):
+                    item = taxmate_taxpack.guide_item(
+                        {
+                            "number": "12",
+                            "ato_area": "Other",
+                            "question": "Conflicting reviewed row?",
+                            "answer": "User-entered value",
+                            "why_included": "Explicit review status must not be downgraded.",
+                            "status": "Accountant review",
+                            "status_kind": status_kind,
+                            "tab_kind": tab_kind,
+                            "tab_text": "Conflicting status fields require accountant review.",
+                        }
+                    )
+                    data = taxmate_taxpack.GuideData(
+                        income_year="2025-26",
+                        generated_date="28 Jun 2026",
+                        summary_note="Conflicting status regression.",
+                        items=[item],
+                    )
+
+                    body = taxmate_taxpack.render_html(data)
+
+                    self.assertEqual("review", item.status_kind)
+                    self.assertEqual("review", item.tab_kind)
+                    self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+                    self.assertIn("class=\"tab red review\"", body)
+                    self.assertIn(
+                        "<b>Accountant review queue:</b> Conflicting status fields require accountant review.",
+                        body,
+                    )
+                    for downgraded_badge in downgraded_badges:
+                        self.assertNotIn(downgraded_badge, body)
+
+        for field in ("status", "status_kind", "tab_kind"):
+            with self.subTest(review_field=field):
+                raw = {
+                    "number": "12",
+                    "ato_area": "Other",
+                    "question": "Split reviewed row?",
+                    "answer": "User-entered value",
+                    "why_included": "Any explicit review field must control output.",
+                    "status": "Evidence",
+                    "status_kind": "evidence",
+                    "tab_kind": "evidence",
+                    "tab_text": "One field still requires accountant review.",
+                }
+                raw[field] = "Accountant review"
+                item = taxmate_taxpack.guide_item(raw)
+                body = taxmate_taxpack.render_html(
+                    taxmate_taxpack.GuideData(
+                        income_year="2025-26",
+                        generated_date="28 Jun 2026",
+                        summary_note="Split status regression.",
+                        items=[item],
+                    )
+                )
+                self.assertEqual("review", item.status_kind)
+                self.assertEqual("review", item.tab_kind)
+                self.assertIn("<b>Accountant review queue:</b> One field still requires accountant review.", body)
+
+        review_like_labels = [
+            "Accountant review required",
+            "Requires accountant review",
+            "Review required",
+            "Needs review",
+            "Tax agent review required",
+        ]
+        for label in review_like_labels:
+            with self.subTest(review_like_label=label):
+                item = taxmate_taxpack.guide_item(
+                    {
+                        "number": "12",
+                        "ato_area": "Other",
+                        "question": "Review-like label?",
+                        "answer": "User-entered value",
+                        "why_included": "Review-like status labels must not be downgraded.",
+                        "status": label,
+                        "status_kind": "evidence",
+                        "tab_kind": "answer",
+                        "tab_text": "Review-like label requires accountant review.",
+                    }
+                )
+                body = taxmate_taxpack.render_html(
+                    taxmate_taxpack.GuideData(
+                        income_year="2025-26",
+                        generated_date="28 Jun 2026",
+                        summary_note="Review-like status regression.",
+                        items=[item],
+                    )
+                )
+                self.assertEqual("review", item.status_kind)
+                self.assertEqual("review", item.tab_kind)
+                self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+                self.assertIn("<b>Accountant review queue:</b> Review-like label requires accountant review.", body)
+
+        blank_review = taxmate_taxpack.guide_item(
+            {
+                "number": "13",
+                "ato_area": "Other",
+                "question": "Blank review explanation?",
+                "answer": "User-entered value",
+                "status": "Accountant review",
+                "status_kind": "review",
+                "tab_kind": "review",
+            }
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Blank review regression.",
+                items=[blank_review],
+            )
+        )
+        self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
+        self.assertIn("<b>Accountant review queue:</b> Row 13: Accountant review.", body)
+        self.assertIn("<p>Row 13: Accountant review.</p>", body)
+
+        direct_blank = taxmate_taxpack.GuideItem(
+            number="14",
+            ato_area="Other",
+            question="Direct blank review?",
+            answer="User-entered value",
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review",
+            status_kind="review",
+            tab_title="Row 14 direct review",
+            tab_text="",
+            tab_kind="review",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct blank review regression.",
+                items=[direct_blank],
+            )
+        )
+        self.assertIn("<b>Accountant review queue:</b> Row 14: Accountant review.", body)
+        self.assertIn("<p>Row 14: Accountant review.</p>", body)
+
+        direct_conflict = taxmate_taxpack.GuideItem(
+            number="15",
+            ato_area="Other",
+            question="Direct conflicting review?",
+            answer="User-entered value",
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review required",
+            status_kind="evidence",
+            tab_title="Row 15 direct conflict",
+            tab_text="",
+            tab_kind="answer",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct conflict regression.",
+                items=[direct_conflict],
+            )
+        )
+        self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+        self.assertIn("class=\"tab red review\"", body)
+        self.assertIn("<b>Accountant review queue:</b> Row 15: Accountant review.", body)
+
+    def test_guide_canonicalizes_color_status_aliases(self) -> None:
+        aliases = {
+            "red": "Accountant review",
+            "yellow": "Evidence",
+            "green": "Used",
+            "blue": "ATO label",
+            "grey": "N/A skipped",
+        }
+
+        for alias, expected in aliases.items():
+            with self.subTest(alias=alias):
+                item = taxmate_taxpack.guide_item(
+                    {
+                        "number": alias,
+                        "ato_area": "Other",
+                        "question": "Alias?",
+                        "answer": "Alias input",
+                        "why_included": "Color alias regression.",
+                        "status": alias,
+                        "tab_text": "Alias item.",
+                    }
+                )
+
+                self.assertEqual(expected, item.status)
+                self.assertNotEqual(alias, item.status)
+
+    def test_guide_preserves_falsey_display_values(self) -> None:
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": 0,
+                "ato_area": 0,
+                "question": False,
+                "answer": 0,
+                "why_included": 0,
+                "checked_at": 0,
+                "status": "Evidence",
+                "tab_title": 0,
+                "tab_text": 0,
+                "source_urls": [False],
+            }
+        )
+
+        self.assertEqual("0", item.number)
+        self.assertEqual("0", item.ato_area)
+        self.assertEqual("false", item.question)
+        self.assertEqual("0", item.answer)
+        self.assertEqual("0", item.why_included)
+        self.assertEqual("0", item.checked_at)
+        self.assertEqual("0", item.tab_title)
+        self.assertEqual("0", item.tab_text)
+        self.assertEqual(["false"], item.source_urls)
+
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Falsey value regression.",
+                items=[item],
+            )
+        )
+        self.assertIn("<td>0</td>", body)
+        self.assertIn("<td>false</td>", body)
+        self.assertIn("<b>0</b>", body)
+        self.assertIn("<p>0</p>", body)
+        self.assertIn("Checked 0", body)
+        self.assertIn("<span class=\"source-url\">false</span>", body)
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json") as handle:
+            json.dump(
+                {
+                    "income_year": 0,
+                    "generated_date": False,
+                    "summary_note": 0,
+                    "items": [
+                        {
+                            "number": 0,
+                            "ato_area": 0,
+                            "question": False,
+                            "answer": 0,
+                            "why_included": 0,
+                            "status": "Evidence",
+                        }
+                    ],
+                },
+                handle,
+            )
+            handle.flush()
+            data = taxmate_taxpack.load_guide_data(handle.name)
+
+        self.assertEqual("0", data.income_year)
+        self.assertEqual("false", data.generated_date)
+        self.assertEqual("0", data.summary_note)
+        body = taxmate_taxpack.render_html(data)
+        self.assertIn("Income year 0", body)
+        self.assertIn("Generated false", body)
+        self.assertIn("0</p>", body)
+
+        direct = taxmate_taxpack.GuideItem(
+            number=0,
+            ato_area=0,
+            question=False,
+            answer=0,
+            why_included=0,
+            source_urls=[0],
+            checked_at=0,
+            status="Evidence",
+            status_kind="evidence",
+            tab_title=0,
+            tab_text=0,
+            tab_kind="evidence",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct falsey value regression.",
+                items=[direct],
+            )
+        )
+        self.assertIn("<td>0</td>", body)
+        self.assertIn("<td>false</td>", body)
+        self.assertIn("<span class=\"source-url\">0</span>", body)
+        self.assertIn("<b>0</b>", body)
+        self.assertIn("<p>0</p>", body)
+        self.assertIn("Checked 0", body)
+        self.assertIn("data-anchor=\"row-1-0\"", body)
+
+        direct_blank = taxmate_taxpack.GuideItem(
+            number=False,
+            ato_area="Other",
+            question="Direct false number?",
+            answer=0,
+            why_included="",
+            source_urls=[],
+            checked_at="",
+            status="Accountant review",
+            status_kind="review",
+            tab_title="Direct false number",
+            tab_text="",
+            tab_kind="review",
+        )
+        body = taxmate_taxpack.render_html(
+            taxmate_taxpack.GuideData(
+                income_year="2025-26",
+                generated_date="28 Jun 2026",
+                summary_note="Direct false number fallback.",
+                items=[direct_blank],
+            )
+        )
+        self.assertIn("Row false: Accountant review.", body)
+        self.assertIn("data-anchor=\"row-1-false\"", body)
+
+    def test_guide_rejects_forbidden_visible_taxpack_language(self) -> None:
+        data = taxmate_taxpack.load_guide_data(None)
+        bad = taxmate_taxpack.render_html(data).replace("Prepared by user", "Prepared by " + "TaxMate")
+
+        with self.assertRaises(ValueError):
+            taxmate_taxpack.assert_visible_boundaries(bad)
 
 
 if __name__ == "__main__":

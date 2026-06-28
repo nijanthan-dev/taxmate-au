@@ -1,7 +1,7 @@
 {
   "lockVersion": 1,
   "pluginId": "com.github.nijanthan-dev.taxmate-australia",
-  "pluginVersion": "0.1.2",
+  "pluginVersion": "0.2.0",
   "generatedBy": "TaxMate Australia Maintainers",
   "generatedAt": "2026-06-23T00:00:00Z",
   "skills": [
@@ -138,7 +138,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:a9997290e5f5f0ab9f3b5dd20b3ec45ba3a570804165f4a58b60fd62efc3060e"
+      "integrity": "sha256:cbf0c8e7f1a0974eefe5872092b5e5b81095724090f5b3526090817be310bed3"
     },
     {
       "id": "taxpack",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:4cd966e0e703bffd6905a42c2340836336941bbd40cd496d8e11f4e61fed5173"
+      "integrity": "sha256:ee2fb8f360d534d43b23561b01d1bb028bc534f89737a246c04603e87077990d"
     },
     {
       "id": "work-from-home",
@@ -165,7 +165,7 @@
         "type": "local",
         "path": "skills/workbook"
       },
-      "integrity": "sha256:bb3bb111c16efb5b9efa69f321ffcde3aeaffeb442d15a77f10e70f75b6a329c"
+      "integrity": "sha256:8e7068a503e4babfe7ebcc87479a4292bfb2950cff0a1142c359965b21f8e420"
     }
   ]
 }

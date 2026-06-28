@@ -22,6 +22,17 @@ gitleaks detect --source . --redact --no-banner
 gitleaks dir . --redact --no-banner
 ```
 
+## Review feedback loop
+
+Before requesting another Codex review after review feedback:
+
+- Scan the whole same bug class, not only the commented line.
+- Use a focused explorer/subagent when the bug class may recur outside the commented line, then close it after findings are integrated.
+- Cover parser, file-backed data, and direct renderer/workbook-row paths.
+- For falsey output bugs, cover top-level metadata, row fields, list fields, provenance, fallback labels, anchors, and direct constructors.
+- Update AGENTS, relevant skills, generated docs, tests, validator, and plugin lock when behavior changes.
+- Regenerate skills, run publication checks, and run secret scans.
+
 ## Cloud (Codex) and local build environments (Mac-independent)
 
 Use one setup for Codex Cloud and laptop-local workflows.
@@ -64,6 +75,7 @@ Run runtime commands with the bash+python stack:
 ```bash
 ./scripts/taxmate refresh --help
 ./scripts/taxmate finance --help
+./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html
 ./scripts/taxmate validate
 ```
 
