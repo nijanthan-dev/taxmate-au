@@ -9,15 +9,15 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import tempfile
 import time
-import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from datetime import datetime, timezone
-from urllib.error import HTTPError, URLError
 
 
 SCOPE = (
@@ -455,24 +455,50 @@ def save_registry(root: str, registry: SourceRegistry) -> None:
     path_obj.write_text(json.dumps(registry.to_dict(), indent=2) + "\n", encoding="utf-8")
 
 
-def fetch(raw_url: str) -> FetchResult:
-    request = urllib.request.Request(
-        raw_url,
-        headers={
-            "User-Agent": "taxmate-australia-runtime",
-        },
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            body = response.read()
-            status = int(getattr(response, "status", 0) or 0)
-            final_url = response.geturl()
-    except HTTPError as exc:
-        return FetchResult(status=int(exc.code), final_url=raw_url, body=exc.read())
-    except URLError as exc:
-        raise RuntimeError(str(exc)) from exc
+def curl_fetch(raw_url: str) -> FetchResult:
+    with tempfile.NamedTemporaryFile() as body_file:
+        command = [
+            "curl",
+            "--disable",
+            "-L",
+            "--silent",
+            "--show-error",
+            "--max-time",
+            "30",
+            "--user-agent",
+            "taxmate-australia-runtime",
+            "--output",
+            body_file.name,
+            "--write-out",
+            "%{http_code}\n%{url_effective}",
+            raw_url,
+        ]
+        try:
+            proc = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        except OSError as exc:
+            raise RuntimeError(str(exc)) from exc
+        body_file.seek(0)
+        body = body_file.read()
 
+    if proc.returncode != 0:
+        error = proc.stderr.decode("utf-8", errors="ignore").strip()
+        if not error:
+            error = f"curl failed with exit {proc.returncode}"
+        raise RuntimeError(error)
+
+    metadata = proc.stdout.decode("utf-8", errors="ignore").splitlines()
+    status = int(metadata[0]) if metadata and metadata[0].isdigit() else 0
+    final_url = metadata[1].strip() if len(metadata) > 1 and metadata[1].strip() else raw_url
     return FetchResult(status=status, final_url=final_url, body=body)
+
+
+def fetch(raw_url: str) -> FetchResult:
+    return curl_fetch(raw_url)
 
 
 def clean_text(src: bytes) -> str:

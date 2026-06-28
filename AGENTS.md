@@ -15,6 +15,7 @@
 - Publication checks must fail when `plugin.lock.json` omits packaged skills or points at stale paths.
 - Treat validator helpers that return errors as failed checks; do not assume they throw exceptions.
 - No-op CLI commands, including unknown-topic refreshes, must not rewrite registry metadata.
+- Curl subprocess fetches must pass `--disable` as the first curl option before `-L` to ignore user `.curlrc`.
 - Plugin hooks should use Codex-compatible root resolution with cwd fallback.
 - Cleanup and environment scripts must work in linked Git worktrees where `.git` is a file. Validate with `git rev-parse --show-toplevel`, not `.git` directory checks.
 - Do not combine `find -delete` with `-prune`; GNU find treats `-delete` as depth-first. Use `-exec rm -f {} +` or a tested portable pattern.

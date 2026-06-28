@@ -4,6 +4,7 @@ import argparse
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -272,6 +273,62 @@ class FinanceTests(unittest.TestCase):
 
 
 class SourceHelperTests(unittest.TestCase):
+    def run_fetch_with_curl(
+        self,
+        status: int,
+        final_url: str,
+        body: bytes,
+        returncode: int = 0,
+        stderr: bytes = b"",
+    ) -> atodata.FetchResult:
+        original_run = atodata.subprocess.run
+
+        def fake_run(command, **_kwargs):
+            self.assertEqual(command[0], "curl")
+            self.assertEqual(command[1], "--disable")
+            self.assertEqual(command[2], "-L")
+            output_path = command[command.index("--output") + 1]
+            Path(output_path).write_bytes(body)
+            stdout = f"{status}\n{final_url}".encode("utf-8")
+            return subprocess.CompletedProcess(command, returncode, stdout, stderr)
+
+        atodata.subprocess.run = fake_run
+        try:
+            return atodata.Fetch("https://www.ato.gov.au/start")
+        finally:
+            atodata.subprocess.run = original_run
+
+    def test_fetch_uses_curl_and_preserves_200_body(self) -> None:
+        fetched = self.run_fetch_with_curl(200, "https://www.ato.gov.au/start", b"<html>ok</html>")
+
+        self.assertEqual(fetched.status, 200)
+        self.assertEqual(fetched.final_url, "https://www.ato.gov.au/start")
+        self.assertEqual(fetched.body, b"<html>ok</html>")
+
+    def test_fetch_preserves_redirect_final_url(self) -> None:
+        fetched = self.run_fetch_with_curl(200, "https://www.ato.gov.au/final", b"redirected")
+
+        self.assertEqual(fetched.status, 200)
+        self.assertEqual(fetched.final_url, "https://www.ato.gov.au/final")
+        self.assertEqual(fetched.body, b"redirected")
+
+    def test_fetch_preserves_404_status_and_body(self) -> None:
+        fetched = self.run_fetch_with_curl(404, "https://www.ato.gov.au/missing", b"not found")
+
+        self.assertEqual(fetched.status, 404)
+        self.assertEqual(fetched.final_url, "https://www.ato.gov.au/missing")
+        self.assertEqual(fetched.body, b"not found")
+
+    def test_fetch_network_failure_uses_curl_error(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "Could not resolve host"):
+            self.run_fetch_with_curl(
+                0,
+                "",
+                b"",
+                returncode=6,
+                stderr=b"curl: (6) Could not resolve host: www.ato.gov.au",
+            )
+
     def test_clean_text_removes_scripts_and_unescapes_html(self) -> None:
         body = b"<main>Claim &amp; keep<script>bad()</script><style>x{}</style> records</main>"
 
