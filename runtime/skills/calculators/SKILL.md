@@ -26,7 +26,7 @@ Run:
 
 ```bash
 export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
-"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" calc <bas|super|fbt|cgt|payg|stamp-duty> [flags]
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" calc bas [flags]
 ```
 
 ## Rules

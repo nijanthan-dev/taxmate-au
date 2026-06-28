@@ -35,3 +35,4 @@
 - Do not commit built binaries from `bin/`.
 - Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
 - Before merge, require latest-head Codex review, green CI, `mergeStateStatus` `CLEAN`, and no unresolved review threads.
+- If a Codex review request gets eyes, keep polling for the review body; do not request review again unless explicitly asked.

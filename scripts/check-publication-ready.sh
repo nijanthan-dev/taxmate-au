@@ -246,13 +246,18 @@ const readme = fs.readFileSync("README.md", "utf8");
 const discovery = fs.readFileSync("docs/DISCOVERY.md", "utf8");
 const docs = ["docs/INSTALLATION.md", "docs/FULL_PLUGIN_INSTALL.md", "docs/DEVELOPMENT.md", "docs/SKILL_GENERATION.md", "docs/DISCOVERY.md"];
 for (const doc of docs) if (!fs.existsSync(doc)) fail(`missing ${doc}`);
-for (const term of ["ATO-backed Australian tax prep", "GST/BAS", "CGT", "accountant-ready", "Codex", "Claude Code", "Cowork"]) {
+for (const term of ["linked to official ATO sources", "GST/BAS", "CGT", "accountant-ready", "Codex", "Claude Code", "Cowork"]) {
   if (!readme.includes(term)) fail(`README missing discovery term ${term}`);
 }
-for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "tax-records", "https://github.com/nijanthan-dev/taxmate-australia#readme"]) {
+for (const term of ["GitHub About", "claude-code", "cowork", "openagentskill", "tax-records", "Leave blank until there is a dedicated external landing page."]) {
   if (!discovery.includes(term)) fail(`DISCOVERY missing term ${term}`);
 }
-if (!plugin.interface.shortDescription.includes("ATO-backed Australian tax prep skills")) fail("plugin short description missing discovery copy");
+if (!plugin.interface.shortDescription.includes("Australian tax prep with ATO source links")) fail("plugin short description missing discovery copy");
+const atoBackingPattern = new RegExp("ATO[- ]" + "backed|backed by " + "ATO|supported by " + "ATO", "i");
+for (const file of ["README.md", "docs/DISCOVERY.md", ".codex-plugin/plugin.json", "skill.json", "agents/openai.yaml", "skills/taxmate-australia/SKILL.md", "wrappers/taxmate-australia/SKILL.md"]) {
+  const text = fs.readFileSync(file, "utf8");
+  if (atoBackingPattern.test(text)) fail(`${file} implies ATO backing`);
+}
 if (plugin.keywords.includes("assistant") || plugin.keywords.includes("super")) fail("plugin keywords contain stale generic terms");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia --list")) fail("README missing primary npx skills list command");
 if (!readme.includes("npx skills@1.5.13 add nijanthan-dev/taxmate-australia \\")) fail("README missing primary npx skills install command");

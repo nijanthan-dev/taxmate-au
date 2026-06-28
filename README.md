@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia is an ATO-backed Australian tax prep skill pack and plugin for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, and source-linked treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
+TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).

@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia
-description: Route Australian tax-prep questions to the most specific installed TaxMate Australia portable skill. Use when the user asks for TaxMate Australia, Australian tax prep, ATO-backed review, or an unclear tax topic.
+description: Route Australian tax-prep questions to the most specific installed TaxMate Australia portable skill. Use when the user asks for TaxMate Australia, Australian tax prep linked to ATO sources, or an unclear tax topic.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 5

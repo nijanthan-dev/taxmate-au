@@ -27,13 +27,13 @@ Run:
 
 ```bash
 export TAXMATE_AUSTRALIA_ROOT="${TAXMATE_AUSTRALIA_ROOT:-$(pwd)}"
-"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "<records.csv>" --format markdown --output "<review.md>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "records.csv" --format markdown --output "review.md"
 ```
 
 For machine-readable output:
 
 ```bash
-"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "<records.csv>" --format json --output "<review.json>"
+"$TAXMATE_AUSTRALIA_ROOT/scripts/taxmate" finance --input "records.csv" --format json --output "review.json"
 ```
 
 Accepted headers include `date`, `description`, `amount`, `gst`, `owner`, `purpose`, `evidence`, `abn`, `category`, `account`, `asset`, `units`, and `type`.

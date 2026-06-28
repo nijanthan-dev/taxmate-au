@@ -391,6 +391,7 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("wrapper_help_uses_public_commands", wrapper_help_uses_public_commands(root), "")
     add("codex_environment_toml_valid", codex_environment_toml_valid(root), "")
     add("release_workflow_auto_after_ci", release_workflow_auto_after_ci(root), "")
+    add("release_config_tracks_manifest_versions", release_config_tracks_manifest_versions(root), "")
     private_hits = tracked_private_path_hits(root)
     add("tracked_text_no_private_paths", len(private_hits) == 0, "; ".join(first_n(private_hits, 5)))
     add("gitleaks_no_broad_cache_allowlist", gitleaks_no_broad_cache_allowlist(root), "")
@@ -418,6 +419,8 @@ def add_runtime_binary_checks(root: str, add, registry) -> None:
     add("public_metadata_no_go_runtime_claims", len(go_runtime_claim_hits) == 0, "; ".join(go_runtime_claim_hits))
     stale_cache_claim_hits = stale_committed_source_cache_claim_hits(root)
     add("public_docs_no_committed_source_cache_claims", len(stale_cache_claim_hits) == 0, "; ".join(stale_cache_claim_hits))
+    ato_claim_hits = ato_endorsement_claim_hits(root)
+    add("public_docs_no_ato_backing_claims", len(ato_claim_hits) == 0, "; ".join(ato_claim_hits))
 
 
 def is_valid_exception_safe(fn) -> Optional[Exception]:
@@ -532,7 +535,7 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
     plugin = read_text(os.path.join(root, ".codex-plugin", "plugin.json"))
     agent = read_text(os.path.join(root, "agents", "openai.yaml"))
     required_readme_terms = [
-        "ATO-backed Australian tax prep",
+        "linked to official ATO sources",
         "GST/BAS",
         "CGT",
         "accountant-ready",
@@ -546,13 +549,17 @@ def discovery_metadata_ready(root: str, readme_text: str) -> bool:
         "cowork",
         "openagentskill",
         "tax-records",
-        "https://github.com/nijanthan-dev/taxmate-australia#readme",
+        "Leave blank until there is a dedicated external landing page.",
     ]
     return (
         all(term in readme_text for term in required_readme_terms)
         and all(term in discovery for term in required_discovery_terms)
-        and "ATO-backed Australian tax prep skills" in plugin
-        and "ATO-backed Australian tax prep skills" in agent
+        and "Australian tax prep with ATO source links" in plugin
+        and "Australian tax prep with ATO source links" in agent
+        and ("ATO-" + "backed") not in readme_text
+        and ("ATO-" + "backed") not in discovery
+        and ("ATO-" + "backed") not in plugin
+        and ("ATO-" + "backed") not in agent
         and '"assistant"' not in plugin
         and '"super"' not in plugin
     )
@@ -1284,6 +1291,170 @@ def stale_committed_source_cache_claim_hits(root: str) -> List[str]:
     return hits
 
 
+def ato_endorsement_claim_hits(root: str) -> List[str]:
+    files = public_ato_claim_scan_files(root)
+    banned = [
+        "ATO-" + "backed",
+        "ATO " + "backed",
+        "Australian Taxation Office-" + "backed",
+        "Australian Taxation Office " + "backed",
+        "backed by " + "ATO",
+        "backed by the " + "ATO",
+        "backed by Australian Taxation Office",
+        "backed by the Australian Taxation Office",
+        "supported by " + "ATO",
+        "supported by the " + "ATO",
+        "supported by Australian Taxation Office",
+        "supported by the Australian Taxation Office",
+        "sponsored by " + "ATO",
+        "sponsored by the " + "ATO",
+        "sponsored by Australian Taxation Office",
+        "sponsored by the Australian Taxation Office",
+        "endorsed by " + "ATO",
+        "endorsed by the " + "ATO",
+        "endorsed by Australian Taxation Office",
+        "endorsed by the Australian Taxation Office",
+        "approved by " + "ATO",
+        "approved by the " + "ATO",
+        "approved by Australian Taxation Office",
+        "approved by the Australian Taxation Office",
+        "certified by " + "ATO",
+        "certified by the " + "ATO",
+        "certified by Australian Taxation Office",
+        "certified by the Australian Taxation Office",
+        "authorised by " + "ATO",
+        "authorised by the " + "ATO",
+        "authorised by Australian Taxation Office",
+        "authorised by the Australian Taxation Office",
+        "authorized by " + "ATO",
+        "authorized by the " + "ATO",
+        "authorized by Australian Taxation Office",
+        "authorized by the Australian Taxation Office",
+        "affiliated with " + "ATO",
+        "affiliated with the " + "ATO",
+        "affiliated with Australian Taxation Office",
+        "affiliated with the Australian Taxation Office",
+        "partnered with " + "ATO",
+        "partnered with the " + "ATO",
+        "partnered with Australian Taxation Office",
+        "partnered with the Australian Taxation Office",
+        "in partnership with " + "ATO",
+        "in partnership with the " + "ATO",
+        "in partnership with Australian Taxation Office",
+        "in partnership with the Australian Taxation Office",
+        "ATO-" + "supported",
+        "ATO " + "supported",
+        "Australian Taxation Office-" + "supported",
+        "Australian Taxation Office " + "supported",
+        "ATO-" + "sponsored",
+        "ATO " + "sponsored",
+        "Australian Taxation Office-" + "sponsored",
+        "Australian Taxation Office " + "sponsored",
+        "ATO-" + "endorsed",
+        "ATO " + "endorsed",
+        "Australian Taxation Office-" + "endorsed",
+        "Australian Taxation Office " + "endorsed",
+        "ATO-" + "approved",
+        "ATO " + "approved",
+        "Australian Taxation Office-" + "approved",
+        "Australian Taxation Office " + "approved",
+        "ATO-" + "certified",
+        "ATO " + "certified",
+        "Australian Taxation Office-" + "certified",
+        "Australian Taxation Office " + "certified",
+        "ATO-" + "authorised",
+        "ATO " + "authorised",
+        "Australian Taxation Office-" + "authorised",
+        "Australian Taxation Office " + "authorised",
+        "ATO-" + "authorized",
+        "ATO " + "authorized",
+        "Australian Taxation Office-" + "authorized",
+        "Australian Taxation Office " + "authorized",
+        "ATO partner",
+        "official ATO partner",
+        "Australian Taxation Office partner",
+        "official Australian Taxation Office partner",
+    ]
+    hits: List[str] = []
+    for rel in files:
+        hits.extend(ato_endorsement_text_hits(root, rel, banned))
+    return hits
+
+
+def ato_endorsement_text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
+    text = read_text(os.path.join(root, rel))
+    lowered = text.lower()
+    hits: List[str] = []
+    if not lowered:
+        return hits
+    for needle in needles:
+        lowered_needle = needle.lower()
+        start = 0
+        while True:
+            index = lowered.find(lowered_needle, start)
+            if index == -1:
+                break
+            if not is_negated_ato_claim(lowered, index):
+                hits.append(f"{rel}:{needle}")
+            start = index + 1
+    return hits
+
+
+def is_negated_ato_claim(lowered_text: str, start_index: int) -> bool:
+    sentence_start = max(
+        lowered_text.rfind(".", 0, start_index),
+        lowered_text.rfind("!", 0, start_index),
+        lowered_text.rfind("?", 0, start_index),
+        lowered_text.rfind(";", 0, start_index),
+        lowered_text.rfind("\n", 0, start_index),
+    )
+    prefix = lowered_text[sentence_start + 1 : start_index]
+    comma_index = prefix.rfind(",")
+    if comma_index != -1 and not re.fullmatch(r"\s*(and|or)\s*", prefix[comma_index + 1 :]):
+        prefix = prefix[comma_index + 1 :]
+
+    negation_matches = list(re.finditer(r"\b(?:never|do not|does not|must not|not)\b", prefix))
+    for match in reversed(negation_matches):
+        tail = prefix[match.start() :]
+        if re.match(r"not\s+only\b", tail):
+            continue
+        if re.search(r"\b(?:but|however|yet|though|although)\b", tail):
+            continue
+        return True
+    return False
+
+
+def public_ato_claim_scan_files(root: str) -> List[str]:
+    files = set(public_runtime_claim_scan_files())
+    files.update(
+        [
+            "skill.json",
+            "hooks.json",
+            os.path.join(".github", "workflows", "ci.yml"),
+            os.path.join(".github", "workflows", "release.yml"),
+            os.path.join(".github", "dependabot.yml"),
+            os.path.join(".github", "dependabot.yaml"),
+        ]
+    )
+    for base in [
+        "agents",
+        "docs",
+        "skills",
+        "runtime/skills",
+        "wrappers",
+        ".codex-plugin",
+        ".agents",
+    ]:
+        abs_base = os.path.join(root, base)
+        if not os.path.isdir(abs_base):
+            continue
+        for dirpath, _, filenames in os.walk(abs_base):
+            for filename in filenames:
+                if filename.endswith((".md", ".json", ".yaml", ".yml")) or filename == "SKILL.md":
+                    files.add(os.path.relpath(os.path.join(dirpath, filename), root))
+    return sorted(rel for rel in files if file_exists(os.path.join(root, rel)))
+
+
 def go_tooling_scan_files() -> List[str]:
     return [
         ".gitignore",
@@ -1363,7 +1534,7 @@ def text_hits(root: str, rel: str, needles: List[str]) -> List[str]:
     if not text:
         return hits
     for needle in needles:
-        if needle in text:
+        if needle.lower() in text:
             hits.append(f"{rel}:{needle}")
     return hits
 
@@ -1798,8 +1969,53 @@ def release_workflow_auto_after_ci(root: str) -> bool:
         "main moved from $TARGET_SHA",
         "RELEASE_PLEASE_TOKEN",
         "target-branch: main",
+        "config-file: release-please-config.json",
+        "manifest-file: .release-please-manifest.json",
     ]
     return all(item in text for item in required)
+
+
+def release_config_tracks_manifest_versions(root: str) -> bool:
+    config, config_err = read_json_file(os.path.join(root, "release-please-config.json"))
+    manifest, manifest_err = read_json_file(os.path.join(root, ".release-please-manifest.json"))
+    plugin, plugin_err = read_json_file(os.path.join(root, ".codex-plugin", "plugin.json"))
+    skill, skill_err = read_json_file(os.path.join(root, "skill.json"))
+    lock, lock_err = read_json_file(os.path.join(root, "plugin.lock.json"))
+    if any(err is not None for err in [config_err, manifest_err, plugin_err, skill_err, lock_err]):
+        return False
+
+    version = plugin.get("version")
+    if not (version == skill.get("version") == lock.get("pluginVersion") == manifest.get(".")):
+        return False
+    if not isinstance(version, str) or not version.startswith("0."):
+        return False
+    bootstrap_sha = config.get("bootstrap-sha")
+    if not (isinstance(bootstrap_sha, str) and re.fullmatch(r"[0-9a-f]{40}", bootstrap_sha)):
+        return False
+
+    root_package = config.get("packages", {}).get(".")
+    if not isinstance(root_package, dict):
+        return False
+    extra_files = root_package.get("extra-files")
+    if not isinstance(extra_files, list):
+        return False
+
+    required = {
+        (".codex-plugin/plugin.json", "$.version"),
+        ("skill.json", "$.version"),
+        ("plugin.lock.json", "$.pluginVersion"),
+    }
+    seen = set()
+    for item in extra_files:
+        if isinstance(item, dict) and item.get("type") == "json":
+            seen.add((item.get("path"), item.get("jsonpath")))
+
+    return (
+        config.get("release-type") == "simple"
+        and config.get("bump-minor-pre-major") is True
+        and root_package.get("include-component-in-tag") is False
+        and required.issubset(seen)
+    )
 
 
 def refresh_query_no_match_is_read_only(root: str) -> bool:

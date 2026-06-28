@@ -5,7 +5,7 @@ Use this before publishing TaxMate Australia outside a local install.
 - Confirm legal license and repository URL.
 - Confirm `skill.json` is present for OpenAgentSkill submission readiness.
 - Confirm `skill.json` declares Codex, Claude Code, Cowork, and OpenAgentSkill CLI compatibility.
-- Confirm GitHub About description, homepage, and topics match `docs/DISCOVERY.md`.
+- Confirm GitHub About description and topics match `docs/DISCOVERY.md`; leave homepage blank unless there is a dedicated external landing page.
 - Confirm root `LICENSE` is detected as Apache-2.0 by GitHub.
 - Confirm `DISCLAIMER.md` is present and linked from README.
 - Confirm no wording implies ATO, Commonwealth, state revenue office, insurer, super fund, or financial-institution endorsement.
@@ -17,7 +17,7 @@ Use this before publishing TaxMate Australia outside a local install.
 - if publishing, add `.agents/plugins/marketplace.json` sample and point `source.path` to an actual path for this repository.
 - Confirm plugin docs include installation notes and plugin structure for onboarding.
 - Confirm README has install commands and usage examples suitable for OpenAgentSkill review.
-- Confirm README first paragraph includes Australian tax prep, ATO-backed, GST/BAS, CGT, accountant handoff, and supported agent surfaces.
+- Confirm README first paragraph includes Australian tax prep, linked official ATO source wording, GST/BAS, CGT, accountant handoff, and supported agent surfaces.
 - Confirm every packaged skill has exact `SKILL.md`, kebab-case folder/name, trigger-ready description, compatibility frontmatter, no XML angle brackets in frontmatter, and no skill-folder `README.md`.
 - Do not add an OpenAgentSkill badge until the listing is approved.
 - Run `./scripts/taxmate validate` and require every check to pass (`score: 100.0`).

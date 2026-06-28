@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -448,6 +450,161 @@ class ValidatorAndCliTests(unittest.TestCase):
 
     def test_release_workflow_auto_runs_after_green_ci(self) -> None:
         self.assertTrue(taxmate_validate.release_workflow_auto_after_ci(str(ROOT)))
+
+    def test_release_config_tracks_manifest_versions(self) -> None:
+        self.assertTrue(taxmate_validate.release_config_tracks_manifest_versions(str(ROOT)))
+
+    def test_release_config_requires_bootstrap_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            for rel in [
+                "release-please-config.json",
+                ".release-please-manifest.json",
+                ".codex-plugin/plugin.json",
+                "skill.json",
+                "plugin.lock.json",
+            ]:
+                src = ROOT / rel
+                dst = tmp_root / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+
+            config_path = tmp_root / "release-please-config.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config.pop("bootstrap-sha", None)
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            self.assertFalse(taxmate_validate.release_config_tracks_manifest_versions(str(tmp_root)))
+
+    def test_ato_endorsement_scan_is_case_insensitive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text("This is ATO-backed tax prep.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-backed"])
+
+    def test_ato_endorsement_scan_includes_discovery_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            discovery = Path(tmp) / "docs" / "DISCOVERY.md"
+            discovery.parent.mkdir(parents=True)
+            discovery.write_text("TaxMate is backed by ATO.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["docs/DISCOVERY.md:backed by ATO"])
+
+    def test_ato_endorsement_scan_includes_all_wrapper_skills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            wrapper = Path(tmp) / "wrappers" / "taxmate-australia-extra" / "SKILL.md"
+            wrapper.parent.mkdir(parents=True)
+            wrapper.write_text("description: ATO-supported workflow.\n", encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["wrappers/taxmate-australia-extra/SKILL.md:ATO-supported"])
+
+    def test_ato_endorsement_scan_includes_skill_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = Path(tmp) / "skill.json"
+            manifest.write_text('{"description":"ATO partner"}\n', encoding="utf-8")
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["skill.json:ATO partner"])
+
+    def test_ato_endorsement_scan_blocks_verb_before_ato(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is endorsed by ATO and approved by the Australian Taxation Office.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(
+            hits,
+            [
+                "README.md:endorsed by ATO",
+                "README.md:approved by the Australian Taxation Office",
+            ],
+        )
+
+    def test_ato_endorsement_scan_blocks_related_endorsement_forms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "\n".join(
+                    [
+                        "TaxMate is sponsored by ATO.",
+                        "TaxMate is certified by the Australian Taxation Office.",
+                        "TaxMate is authorised by the ATO.",
+                        "TaxMate is authorized by ATO.",
+                        "TaxMate is partnered with ATO.",
+                        "TaxMate is in partnership with the ATO.",
+                        "TaxMate is ATO-certified.",
+                        "TaxMate is Australian Taxation Office approved.",
+                        "TaxMate is an official Australian Taxation Office partner.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(
+            hits,
+            [
+                "README.md:sponsored by ATO",
+                "README.md:certified by the Australian Taxation Office",
+                "README.md:authorised by the ATO",
+                "README.md:authorized by ATO",
+                "README.md:partnered with ATO",
+                "README.md:in partnership with the ATO",
+                "README.md:Australian Taxation Office approved",
+                "README.md:ATO-certified",
+                "README.md:Australian Taxation Office partner",
+                "README.md:official Australian Taxation Office partner",
+            ],
+        )
+
+    def test_ato_endorsement_scan_allows_negated_disclaimer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, [])
+
+    def test_ato_endorsement_scan_blocks_unrelated_negation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not only accountant-ready, it is ATO-backed.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-backed"])
+
+    def test_ato_endorsement_scan_blocks_contrasted_negation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not affiliated with ATO but ATO-approved.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-approved"])
 
 
 if __name__ == "__main__":
