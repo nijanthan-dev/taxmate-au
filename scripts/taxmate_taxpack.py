@@ -348,8 +348,8 @@ HTML_TEMPLATE = """<!doctype html>
 <section class="spread">
 <article class="page">
 <div class="watermark">MANUAL COPY</div>
-<div class="header"><h1>Deductions and review flags</h1><div class="meta">Income year {income_year}<br>Self-prepared draft<br>Not an ATO form</div></div>
-<h2>ATO-aligned deduction worksheet</h2>
+<div class="header"><h1>Tax items and review flags</h1><div class="meta">Income year {income_year}<br>Self-prepared draft<br>Not an ATO form</div></div>
+<h2>ATO-aligned manual copy worksheet</h2>
 <table class="table"><thead><tr><th></th><th>ATO area</th><th>Question</th><th>Answer/value</th><th>Why included</th><th>Status</th></tr></thead><tbody>
 {rows}
 </tbody></table>

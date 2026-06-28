@@ -2160,8 +2160,12 @@ def taxpack_guide_html_contract() -> bool:
         "hide-tabs",
         "only-review",
         "only-evidence",
+        "Tax items and review flags",
+        "ATO-aligned manual copy worksheet",
     ]
     if not all(item in body for item in required):
+        return False
+    if "Deductions and review flags" in body or "ATO-aligned deduction worksheet" in body:
         return False
     if "target-dot" in body or "border-radius:50%" in body:
         return False
