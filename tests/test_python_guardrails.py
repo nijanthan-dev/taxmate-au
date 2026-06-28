@@ -697,6 +697,9 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("hide tabs", body.lower())
         self.assertIn("Tax items and review flags", body)
         self.assertIn("ATO-aligned manual copy worksheet", body)
+        self.assertIn("<th>Source</th>", body)
+        self.assertIn("source-url", body)
+        self.assertIn("Checked 2026-06-23T09:04:57Z", body)
         self.assertNotIn("Deductions and review flags", body)
         self.assertNotIn("ATO-aligned deduction worksheet", body)
         self.assertNotIn("target-dot", body)
@@ -805,6 +808,37 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn("Other &lt;area&gt;", body)
         self.assertIn("User says &lt;yes&gt;", body)
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
+
+    def test_guide_preserves_source_provenance(self) -> None:
+        source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
+        second_url = "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return"
+        item = taxmate_taxpack.guide_item(
+            {
+                "number": "9",
+                "ato_area": "Other",
+                "question": "Has records?",
+                "answer": "User-entered value",
+                "why_included": "Source-backed handoff row.",
+                "source_url": source_url,
+                "source_urls": [source_url, second_url],
+                "checked_at": "2026-06-28T00:00:00Z",
+                "status": "Evidence",
+                "tab_text": "Keep records visible.",
+            }
+        )
+        data = taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date="28 Jun 2026",
+            summary_note="Provenance regression.",
+            items=[item],
+        )
+
+        body = taxmate_taxpack.render_html(data)
+
+        self.assertIn(f'<span class="source-url">{source_url}</span>', body)
+        self.assertIn(f'<span class="source-url">{second_url}</span>', body)
+        self.assertIn('<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>', body)
+        self.assertEqual(1, body.count(f'<span class="source-url">{source_url}</span>'))
 
     def test_guide_preserves_skipped_statuses(self) -> None:
         payload = {

@@ -45,6 +45,8 @@ class GuideItem:
     question: str
     answer: str
     why_included: str
+    source_urls: List[str]
+    checked_at: str
     status: str
     status_kind: str
     tab_title: str
@@ -71,6 +73,8 @@ def sample_payload() -> Dict[str, Any]:
                 "question": "Did you work from home?",
                 "answer": "843 hours; fixed-rate method candidate",
                 "why_included": "May support WFH deduction if ATO rate, records, and eligibility align.",
+                "source_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method",
+                "checked_at": "2026-06-23T09:04:57Z",
                 "status": "Evidence",
                 "status_kind": "evidence",
                 "tab_title": "Row 5 answer used",
@@ -83,6 +87,8 @@ def sample_payload() -> Dict[str, Any]:
                 "question": "Any work devices or software?",
                 "answer": "Laptop, $1,850, 70% work use claimed",
                 "why_included": "Mixed-use percentage and decline-in-value method need review.",
+                "source_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/computers-laptops-and-software",
+                "checked_at": "2026-06-23T09:04:57Z",
                 "status": "Review",
                 "status_kind": "review",
                 "tab_title": "Row 6 mixed use",
@@ -95,6 +101,8 @@ def sample_payload() -> Dict[str, Any]:
                 "question": "Any ABN or side activity?",
                 "answer": "ABN active; $0 income; startup costs",
                 "why_included": "Business-vs-hobby, pre-revenue timing, and non-commercial loss rules may apply.",
+                "source_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/overview-of-business-income-and-deductions",
+                "checked_at": "2026-06-23T09:04:57Z",
                 "status": "Review",
                 "status_kind": "review",
                 "tab_title": "Row 7 ABN/pre-revenue",
@@ -107,6 +115,8 @@ def sample_payload() -> Dict[str, Any]:
                 "question": "Private hospital cover?",
                 "answer": "Insurer statement missing",
                 "why_included": "Needed for Medicare levy surcharge/private health rebate labels.",
+                "source_url": "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/private-health-insurance-rebate/your-private-health-insurance-statement",
+                "checked_at": "2026-06-23T09:04:57Z",
                 "status": "Evidence",
                 "status_kind": "evidence",
                 "tab_title": "Row 8 missing statement",
@@ -153,12 +163,28 @@ def guide_item(raw: Dict[str, Any]) -> GuideItem:
         question=str(raw.get("question") or ""),
         answer=str(raw.get("answer") or ""),
         why_included=str(raw.get("why_included") or ""),
+        source_urls=source_urls(raw),
+        checked_at=str(raw.get("checked_at") or ""),
         status=canonical_status(status_kind),
         status_kind=status_kind,
         tab_title=str(raw.get("tab_title") or f"Row {number} {short_status(status_kind)}"),
         tab_text=str(raw.get("tab_text") or raw.get("why_included") or ""),
         tab_kind=tab_kind,
     )
+
+
+def source_urls(raw: Dict[str, Any]) -> List[str]:
+    urls: List[str] = []
+    single = str(raw.get("source_url") or "").strip()
+    if single:
+        urls.append(single)
+    multiple = raw.get("source_urls")
+    if isinstance(multiple, list):
+        for item in multiple:
+            url = str(item or "").strip()
+            if url and url not in urls:
+                urls.append(url)
+    return urls
 
 
 def normal_kind(value: str) -> str:
@@ -241,9 +267,17 @@ def render_row(item: GuideItem, row_index: int) -> str:
         f"<td>{esc(item.question)}</td>"
         f"<td>{esc(item.answer)}</td>"
         f"<td>{esc(item.why_included)}</td>"
+        f"<td class=\"provenance\">{render_provenance(item)}</td>"
         f'<td data-anchor="{anchor}"><span class="status {status_class(item.status_kind)}">{esc(item.status)}</span></td>'
         "</tr>"
     )
+
+
+def render_provenance(item: GuideItem) -> str:
+    parts = [f'<span class="source-url">{esc(url)}</span>' for url in item.source_urls]
+    if item.checked_at:
+        parts.append(f'<span class="checked-at">Checked {esc(item.checked_at)}</span>')
+    return "<br>".join(parts) if parts else "-"
 
 
 def render_item_tab(item: GuideItem, row_index: int) -> str:
@@ -321,7 +355,7 @@ HTML_TEMPLATE = """<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Self-prepared ATO-aligned Guide</title>
 <style>
-:root{{--bg:#e9eef4;--ink:#111827;--muted:#64748b;--line:#d9e0e8;--red:#ef6b73;--blue:#6495ed;--green:#53c987;--yellow:#f2b84b;--grey:#94a3b8}}*{{box-sizing:border-box}}html,body{{overflow-x:hidden}}body{{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}.toolbar{{padding:12px 18px;background:#111827;color:#fff;display:flex;gap:12px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);position:sticky;top:0;z-index:20}}.toolbar strong{{font-size:14px}}.toolbar span{{font-size:12px;color:#cbd5e1;margin-right:auto}}.toolbar button{{border:1px solid #475569;background:#1f2937;color:#fff;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer}}.toolbar button:hover{{background:#374151}}body.hide-tabs .tab{{display:none}}body.only-review .tab:not(.review){{opacity:.18;filter:grayscale(1)}}body.only-evidence .tab:not(.evidence){{opacity:.18;filter:grayscale(1)}}.book{{width:min(1120px,calc(100vw - 24px));margin:18px auto 50px;display:grid;gap:30px}}.spread{{display:grid;grid-template-columns:minmax(0,74%) minmax(190px,26%);align-items:start;position:relative;filter:drop-shadow(0 10px 24px rgba(15,23,42,.16))}}.page{{background:#fff;min-height:1088px;padding:clamp(24px,3.4vw,42px) clamp(24px,3.5vw,48px) 36px clamp(28px,3.8vw,52px);position:relative;overflow:visible}}.side{{min-height:1088px;position:relative;background:transparent;overflow:visible}}.watermark{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;font-weight:900;letter-spacing:.08em;transform:rotate(-28deg);color:rgba(15,23,42,.045);pointer-events:none}}.header{{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #111827;padding-bottom:14px;margin-bottom:24px}}.header h1{{margin:0;font-size:clamp(22px,2.8vw,29px);line-height:1.12}}.meta{{text-align:right;color:var(--muted);font-size:clamp(9px,1vw,12px);line-height:1.55}}.notice{{border:2px solid #111827;background:#f8fafc;padding:14px 16px;margin:12px 0 24px;font-size:clamp(10.5px,1.15vw,13px);line-height:1.45;position:relative}}h2{{font-size:clamp(15px,1.8vw,18px);margin:24px 0 10px;border-bottom:1px solid var(--line);padding-bottom:8px}}.steps{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}}.step{{border:1px solid var(--line);border-radius:6px;padding:12px;min-height:84px;position:relative}}.step b{{font-size:12px}}.step p{{font-size:11px;color:var(--muted);line-height:1.35}}.legend{{display:flex;gap:8px;flex-wrap:wrap}}.legend span{{font-size:10px;padding:5px 8px;border-radius:4px;background:#f8fafc;border-left:7px solid var(--line)}}.legend .b{{border-color:var(--blue)}}.legend .g{{border-color:var(--green)}}.legend .y{{border-color:var(--yellow)}}.legend .r{{border-color:var(--red)}}.legend .x{{border-color:var(--grey)}}.summary-note{{font-size:clamp(9px,1vw,12px);color:#64748b;line-height:1.5;position:relative}}.table{{width:100%;max-width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}}.table th{{background:#f1f5f9;color:#475569;text-transform:uppercase;font-size:10px;text-align:left;border:1px solid var(--line);padding:8px}}.table td{{border:1px solid var(--line);padding:8px;vertical-align:top;line-height:1.32;position:relative;height:92px;overflow-wrap:normal;word-break:normal}}.table th:nth-child(1),.table td:nth-child(1){{width:5%;text-align:center}}.table th:nth-child(2){{width:16%}}.table th:nth-child(3){{width:14%}}.table th:nth-child(4){{width:20%}}.table th:nth-child(5){{width:27%}}.table th:nth-child(6){{width:18%}}.status{{display:inline-block;min-width:96px;padding:4px 6px;border-radius:5px;font-weight:800;font-size:8px;white-space:nowrap;word-break:normal;overflow-wrap:normal;text-align:center;line-height:1.15}}.gap{{background:#fde68a}}.review-badge{{background:#fecaca}}.used{{background:#bbf7d0}}.label{{background:#dbeafe}}.skipped{{background:#e2e8f0}}.callout{{margin-top:20px;border-left:5px solid var(--red);background:#fff1f2;padding:10px 12px;font-size:12px;line-height:1.45;position:relative}}.footer{{position:absolute;left:52px;right:48px;bottom:22px;border-top:1px solid var(--line);padding-top:8px;color:#94a3b8;font-size:10px;display:flex;justify-content:space-between}}.tab{{position:absolute;left:12px;width:calc(100% - 18px);min-height:66px;border-radius:0 12px 12px 0;padding:10px 12px 10px 16px;background:#fff;box-shadow:0 7px 16px rgba(15,23,42,.12);border-left:10px solid currentColor;color:#111827;z-index:5;cursor:pointer}}.tab:before{{content:"";position:absolute;left:-64px;top:50%;width:64px;height:3px;background:currentColor;transform:translateY(-50%)}}.tab:after{{content:"";position:absolute;left:-69px;top:50%;width:9px;height:9px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:translateY(-50%) rotate(45deg);background:transparent}}.tab b{{display:block;font-size:clamp(8px,.85vw,10px);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;color:#0f172a}}.tab p{{margin:0;font-size:clamp(9px,.9vw,10.5px);line-height:1.3}}.tab.red{{color:#ef5b63;background:#fff0f1}}.tab.blue{{color:#3f82f6;background:#eef5ff}}.tab.green{{color:#24b96d;background:#effbf4}}.tab.yellow{{color:#df8d00;background:#fff7dc}}.tab.grey{{color:#94a3b8;background:#f8fafc}}.spotlight-target{{outline:2px solid rgba(59,130,246,.45)!important;outline-offset:5px;background:rgba(96,165,250,.08)!important;box-shadow:0 0 0 7px rgba(96,165,250,.08)!important;transition:box-shadow .15s ease,outline-color .15s ease}}.tab.active{{box-shadow:0 0 0 3px rgba(17,24,39,.16),0 10px 22px rgba(15,23,42,.22)}}@media print{{.toolbar{{display:none}}.book{{width:100%;margin:0}}.spread{{filter:none;page-break-after:always;grid-template-columns:74% 26%}}.page,.side{{min-height:100vh}}.tab{{box-shadow:none}}}}
+:root{{--bg:#e9eef4;--ink:#111827;--muted:#64748b;--line:#d9e0e8;--red:#ef6b73;--blue:#6495ed;--green:#53c987;--yellow:#f2b84b;--grey:#94a3b8}}*{{box-sizing:border-box}}html,body{{overflow-x:hidden}}body{{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}.toolbar{{padding:12px 18px;background:#111827;color:#fff;display:flex;gap:12px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.18);position:sticky;top:0;z-index:20}}.toolbar strong{{font-size:14px}}.toolbar span{{font-size:12px;color:#cbd5e1;margin-right:auto}}.toolbar button{{border:1px solid #475569;background:#1f2937;color:#fff;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer}}.toolbar button:hover{{background:#374151}}body.hide-tabs .tab{{display:none}}body.only-review .tab:not(.review){{opacity:.18;filter:grayscale(1)}}body.only-evidence .tab:not(.evidence){{opacity:.18;filter:grayscale(1)}}.book{{width:min(1120px,calc(100vw - 24px));margin:18px auto 50px;display:grid;gap:30px}}.spread{{display:grid;grid-template-columns:minmax(0,74%) minmax(190px,26%);align-items:start;position:relative;filter:drop-shadow(0 10px 24px rgba(15,23,42,.16))}}.page{{background:#fff;min-height:1088px;padding:clamp(24px,3.4vw,42px) clamp(24px,3.5vw,48px) 36px clamp(28px,3.8vw,52px);position:relative;overflow:visible}}.side{{min-height:1088px;position:relative;background:transparent;overflow:visible}}.watermark{{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;font-weight:900;letter-spacing:.08em;transform:rotate(-28deg);color:rgba(15,23,42,.045);pointer-events:none}}.header{{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #111827;padding-bottom:14px;margin-bottom:24px}}.header h1{{margin:0;font-size:clamp(22px,2.8vw,29px);line-height:1.12}}.meta{{text-align:right;color:var(--muted);font-size:clamp(9px,1vw,12px);line-height:1.55}}.notice{{border:2px solid #111827;background:#f8fafc;padding:14px 16px;margin:12px 0 24px;font-size:clamp(10.5px,1.15vw,13px);line-height:1.45;position:relative}}h2{{font-size:clamp(15px,1.8vw,18px);margin:24px 0 10px;border-bottom:1px solid var(--line);padding-bottom:8px}}.steps{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}}.step{{border:1px solid var(--line);border-radius:6px;padding:12px;min-height:84px;position:relative}}.step b{{font-size:12px}}.step p{{font-size:11px;color:var(--muted);line-height:1.35}}.legend{{display:flex;gap:8px;flex-wrap:wrap}}.legend span{{font-size:10px;padding:5px 8px;border-radius:4px;background:#f8fafc;border-left:7px solid var(--line)}}.legend .b{{border-color:var(--blue)}}.legend .g{{border-color:var(--green)}}.legend .y{{border-color:var(--yellow)}}.legend .r{{border-color:var(--red)}}.legend .x{{border-color:var(--grey)}}.summary-note{{font-size:clamp(9px,1vw,12px);color:#64748b;line-height:1.5;position:relative}}.table{{width:100%;max-width:100%;border-collapse:collapse;font-size:9px;table-layout:fixed}}.table th{{background:#f1f5f9;color:#475569;text-transform:uppercase;font-size:9px;text-align:left;border:1px solid var(--line);padding:8px}}.table td{{border:1px solid var(--line);padding:8px;vertical-align:top;line-height:1.32;position:relative;height:104px;overflow-wrap:normal;word-break:normal}}.table th:nth-child(1),.table td:nth-child(1){{width:5%;text-align:center}}.table th:nth-child(2){{width:14%}}.table th:nth-child(3){{width:13%}}.table th:nth-child(4){{width:17%}}.table th:nth-child(5){{width:22%}}.table th:nth-child(6){{width:17%}}.table th:nth-child(7){{width:12%}}.provenance{{font-size:7.5px;color:#475569;line-height:1.28;overflow-wrap:anywhere!important;word-break:break-word!important}}.source-url{{display:block}}.checked-at{{display:block;margin-top:4px;color:#64748b;font-weight:700}}.status{{display:inline-block;min-width:86px;padding:4px 5px;border-radius:5px;font-weight:800;font-size:7.5px;white-space:normal;word-break:normal;overflow-wrap:normal;text-align:center;line-height:1.15}}.gap{{background:#fde68a}}.review-badge{{background:#fecaca}}.used{{background:#bbf7d0}}.label{{background:#dbeafe}}.skipped{{background:#e2e8f0}}.callout{{margin-top:20px;border-left:5px solid var(--red);background:#fff1f2;padding:10px 12px;font-size:12px;line-height:1.45;position:relative}}.footer{{position:absolute;left:52px;right:48px;bottom:22px;border-top:1px solid var(--line);padding-top:8px;color:#94a3b8;font-size:10px;display:flex;justify-content:space-between}}.tab{{position:absolute;left:12px;width:calc(100% - 18px);min-height:66px;border-radius:0 12px 12px 0;padding:10px 12px 10px 16px;background:#fff;box-shadow:0 7px 16px rgba(15,23,42,.12);border-left:10px solid currentColor;color:#111827;z-index:5;cursor:pointer}}.tab:before{{content:"";position:absolute;left:-64px;top:50%;width:64px;height:3px;background:currentColor;transform:translateY(-50%)}}.tab:after{{content:"";position:absolute;left:-69px;top:50%;width:9px;height:9px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:translateY(-50%) rotate(45deg);background:transparent}}.tab b{{display:block;font-size:clamp(8px,.85vw,10px);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;color:#0f172a}}.tab p{{margin:0;font-size:clamp(9px,.9vw,10.5px);line-height:1.3}}.tab.red{{color:#ef5b63;background:#fff0f1}}.tab.blue{{color:#3f82f6;background:#eef5ff}}.tab.green{{color:#24b96d;background:#effbf4}}.tab.yellow{{color:#df8d00;background:#fff7dc}}.tab.grey{{color:#94a3b8;background:#f8fafc}}.spotlight-target{{outline:2px solid rgba(59,130,246,.45)!important;outline-offset:5px;background:rgba(96,165,250,.08)!important;box-shadow:0 0 0 7px rgba(96,165,250,.08)!important;transition:box-shadow .15s ease,outline-color .15s ease}}.tab.active{{box-shadow:0 0 0 3px rgba(17,24,39,.16),0 10px 22px rgba(15,23,42,.22)}}@media print{{.toolbar{{display:none}}.book{{width:100%;margin:0}}.spread{{filter:none;page-break-after:always;grid-template-columns:74% 26%}}.page,.side{{min-height:100vh}}.tab{{box-shadow:none}}}}
 </style>
 </head>
 <body>
@@ -351,7 +385,7 @@ HTML_TEMPLATE = """<!doctype html>
 <div class="watermark">MANUAL COPY</div>
 <div class="header"><h1>Tax items and review flags</h1><div class="meta">Income year {income_year}<br>Self-prepared draft<br>Not an ATO form</div></div>
 <h2>ATO-aligned manual copy worksheet</h2>
-<table class="table"><thead><tr><th></th><th>ATO area</th><th>Question</th><th>Answer/value</th><th>Why included</th><th>Status</th></tr></thead><tbody>
+<table class="table"><thead><tr><th></th><th>ATO area</th><th>Question</th><th>Answer/value</th><th>Why included</th><th>Source</th><th>Status</th></tr></thead><tbody>
 {rows}
 </tbody></table>
 <div class="callout"><b>Accountant review queue:</b> {review_queue}</div>

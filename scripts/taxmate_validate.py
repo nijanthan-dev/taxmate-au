@@ -2162,6 +2162,9 @@ def taxpack_guide_html_contract() -> bool:
         "only-evidence",
         "Tax items and review flags",
         "ATO-aligned manual copy worksheet",
+        "<th>Source</th>",
+        "source-url",
+        "Checked 2026-06-23T09:04:57Z",
     ]
     if not all(item in body for item in required):
         return False
@@ -2228,10 +2231,41 @@ def taxpack_guide_html_contract() -> bool:
         for target in re.findall(r'<div class="tab [^"]+" data-target="([^"]+)"', duplicate_body)
         if target.startswith("row-")
     ]
+    source_url = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/records-you-need-to-keep"
+    second_url = "https://www.ato.gov.au/individuals-and-families/your-tax-return/how-to-lodge-your-tax-return"
+    sourced = taxmate_taxpack.guide_item(
+        {
+            "number": "S1",
+            "ato_area": "Other",
+            "question": "Has source?",
+            "answer": "User-entered value",
+            "why_included": "Source provenance regression.",
+            "source_url": source_url,
+            "source_urls": [source_url, second_url],
+            "checked_at": "2026-06-28T00:00:00Z",
+            "status": "Evidence",
+            "tab_text": "Source row should keep provenance.",
+        }
+    )
+    sourced_body = taxmate_taxpack.render_html(
+        taxmate_taxpack.GuideData(
+            income_year="2025-26",
+            generated_date=taxmate_taxpack.default_generated_date(),
+            summary_note="Source regression.",
+            items=[sourced],
+        )
+    )
+    sourced_ok = (
+        f'<span class="source-url">{source_url}</span>' in sourced_body
+        and f'<span class="source-url">{second_url}</span>' in sourced_body
+        and '<span class="checked-at">Checked 2026-06-28T00:00:00Z</span>' in sourced_body
+        and sourced_body.count(f'<span class="source-url">{source_url}</span>') == 1
+    )
     return (
         quoted_ok
         and duplicate_anchors == ["row-1-D1", "row-2-D1"]
         and duplicate_targets == ["row-1-D1", "row-2-D1"]
+        and sourced_ok
     )
 
 
