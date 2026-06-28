@@ -508,6 +508,44 @@ class ValidatorAndCliTests(unittest.TestCase):
             ],
         )
 
+    def test_ato_endorsement_scan_blocks_related_endorsement_forms(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "\n".join(
+                    [
+                        "TaxMate is sponsored by ATO.",
+                        "TaxMate is certified by the Australian Taxation Office.",
+                        "TaxMate is authorised by the ATO.",
+                        "TaxMate is authorized by ATO.",
+                        "TaxMate is partnered with ATO.",
+                        "TaxMate is in partnership with the ATO.",
+                        "TaxMate is ATO-certified.",
+                        "TaxMate is Australian Taxation Office approved.",
+                        "TaxMate is an official Australian Taxation Office partner.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(
+            hits,
+            [
+                "README.md:sponsored by ATO",
+                "README.md:certified by the Australian Taxation Office",
+                "README.md:authorised by the ATO",
+                "README.md:authorized by ATO",
+                "README.md:partnered with ATO",
+                "README.md:in partnership with the ATO",
+                "README.md:Australian Taxation Office approved",
+                "README.md:ATO-certified",
+                "README.md:Australian Taxation Office partner",
+                "README.md:official Australian Taxation Office partner",
+            ],
+        )
+
     def test_ato_endorsement_scan_allows_negated_disclaimer(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             readme = Path(tmp) / "README.md"
