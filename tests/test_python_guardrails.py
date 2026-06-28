@@ -582,6 +582,30 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertEqual(hits, [])
 
+    def test_ato_endorsement_scan_blocks_unrelated_negation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not only accountant-ready, it is ATO-backed.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-backed"])
+
+    def test_ato_endorsement_scan_blocks_contrasted_negation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            readme = Path(tmp) / "README.md"
+            readme.write_text(
+                "TaxMate is not affiliated with ATO but ATO-approved.\n",
+                encoding="utf-8",
+            )
+
+            hits = taxmate_validate.ato_endorsement_claim_hits(tmp)
+
+        self.assertEqual(hits, ["README.md:ATO-approved"])
+
 
 if __name__ == "__main__":
     unittest.main()

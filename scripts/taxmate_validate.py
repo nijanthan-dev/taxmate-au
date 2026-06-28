@@ -1405,10 +1405,23 @@ def is_negated_ato_claim(lowered_text: str, start_index: int) -> bool:
         lowered_text.rfind(".", 0, start_index),
         lowered_text.rfind("!", 0, start_index),
         lowered_text.rfind("?", 0, start_index),
+        lowered_text.rfind(";", 0, start_index),
         lowered_text.rfind("\n", 0, start_index),
     )
     prefix = lowered_text[sentence_start + 1 : start_index]
-    return any(marker in prefix for marker in ["not ", "never ", "do not ", "does not ", "must not "])
+    comma_index = prefix.rfind(",")
+    if comma_index != -1 and not re.fullmatch(r"\s*(and|or)\s*", prefix[comma_index + 1 :]):
+        prefix = prefix[comma_index + 1 :]
+
+    negation_matches = list(re.finditer(r"\b(?:never|do not|does not|must not|not)\b", prefix))
+    for match in reversed(negation_matches):
+        tail = prefix[match.start() :]
+        if re.match(r"not\s+only\b", tail):
+            continue
+        if re.search(r"\b(?:but|however|yet|though|although)\b", tail):
+            continue
+        return True
+    return False
 
 
 def public_ato_claim_scan_files(root: str) -> List[str]:
