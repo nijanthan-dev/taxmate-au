@@ -74,7 +74,7 @@ This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.
 From the repo root:
 
 ```bash
-codex plugin marketplace add .agents/plugins
+codex plugin marketplace add .
 codex plugin add taxmate-australia@taxmate-local-marketplace
 ```
 

@@ -36,6 +36,39 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("forbidden pattern" in finding.detail for finding in findings))
 
+    def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            marketplace_dir = root / ".agents" / "plugins"
+            docs_dir = root / "docs"
+            marketplace_dir.mkdir(parents=True)
+            docs_dir.mkdir()
+            (root / ".codex-plugin").mkdir()
+            (root / ".codex-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+            (marketplace_dir / "marketplace.json").write_text(
+                json.dumps(
+                    {
+                        "name": "taxmate-local-marketplace",
+                        "plugins": [
+                            {
+                                "name": "taxmate-australia",
+                                "source": {"source": "local", "path": "./"},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (docs_dir / "FULL_PLUGIN_INSTALL.md").write_text(
+                "codex plugin marketplace add .agents/plugins\n"
+                "codex plugin add taxmate-australia@taxmate-local-marketplace\n",
+                encoding="utf-8",
+            )
+
+            findings = taxmate_review_guardrails.check_local_plugin_marketplace_contract(root)
+
+        self.assertTrue(any("repo root" in finding.detail for finding in findings))
+
 
 class CalculatorTests(unittest.TestCase):
     def test_cgt_discount_rejects_exact_calendar_year(self) -> None:

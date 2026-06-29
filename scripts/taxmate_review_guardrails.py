@@ -22,6 +22,7 @@ CALCULATOR_NUMERIC_CONTRACT = "calculator_numeric_contract"
 PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
+LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
 REVIEW_PATTERN_DOCS = "review_pattern_docs"
 
@@ -240,6 +241,50 @@ def check_environment_contract(root: Path) -> List[Finding]:
     return findings
 
 
+def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
+    marketplace_path = root.joinpath(".agents", "plugins", "marketplace.json")
+    docs = read(root, "docs/FULL_PLUGIN_INSTALL.md")
+    findings: List[Finding] = []
+    try:
+        marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, f"invalid .agents/plugins/marketplace.json: {exc}")]
+
+    name = marketplace.get("name")
+    plugins = marketplace.get("plugins")
+    if not isinstance(name, str) or not name:
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing name"))
+    if not isinstance(plugins, list) or not plugins:
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing plugins"))
+        return findings
+
+    taxmate_plugin = next((plugin for plugin in plugins if plugin.get("name") == "taxmate-australia"), None)
+    if not isinstance(taxmate_plugin, dict):
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing taxmate-australia plugin"))
+        return findings
+
+    source = taxmate_plugin.get("source")
+    source_path = source.get("path") if isinstance(source, dict) else None
+    if source_path == "./":
+        required = ["codex plugin marketplace add .", f"codex plugin add taxmate-australia@{name}"]
+        findings.extend(fail_if_missing(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, docs, required))
+        if "codex plugin marketplace add .agents/plugins" in docs:
+            findings.append(
+                Finding(
+                    LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+                    "docs must add repo root because marketplace source.path is ./",
+                )
+            )
+    else:
+        findings.append(
+            Finding(
+                LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
+                "unexpected marketplace source.path; update docs and guardrail together",
+            )
+        )
+    return findings
+
+
 def check_precommit_contract(root: Path) -> List[Finding]:
     findings: List[Finding] = []
     for rel in [".pre-commit-config.yaml", ".githooks/pre-commit"]:
@@ -262,10 +307,12 @@ def check_pattern_docs(root: Path) -> List[Finding]:
         "PR #7",
         "PR #22",
         "PR #27",
+        "PR #38",
         "falsey",
         "Accountant review",
         "generated artifacts",
         "public claim",
+        "marketplace",
         "Release guardrails",
     ]
     return fail_if_missing(REVIEW_PATTERN_DOCS, text, required)
@@ -279,6 +326,7 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_public_claim_surfaces,
     check_release_contract,
     check_environment_contract,
+    check_local_plugin_marketplace_contract,
     check_precommit_contract,
     check_pattern_docs,
 ]

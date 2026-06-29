@@ -10,6 +10,7 @@ This repo has had repeated Codex review comments fixed across PRs. Keep the repe
 - PR #22: public claim scanners must include wrappers, discovery docs, workflows, and endorsement phrasing in both directions around `ATO`.
 - PR #25: ATO fetches must call `curl --disable -L` so user curl config cannot alter source refreshes.
 - PR #27: output layers must preserve `Accountant review`, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.
+- PR #38: local Codex plugin setup docs must point `codex plugin marketplace add` at the repo root when `.agents/plugins/marketplace.json` uses `source.path` `./`.
 - Release guardrails: release workflow edits must preserve green-CI checks, unchanged-main checks, version manifest alignment, and the Release Please bootstrap SHA.
 
 ## Local gate
