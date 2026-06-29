@@ -66,6 +66,10 @@ Create a self-prepared HTML guide users can save as PDF from their browser:
 Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the same guide layout and hides the preview toolbar.
 Rows can include `source_url`, `source_urls`, and `checked_at`; the guide keeps those provenance fields visible in the worksheet.
 
+![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
+
+The worksheet page shows manual-copy rows, source provenance, evidence prompts, and `Accountant review` flags.
+
 Optional: install one or more portable skills for ad-hoc use without checkout:
 
 ```bash
