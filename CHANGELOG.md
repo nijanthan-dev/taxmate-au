@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.2.1...v0.2.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* auto release after ci ([#39](https://github.com/nijanthan-dev/taxmate-australia/issues/39)) ([b8f1d23](https://github.com/nijanthan-dev/taxmate-australia/commit/b8f1d23afb1d539aa3f1006a69141ae3daa625a2))
+
 ## [0.2.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.2.0...v0.2.1) (2026-06-29)
 
 
