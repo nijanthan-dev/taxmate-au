@@ -4,6 +4,7 @@
   "agent": "codex",
   "portableSkills": [
     "taxmate-australia",
+    "individual-return",
     "employment-deductions",
     "work-from-home",
     "abn-business",
