@@ -387,11 +387,10 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
 
 
 def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
-    try:
-        start = date.fromisoformat(str(raw.get("start", "2025-07-01")))
-        end = date.fromisoformat(str(raw.get("end", "2026-06-30")))
-    except ValueError:
-        return 0.0
+    start = parse_iso_date(raw.get("start", "2025-07-01"))
+    end = parse_iso_date(raw.get("end", "2026-06-30"))
+    if start is None or end is None or end < start:
+        return None
     weekdays = {int(day) for day in raw.get("weekdays", []) if isinstance(day, int) or str(day).isdigit()}
     hours_per_day = money_value(raw.get("hours_per_day"), unknown_as_missing=True)
     if hours_per_day is None:
@@ -426,7 +425,7 @@ def public_holidays(state: Any) -> Set[date]:
         "2026-04-25",
     }
     state_days = {
-        "VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-06-08"},
+        "VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"},
         "NSW": {"2025-10-06", "2026-04-27", "2026-06-08"},
         "QLD": {"2025-10-06", "2026-05-04"},
         "SA": {"2025-10-06", "2026-03-09", "2026-06-08"},
@@ -523,9 +522,20 @@ def guide_row(
         "why_included": why,
         "status": status,
         "source_urls": source if isinstance(source, list) else [source],
-        "checked_at": "2026-06-29",
+        "checked_at": generation_checked_at(),
         "tab_text": tab_text or why,
     }
+
+
+def generation_checked_at() -> str:
+    return date.today().isoformat()
+
+
+def parse_iso_date(value: Any) -> Optional[date]:
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
 
 
 def parse_dates(raw_values: Any) -> Set[date]:

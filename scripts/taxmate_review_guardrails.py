@@ -78,7 +78,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH hours as evidence, and keep mixed-use assets under review.",
+        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH periods/hours as evidence, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -211,7 +211,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"not confirmed"',
                 "confirmed = raw.get(\"confirmed\") is True",
                 "if is_missing(enriched.get(\"state\")) and not is_missing(answers.get(\"state\")):",
-                '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-06-08"}',
+                '"VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
                 '"NSW": {"2025-10-06", "2026-04-27", "2026-06-08"}',
                 '"SA": {"2025-10-06", "2026-03-09", "2026-06-08"}',
                 '"TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"}',
@@ -225,9 +225,15 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "fixed_rate_text = money_text(fixed_candidate)",
                 "work_use != 100",
                 "mixed-use",
+                "def parse_iso_date(",
+                "if start is None or end is None or end < start:",
+                "def generation_checked_at(",
+                '"checked_at": generation_checked_at()',
             ],
         )
     )
+    if '"checked_at": "2026-06-29"' in text:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
     return findings
 
 

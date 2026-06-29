@@ -120,6 +120,9 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("2026-06-08" in finding.detail for finding in findings))
         self.assertTrue(any("hours_per_day" in finding.detail for finding in findings))
         self.assertTrue(any("work_use != 100" in finding.detail for finding in findings))
+        self.assertTrue(any("2026-04-04" in finding.detail for finding in findings))
+        self.assertTrue(any("parse_iso_date" in finding.detail for finding in findings))
+        self.assertTrue(any("generation_checked_at" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -419,6 +422,23 @@ class IndividualIntakeTests(unittest.TestCase):
         raw["worked_public_holidays"] = ["2025-09-26"]
         self.assertEqual(8, taxmate_intake.calculate_wfh_hours(raw))
 
+    def test_wfh_calendar_excludes_vic_easter_weekend(self) -> None:
+        raw = {
+            "state": "VIC",
+            "start": "2026-04-04",
+            "end": "2026-04-05",
+            "weekdays": [5, 6],
+            "hours_per_day": 8,
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+
+        self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
+
+        raw["worked_public_holidays"] = ["2026-04-04"]
+        self.assertEqual(8, taxmate_intake.calculate_wfh_hours(raw))
+
     def test_wfh_calendar_excludes_kings_birthday_states(self) -> None:
         for state in ["VIC", "NSW", "SA", "TAS", "ACT", "NT"]:
             with self.subTest(state=state):
@@ -483,6 +503,27 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Evidence", rows[0]["status"])
         self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_wfh_invalid_period_remains_evidence(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "state": "VIC",
+                "start": "not a date",
+                "end": "2026-06-09",
+                "weekdays": [1],
+                "hours_per_day": 8,
+                "records": "timesheet",
+                "actual_cost_records": "none",
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
+    def test_intake_rows_use_generation_checked_at(self) -> None:
+        row = taxmate_intake.guide_row("N", "Area", "Question", "Answer", "Why", "Used", "https://example.test")
+
+        self.assertEqual(taxmate_intake.generation_checked_at(), row["checked_at"])
 
     def test_monitor_over_300_is_not_full_immediate_claim(self) -> None:
         rows = taxmate_intake.asset_rows(
