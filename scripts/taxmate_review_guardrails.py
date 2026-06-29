@@ -78,7 +78,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing, unparseable, or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH parser inputs as evidence, avoid stale checked-at literals, and keep mixed-use assets under review.",
+        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -180,6 +180,10 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "el.dataset.anchor===value",
         "default_generated_date()",
         "canonical_status(item_status_kind)",
+        "def malformed_section_item(",
+        "def malformed_extraction_row(",
+        "def extraction_status_kind(",
+        "if raw.get(\"confirmed\") is True:",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -216,19 +220,22 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def wfh_answers(",
                 "def has_abn_inputs(",
                 "def has_bas_inputs(",
+                "def parse_gst_registration(",
                 "def base_item_status(",
+                "REVIEWABLE_COMPLEX_FIELDS = (",
+                "isinstance(value, (dict, list))",
                 "key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == \"gst_registered\"",
                 "items.extend(wfh_rows(wfh_answers(answers)))",
-                "status = \"Accountant review\" if has_abn_inputs(answers) else \"N/A skipped\"",
-                "status = \"Accountant review\" if has_bas_inputs(answers) else \"N/A skipped\"",
+                "items.extend(asset_rows(asset_answers(answers)))",
                 "gst_registered = answers.get(\"gst_registered\")",
-                "if gst_registered is True or contains_unknown(gst_registered):",
+                "gst_status = parse_gst_registration(gst_registered)",
                 "unknown_as_missing=True",
                 "math.isfinite(amount)",
                 "raise ValueError(f\"invalid money value: {value}\") from None",
                 "phrase in lowered",
                 '"not confirmed"',
                 "confirmed = raw.get(\"confirmed\") is True",
+                '"confirmed": confirmed',
                 "state_key = normalize_state(enriched.get(\"state\"))",
                 "if state_key is not None:",
                 "state_key = normalize_state(raw.get(\"state\"))",
@@ -259,9 +266,20 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "if parsed_day is None:",
                 "def parse_weekday(",
                 "hours_per_day = money_value(raw.get(\"hours_per_day\"), unknown_as_missing=True)",
-                "if hours_per_day is None:",
+                "hours_per_day is None or hours_per_day <= 0 or hours_per_day > 24",
+                "def has_complete_wfh_records(",
+                "def wfh_fixed_rate_candidate(",
+                "fixed_candidate = wfh_fixed_rate_candidate(hours, raw)",
+                "actual_cost_record_value = raw.get(\"actual_cost_records\")",
+                "or is_missing(actual_cost_record_value)",
                 "if leave is None or worked_public is None or worked_weekends is None:",
                 "fixed_rate_text = money_text(fixed_candidate)",
+                "def wfh_adjustment_dates(",
+                "required_keys = (\"leave_dates\", \"worked_public_holidays\", \"worked_weekends\")",
+                "def valid_wfh_adjustment_dates(",
+                "day not in holidays for day in worked_public",
+                "day.weekday() < 5 for day in worked_weekends",
+                "def asset_answers(",
                 "work_use != 100",
                 "mixed-use",
                 "def parse_iso_date(",
@@ -275,7 +293,15 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
     )
     if '"checked_at": "2026-06-29"' in text:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
-    for forbidden in ['raw.get("start", "2025-07-01")', 'raw.get("end", "2026-06-30")', "return {int(day) for day in weekdays"]:
+    for forbidden in [
+        'raw.get("start", "2025-07-01")',
+        'raw.get("end", "2026-06-30")',
+        'raw.get("leave_dates", [])',
+        'raw.get("worked_public_holidays", [])',
+        'raw.get("worked_weekends", [])',
+        "return {int(day) for day in weekdays",
+        "round(hours * WFH_FIXED_RATE_2025_26, 2)",
+    ]:
         if forbidden in text:
             findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, f"forbidden parser fallback: {forbidden}"))
     stale_holiday_source = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"

@@ -19,6 +19,7 @@ DEFAULT_INCOME_YEAR = "2025-26"
 WFH_FIXED_RATE_2025_26 = 0.70
 REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
 REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
+REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
     "not confirmed",
@@ -241,7 +242,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     missing_items = missing_fact_rows(answers)
     evidence_items = evidence_rows(answers)
     items.extend(wfh_rows(wfh_answers(answers)))
-    items.extend(asset_rows(answers.get("assets", [])))
+    items.extend(asset_rows(asset_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
         "income_year": text(answers.get("income_year"), DEFAULT_INCOME_YEAR),
@@ -278,6 +279,8 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def base_item_status(key: str, value: Any) -> str:
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_COMPLEX_FIELDS or isinstance(value, (dict, list)):
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     return "Evidence" if is_missing(value) or contains_unknown(value) else "Used"
 
@@ -336,6 +339,7 @@ def extraction_rows(raw_values: Any) -> List[Dict[str, Any]]:
                 "confidence": display_value(raw.get("confidence")),
                 "target_label": display_value(raw.get("target_label")),
                 "status": "Used" if confirmed else "Evidence",
+                "confirmed": confirmed,
                 "number": f"AI{idx}",
             }
         )
@@ -359,10 +363,14 @@ def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
-    raw = answers.get("wfh", {})
+    raw = answers.get("wfh")
+    if (not isinstance(raw, dict) or not raw) and isinstance(answers.get("wfh_work_pattern"), dict):
+        raw = answers.get("wfh_work_pattern")
     if not isinstance(raw, dict):
         return {}
     enriched = dict(raw)
+    if is_missing(enriched.get("records")) and not is_missing(answers.get("wfh_records")):
+        enriched["records"] = answers.get("wfh_records")
     if is_missing(enriched.get("state")) and not is_missing(answers.get("state")):
         enriched["state"] = answers.get("state")
     state_key = normalize_state(enriched.get("state"))
@@ -373,7 +381,8 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 def has_bas_inputs(answers: Dict[str, Any]) -> bool:
     gst_registered = answers.get("gst_registered")
-    if gst_registered is True or contains_unknown(gst_registered):
+    gst_status = parse_gst_registration(gst_registered)
+    if gst_status is True or (gst_status is None and not is_missing(gst_registered)):
         return True
     for key in REVIEWABLE_BAS_FIELDS:
         if key in answers and not is_missing(answers.get(key)):
@@ -386,6 +395,21 @@ def has_abn_inputs(answers: Dict[str, Any]) -> bool:
         if key in answers and not is_missing(answers.get(key)):
             return True
     return False
+
+
+def parse_gst_registration(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if is_missing(value):
+        return False
+    if contains_unknown(value):
+        return None
+    canonical = text(value).strip().lower()
+    if canonical in {"yes", "y", "true", "registered", "gst registered"}:
+        return True
+    if canonical in {"no", "n", "false", "not registered", "not gst registered"}:
+        return False
+    return None
 
 
 def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -412,17 +436,27 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
     if not isinstance(raw, dict) or not raw:
         return []
     hours = calculate_wfh_hours(raw)
-    fixed_candidate = None if hours is None else round(hours * WFH_FIXED_RATE_2025_26, 2)
+    fixed_candidate = wfh_fixed_rate_candidate(hours, raw)
     hours_text = "unknown" if hours is None else f"{hours:.2f}"
     fixed_rate_text = money_text(fixed_candidate)
     records = raw.get("records")
-    status = "Evidence" if hours is None or contains_unknown(records) else "Accountant review"
+    actual_cost_record_value = raw.get("actual_cost_records")
+    actual_cost_records = display_value(actual_cost_record_value) or "unknown"
+    status = (
+        "Evidence"
+        if hours is None
+        or is_missing(records)
+        or contains_unknown(records)
+        or is_missing(actual_cost_record_value)
+        or contains_unknown(actual_cost_record_value)
+        else "Accountant review"
+    )
     return [
         guide_row(
             "WFH",
             "D5 Other work-related expenses",
             "WFH fixed-rate and actual-cost comparison",
-            f"{hours_text} hours; fixed-rate candidate {fixed_rate_text}; actual-cost records {display_value(raw.get('actual_cost_records'))}",
+            f"{hours_text} hours; fixed-rate candidate {fixed_rate_text}; actual-cost records {actual_cost_records}",
             "Calendar helper excludes non-work public holidays and leave, includes confirmed weekends/holidays worked, and still requires records/method review.",
             status,
             [ATO_WFH_FIXED_SOURCE, ATO_WFH_ACTUAL_SOURCE, *PUBLIC_HOLIDAY_SOURCES],
@@ -442,17 +476,18 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     if weekdays is None:
         return None
     hours_per_day = money_value(raw.get("hours_per_day"), unknown_as_missing=True)
-    if hours_per_day is None:
+    if hours_per_day is None or hours_per_day <= 0 or hours_per_day > 24:
         return None
     state_key = normalize_state(raw.get("state"))
     if state_key is None:
         return None
-    leave = parse_dates(raw.get("leave_dates", []))
-    worked_public = parse_dates(raw.get("worked_public_holidays", []))
-    worked_weekends = parse_dates(raw.get("worked_weekends", []))
-    if leave is None or worked_public is None or worked_weekends is None:
+    adjustment_dates = wfh_adjustment_dates(raw)
+    if adjustment_dates is None:
         return None
+    leave, worked_public, worked_weekends = adjustment_dates
     holidays = public_holidays(state_key)
+    if not valid_wfh_adjustment_dates(start, end, weekdays, holidays, leave, worked_public, worked_weekends):
+        return None
     work_days = 0
     current = start
     while current <= end:
@@ -465,6 +500,50 @@ def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
             work_days += 1
         current += timedelta(days=1)
     return round(work_days * hours_per_day, 2)
+
+
+def has_complete_wfh_records(raw: Dict[str, Any]) -> bool:
+    records = raw.get("records")
+    return not is_missing(records) and not contains_unknown(records)
+
+
+def wfh_fixed_rate_candidate(hours: Optional[float], raw: Dict[str, Any]) -> Optional[float]:
+    if hours is None or not has_complete_wfh_records(raw):
+        return None
+    return round(float(hours) * WFH_FIXED_RATE_2025_26, 2)
+
+
+def wfh_adjustment_dates(raw: Dict[str, Any]) -> Optional[tuple[Set[date], Set[date], Set[date]]]:
+    required_keys = ("leave_dates", "worked_public_holidays", "worked_weekends")
+    if any(key not in raw for key in required_keys):
+        return None
+    leave = parse_dates(raw.get("leave_dates"))
+    worked_public = parse_dates(raw.get("worked_public_holidays"))
+    worked_weekends = parse_dates(raw.get("worked_weekends"))
+    if leave is None or worked_public is None or worked_weekends is None:
+        return None
+    return leave, worked_public, worked_weekends
+
+
+def valid_wfh_adjustment_dates(
+    start: date,
+    end: date,
+    weekdays: Set[int],
+    holidays: Set[date],
+    leave: Set[date],
+    worked_public: Set[date],
+    worked_weekends: Set[date],
+) -> bool:
+    all_adjustments = leave | worked_public | worked_weekends
+    if any(day < start or day > end for day in all_adjustments):
+        return False
+    if any(day.weekday() not in weekdays for day in leave):
+        return False
+    if any(day not in holidays for day in worked_public):
+        return False
+    if any(day.weekday() < 5 for day in worked_weekends):
+        return False
+    return True
 
 
 def parse_weekdays(raw: Dict[str, Any]) -> Optional[Set[int]]:
@@ -550,6 +629,13 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
             )
         )
     return rows
+
+
+def asset_answers(answers: Dict[str, Any]) -> Any:
+    raw_assets = answers.get("assets")
+    if isinstance(raw_assets, list):
+        return raw_assets
+    return answers.get("asset_items", [])
 
 
 def asset_status(cost: Optional[float], work_use: Optional[float]) -> str:

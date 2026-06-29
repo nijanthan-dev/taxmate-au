@@ -166,14 +166,54 @@ def read_json(path: str) -> Dict[str, Any]:
 def section_items(payload: Dict[str, Any], key: str) -> List[GuideItem]:
     raw_items = payload.get(key, [])
     if not isinstance(raw_items, list):
-        return []
-    return [guide_item(raw) for raw in raw_items if isinstance(raw, dict)]
+        return [malformed_section_item(key, raw_items)]
+    items: List[GuideItem] = []
+    for index, raw in enumerate(raw_items, start=1):
+        if isinstance(raw, dict):
+            items.append(guide_item(raw))
+        else:
+            items.append(malformed_section_item(f"{key}-{index}", raw))
+    return items
 
 
 def extracted_values(raw_items: Any) -> List[Dict[str, Any]]:
     if not isinstance(raw_items, list):
-        return []
-    return [raw for raw in raw_items if isinstance(raw, dict)]
+        return [malformed_extraction_row(raw_items)]
+    rows: List[Dict[str, Any]] = []
+    for index, raw in enumerate(raw_items, start=1):
+        if isinstance(raw, dict):
+            rows.append(raw)
+        else:
+            rows.append(malformed_extraction_row(raw, index))
+    return rows
+
+
+def malformed_section_item(key: str, value: Any) -> GuideItem:
+    return guide_item(
+        {
+            "number": f"MALFORMED-{key}",
+            "ato_area": "Input shape review",
+            "question": f"Malformed {key} input",
+            "answer": scalar_text(value),
+            "why_included": "Input section had the wrong shape and was kept for accountant review instead of being dropped.",
+            "status": "Accountant review",
+            "tab_kind": "review",
+            "tab_text": f"Malformed {key} input needs review before manual use.",
+        }
+    )
+
+
+def malformed_extraction_row(value: Any, index: int = 1) -> Dict[str, Any]:
+    return {
+        "number": f"AI-MALFORMED-{index}",
+        "document": "Malformed AI extraction input",
+        "page": "",
+        "field": "AI extraction",
+        "value": scalar_text(value),
+        "confidence": "",
+        "target_label": "",
+        "status": "Accountant review",
+    }
 
 
 def guide_item(raw: Dict[str, Any]) -> GuideItem:
@@ -402,7 +442,7 @@ def render_extraction_table(values: List[Dict[str, Any]]) -> str:
         return '<h2>AI extraction confirmation table</h2><p class="summary-note">No AI-extracted values supplied.</p>'
     rows: List[str] = []
     for raw in values:
-        kind = normal_kind(raw.get("status"))
+        kind = extraction_status_kind(raw)
         status = canonical_status(kind)
         rows.append(
             "<tr>"
@@ -422,6 +462,17 @@ def render_extraction_table(values: List[Dict[str, Any]]) -> str:
         "<th>Field</th><th>Extracted value</th><th>Confidence</th><th>Target label</th><th>Status</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table>"
     )
+
+
+def extraction_status_kind(raw: Dict[str, Any]) -> str:
+    status_kind = known_kind(raw.get("status_kind"))
+    status = known_kind(raw.get("status"))
+    tab_kind = known_kind(raw.get("tab_kind"))
+    if status_kind == "review" or status == "review" or tab_kind == "review":
+        return "review"
+    if raw.get("confirmed") is True:
+        return "answer"
+    return "evidence"
 
 
 def render_source_appendix(items: List[GuideItem]) -> str:
