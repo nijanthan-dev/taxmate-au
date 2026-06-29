@@ -320,6 +320,9 @@ def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
     except (OSError, json.JSONDecodeError) as exc:
         return [Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, f"invalid .agents/plugins/marketplace.json: {exc}")]
 
+    if not isinstance(marketplace, dict):
+        return [Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace root must be an object")]
+
     name = marketplace.get("name")
     plugins = marketplace.get("plugins")
     if not isinstance(name, str) or not name:
@@ -328,7 +331,11 @@ def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
         findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing plugins"))
         return findings
 
-    taxmate_plugin = next((plugin for plugin in plugins if plugin.get("name") == "taxmate-australia"), None)
+    plugin_entries = [plugin for plugin in plugins if isinstance(plugin, dict)]
+    if len(plugin_entries) != len(plugins):
+        findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace plugins entries must be objects"))
+
+    taxmate_plugin = next((plugin for plugin in plugin_entries if plugin.get("name") == "taxmate-australia"), None)
     if not isinstance(taxmate_plugin, dict):
         findings.append(Finding(LOCAL_PLUGIN_MARKETPLACE_CONTRACT, "marketplace missing taxmate-australia plugin"))
         return findings

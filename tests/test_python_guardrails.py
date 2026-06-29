@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any, Optional
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +31,7 @@ MARKETPLACE_NAME = "taxmate-local-marketplace"
 PLUGIN_ADD_COMMAND = f"codex plugin add taxmate-australia@{MARKETPLACE_NAME}"
 
 
-def write_local_marketplace_fixture(root: Path, docs_text: str) -> None:
+def write_local_marketplace_fixture(root: Path, docs_text: str, plugins: Optional[list[Any]] = None) -> None:
     marketplace_dir = root / ".agents" / "plugins"
     docs_dir = root / "docs"
     marketplace_dir.mkdir(parents=True)
@@ -41,7 +42,9 @@ def write_local_marketplace_fixture(root: Path, docs_text: str) -> None:
         json.dumps(
             {
                 "name": MARKETPLACE_NAME,
-                "plugins": [
+                "plugins": plugins
+                if plugins is not None
+                else [
                     {
                         "name": "taxmate-australia",
                         "source": {"source": "local", "path": "./"},
@@ -94,6 +97,25 @@ class ReviewGuardrailTests(unittest.TestCase):
             any("missing exact command: codex plugin marketplace add ." in finding.detail for finding in findings)
         )
         self.assertTrue(any("repo root exactly" in finding.detail for finding in findings))
+
+    def test_review_guardrails_reports_malformed_marketplace_plugin_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_local_marketplace_fixture(
+                root,
+                local_marketplace_docs("codex plugin marketplace add ."),
+                plugins=[
+                    "bad entry",
+                    {
+                        "name": "taxmate-australia",
+                        "source": {"source": "local", "path": "./"},
+                    },
+                ],
+            )
+
+            findings = taxmate_review_guardrails.check_local_plugin_marketplace_contract(root)
+
+        self.assertTrue(any("plugins entries must be objects" in finding.detail for finding in findings))
 
     def test_review_guardrails_list_patterns_as_json(self) -> None:
         payload = json.loads(taxmate_review_guardrails.render_review_patterns("json"))
