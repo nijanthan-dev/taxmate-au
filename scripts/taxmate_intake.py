@@ -242,15 +242,15 @@ def base_item_status(key: str, value: Any) -> str:
 
 
 def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
-    income = money(answers.get("abn_income"))
-    expenses = money(answers.get("abn_expenses"))
+    income = money_value(answers.get("abn_income"), unknown_as_missing=True)
+    expenses = money_value(answers.get("abn_expenses"), unknown_as_missing=True)
     status = "Accountant review" if has_abn_inputs(answers) else "N/A skipped"
     return [
         guide_row(
             "ABN",
             "Sole-trader ABN",
             "ABN business income and expenses",
-            f"Income {income:.2f}; expenses {expenses:.2f}",
+            f"Income {money_text(income)}; expenses {money_text(expenses)}",
             "Sole-trader ABN amounts feed individual return business schedules and need accountant review for PSI, losses, GST, and business-versus-hobby.",
             status,
             "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business",
@@ -260,16 +260,16 @@ def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def bas_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
-    collected = money(answers.get("gst_collected"))
-    credits = money(answers.get("gst_credits"))
-    net = round(collected - credits, 2)
+    collected = money_value(answers.get("gst_collected"), unknown_as_missing=True)
+    credits = money_value(answers.get("gst_credits"), unknown_as_missing=True)
+    net = None if collected is None or credits is None else round(collected - credits, 2)
     status = "Accountant review" if has_bas_inputs(answers) else "N/A skipped"
     return [
         guide_row(
             "BAS",
             "BAS worksheet",
             "GST collected less GST credits",
-            f"1A {collected:.2f}; 1B {credits:.2f}; net GST {net:.2f}",
+            f"1A {money_text(collected)}; 1B {money_text(credits)}; net GST {money_text(net)}",
             "BAS worksheet only. Confirm labels, tax invoices, adjustments, and accounting basis before manual use.",
             status,
             [ATO_BAS_SOURCE, ATO_GST_CREDITS_SOURCE],
@@ -423,12 +423,12 @@ def public_holidays(state: Any) -> Set[date]:
     }
     state_days = {
         "VIC": {"2025-09-26", "2025-11-04", "2026-03-09", "2026-06-08"},
-        "NSW": {"2025-10-06", "2026-06-08"},
+        "NSW": {"2025-10-06", "2026-04-27", "2026-06-08"},
         "QLD": {"2025-10-06", "2026-05-04"},
         "SA": {"2025-10-06", "2026-03-09", "2026-06-08"},
-        "WA": {"2025-09-29", "2026-03-02", "2026-06-01"},
+        "WA": {"2025-09-29", "2026-03-02", "2026-04-27", "2026-06-01"},
         "TAS": {"2025-11-03", "2026-02-09", "2026-03-09", "2026-04-07", "2026-06-08"},
-        "ACT": {"2025-10-06", "2026-03-09", "2026-06-01", "2026-06-08"},
+        "ACT": {"2025-10-06", "2026-03-09", "2026-04-27", "2026-06-01", "2026-06-08"},
         "NT": {"2025-08-04", "2026-05-04", "2026-06-08"},
     }
     values = set(national)
@@ -443,8 +443,8 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
     for idx, asset in enumerate(raw_assets, start=1):
         if not isinstance(asset, dict):
             continue
-        cost = money(asset.get("cost"))
-        work_use = money(asset.get("work_use_percent"))
+        cost = money_value(asset.get("cost"), unknown_as_missing=True)
+        work_use = money_value(asset.get("work_use_percent"), unknown_as_missing=True)
         claim_basis = asset_claim_basis(cost, work_use, asset.get("method_preference"))
         rows.append(
             guide_row(
@@ -453,7 +453,7 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
                 display_value(asset.get("description")),
                 claim_basis,
                 "ATO-guided asset treatment asks work-use, cost, evidence, and method. Items over $300 are not auto-claimed in full.",
-                "Accountant review" if cost > 300 else "Evidence",
+                asset_status(cost, work_use),
                 ATO_ASSET_SOURCE,
                 tab_text="Asset treatment needs evidence and method review before manual copy.",
             )
@@ -461,11 +461,22 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
     return rows
 
 
-def asset_claim_basis(cost: float, work_use: float, preference: Any) -> str:
-    work_amount = round(cost * work_use / 100, 2)
+def asset_status(cost: Optional[float], work_use: Optional[float]) -> str:
+    if cost is None or work_use is None:
+        return "Evidence"
+    return "Accountant review" if cost > 300 else "Evidence"
+
+
+def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preference: Any) -> str:
+    work_amount = None if cost is None or work_use is None else round(cost * work_use / 100, 2)
+    if cost is None or work_use is None:
+        return (
+            f"Cost {money_text(cost)}; work use {percent_text(work_use)}; "
+            f"work-use amount {money_text(work_amount)}; evidence needed before method review"
+        )
     if cost > 300:
-        return f"Cost {cost:.2f}; work use {work_use:.0f}%; work-use amount {work_amount:.2f}; {display_value(preference)} candidate, not full immediate claim"
-    return f"Cost {cost:.2f}; work use {work_use:.0f}%; work-use amount {work_amount:.2f}; immediate deduction candidate if evidence supports"
+        return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; {display_value(preference)} candidate, not full immediate claim"
+    return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
 
 
 def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
@@ -523,18 +534,35 @@ def parse_dates(raw_values: Any) -> Set[date]:
     return dates
 
 
-def money(value: Any) -> float:
+def money_value(value: Any, *, unknown_as_missing: bool = False) -> Optional[float]:
     if value is None or value == "":
-        return 0.0
+        return None
     if isinstance(value, bool):
-        return 0.0
+        return None
+    if contains_unknown(value):
+        if unknown_as_missing:
+            return None
+        raise ValueError(f"unknown money value: {value}")
     try:
         amount = float(str(value).replace("$", "").replace(",", ""))
     except ValueError:
-        return 0.0
+        raise ValueError(f"invalid money value: {value}") from None
     if not math.isfinite(amount):
         raise ValueError(f"non-finite money value: {value}")
     return amount
+
+
+def money(value: Any) -> float:
+    amount = money_value(value)
+    return 0.0 if amount is None else amount
+
+
+def money_text(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.2f}"
+
+
+def percent_text(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.0f}%"
 
 
 def is_unknown(value: Any) -> bool:

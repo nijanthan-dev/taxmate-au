@@ -433,6 +433,22 @@ class IndividualIntakeTests(unittest.TestCase):
 
                 self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
 
+    def test_wfh_calendar_excludes_anzac_substitute_states(self) -> None:
+        for state in ["NSW", "ACT", "WA"]:
+            with self.subTest(state=state):
+                raw = {
+                    "state": state,
+                    "start": "2026-04-27",
+                    "end": "2026-04-27",
+                    "weekdays": [0],
+                    "hours_per_day": 8,
+                    "leave_dates": [],
+                    "worked_public_holidays": [],
+                    "worked_weekends": [],
+                }
+
+                self.assertEqual(0, taxmate_intake.calculate_wfh_hours(raw))
+
     def test_wfh_uses_taxpayer_state_when_nested_state_missing(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["state"] = "VIC"
@@ -503,6 +519,20 @@ class IndividualIntakeTests(unittest.TestCase):
             with self.subTest(raw=raw):
                 with self.assertRaises(ValueError):
                     taxmate_intake.money(raw)
+
+    def test_unparseable_intake_money_is_not_zeroed(self) -> None:
+        with self.assertRaises(ValueError):
+            taxmate_intake.money("not sure")
+
+        bas = taxmate_intake.bas_rows({"gst_collected": "unknown", "gst_credits": 110})
+        asset = taxmate_intake.asset_rows(
+            [{"description": "monitor", "cost": "unknown receipt", "work_use_percent": 80}]
+        )
+
+        self.assertEqual("Accountant review", bas[0]["status"])
+        self.assertIn("1A unknown; 1B 110.00; net GST unknown", bas[0]["answer"])
+        self.assertEqual("Evidence", asset[0]["status"])
+        self.assertIn("Cost unknown; work use 80%; work-use amount unknown", asset[0]["answer"])
 
     def test_embedded_unconfirmed_answers_create_evidence_rows(self) -> None:
         rows = taxmate_intake.evidence_rows(taxmate_intake.sample_answers())
