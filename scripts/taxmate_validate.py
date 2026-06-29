@@ -2594,6 +2594,38 @@ def taxpack_guide_html_contract() -> bool:
                     tab_kind="review",
                 )
             ],
+            missing_facts=[
+                taxmate_taxpack.GuideItem(
+                    number="MISS-1",
+                    ato_area="Missing facts",
+                    question="Missing review row?",
+                    answer="Missing WFH weekdays",
+                    why_included="Missing review rows must have tab targets.",
+                    source_urls=[],
+                    checked_at="",
+                    status="Accountant review",
+                    status_kind="review",
+                    tab_title="Missing review",
+                    tab_text="Missing review queue text.",
+                    tab_kind="review",
+                )
+            ],
+            evidence_items=[
+                taxmate_taxpack.GuideItem(
+                    number="EVID-1",
+                    ato_area="Evidence",
+                    question="Evidence review row?",
+                    answer="Missing receipt",
+                    why_included="Evidence review rows must have tab targets.",
+                    source_urls=[],
+                    checked_at="",
+                    status="Accountant review",
+                    status_kind="review",
+                    tab_title="Evidence review",
+                    tab_text="Evidence review queue text.",
+                    tab_kind="review",
+                )
+            ],
         )
     )
     extended_review_ok = (
@@ -2601,7 +2633,15 @@ def taxpack_guide_html_contract() -> bool:
         and 'data-target="row-201-ABN"' in extended_review_body
         and 'data-anchor="row-301-BAS"' in extended_review_body
         and 'data-target="row-301-BAS"' in extended_review_body
-        and "<b>Accountant review queue:</b> ABN review queue text.; BAS review queue text." in extended_review_body
+        and 'data-anchor="row-401-MISS-1"' in extended_review_body
+        and 'data-target="row-401-MISS-1"' in extended_review_body
+        and 'data-anchor="row-501-EVID-1"' in extended_review_body
+        and 'data-target="row-501-EVID-1"' in extended_review_body
+        and (
+            "<b>Accountant review queue:</b> ABN review queue text.; BAS review queue text.; "
+            "Missing review queue text.; Evidence review queue text."
+        )
+        in extended_review_body
     )
     falsey = taxmate_taxpack.guide_item(
         {

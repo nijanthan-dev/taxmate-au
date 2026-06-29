@@ -332,7 +332,8 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def has_bas_inputs(answers: Dict[str, Any]) -> bool:
-    if answers.get("gst_registered") is True:
+    gst_registered = answers.get("gst_registered")
+    if gst_registered is True or contains_unknown(gst_registered):
         return True
     for key in REVIEWABLE_BAS_FIELDS:
         if key in answers and not is_missing(answers.get(key)):

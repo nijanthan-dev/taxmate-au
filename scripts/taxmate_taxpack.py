@@ -335,8 +335,8 @@ def render_html(data: GuideData) -> str:
         extraction_table=render_extraction_table(data.extracted_values),
         abn_section=render_section("ABN prep section", data.abn_items, 200),
         bas_section=render_section("BAS worksheet", data.bas_items, 300),
-        missing_queue=render_queue("Missing facts queue", data.missing_facts),
-        evidence_queue=render_queue("Evidence queue", data.evidence_items),
+        missing_queue=render_queue("Missing facts queue", data.missing_facts, 400),
+        evidence_queue=render_queue("Evidence queue", data.evidence_items, 500),
         source_appendix=render_source_appendix(all_guide_items(data)) if has_extended_pack(data) else "",
         rows=rows,
         row_tabs=row_tabs,
@@ -374,10 +374,13 @@ def render_section(title: str, items: List[GuideItem], offset: int) -> str:
     )
 
 
-def render_queue(title: str, items: List[GuideItem]) -> str:
+def render_queue(title: str, items: List[GuideItem], offset: int) -> str:
     if not items:
         return f"<h2>{esc(title)}</h2><p class=\"summary-note\">No items supplied.</p>"
-    entries = "".join(f"<li>{esc(queue_item_text(item))}</li>" for item in items)
+    entries = "".join(
+        f'<li data-anchor="{row_anchor(item, offset + index)}">{esc(queue_item_text(item))}</li>'
+        for index, item in enumerate(items, start=1)
+    )
     return f"<h2>{esc(title)}</h2><ul class=\"queue-list\">{entries}</ul>"
 
 

@@ -626,6 +626,12 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Accountant review", rows[0]["status"])
 
+    def test_unknown_gst_registration_keeps_bas_visible(self) -> None:
+        rows = taxmate_intake.bas_rows({"gst_registered": "not sure"})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("1A unknown; 1B unknown; net GST unknown", rows[0]["answer"])
+
     def test_zero_amount_abn_answers_stay_review(self) -> None:
         rows = taxmate_intake.abn_rows({"abn_income": 0, "abn_expenses": 0})
 
@@ -1714,7 +1720,7 @@ class TaxpackGuideTests(unittest.TestCase):
                 missing_facts=[blank_queue],
             )
         )
-        self.assertIn("<li>Row Q1: Evidence.</li>", queue_body)
+        self.assertIn('<li data-anchor="row-401-Q1">Row Q1: Evidence.</li>', queue_body)
         self.assertNotIn("<li>:  (Evidence)</li>", queue_body)
 
         direct_blank = taxmate_taxpack.GuideItem(
@@ -1803,6 +1809,8 @@ class TaxpackGuideTests(unittest.TestCase):
 
         self.assertIn('data-target="row-401-MISS-1"', body)
         self.assertIn('data-target="row-501-EVID-1"', body)
+        self.assertIn('data-anchor="row-401-MISS-1"', body)
+        self.assertIn('data-anchor="row-501-EVID-1"', body)
         self.assertIn("Missing WFH pattern requires accountant review.", body)
         self.assertIn("Evidence gap requires accountant review.", body)
         self.assertIn(
