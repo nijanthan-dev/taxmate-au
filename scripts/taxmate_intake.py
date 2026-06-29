@@ -16,7 +16,18 @@ import taxmate_taxpack
 
 DEFAULT_INCOME_YEAR = "2025-26"
 WFH_FIXED_RATE_2025_26 = 0.70
+REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
 REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
+EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
+EMBEDDED_UNKNOWN_PHRASES = (
+    "not confirmed",
+    "unconfirmed",
+    "unknown",
+    "missing",
+    "not sure",
+    "unsure",
+    "no receipt",
+)
 
 PUBLIC_HOLIDAY_SOURCE = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
@@ -226,7 +237,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 def abn_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     income = money(answers.get("abn_income"))
     expenses = money(answers.get("abn_expenses"))
-    status = "Accountant review" if income or expenses else "N/A skipped"
+    status = "Accountant review" if has_abn_inputs(answers) else "N/A skipped"
     return [
         guide_row(
             "ABN",
@@ -318,18 +329,25 @@ def has_bas_inputs(answers: Dict[str, Any]) -> bool:
     return False
 
 
+def has_abn_inputs(answers: Dict[str, Any]) -> bool:
+    for key in REVIEWABLE_ABN_FIELDS:
+        if key in answers and not is_missing(answers.get(key)):
+            return True
+    return False
+
+
 def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
-    if is_unknown(answers.get("private_health_cover")):
+    if contains_unknown(answers.get("private_health_cover")):
         rows.append(evidence_row("Private health statement", "M2 / Private health", "Insurer statement or policy details"))
     asset_items = answers.get("assets", [])
     if not isinstance(asset_items, list):
         asset_items = []
     for item in asset_items:
-        if isinstance(item, dict) and is_unknown(item.get("evidence")):
+        if isinstance(item, dict) and contains_unknown(item.get("evidence")):
             rows.append(evidence_row(display_value(item.get("description")), "D5 assets", "Receipt/tax invoice"))
     wfh = answers.get("wfh", {})
-    if isinstance(wfh, dict) and is_unknown(wfh.get("records")):
+    if isinstance(wfh, dict) and contains_unknown(wfh.get("records")):
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
     return rows
 
@@ -510,12 +528,15 @@ def money(value: Any) -> float:
 
 
 def is_unknown(value: Any) -> bool:
-    return isinstance(value, str) and value.strip().lower() in {"unknown", "missing", "not sure", "unsure"}
+    return isinstance(value, str) and value.strip().lower() in EXACT_UNKNOWN_PHRASES
 
 
 def contains_unknown(value: Any) -> bool:
     if is_unknown(value):
         return True
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        return any(phrase in lowered for phrase in EMBEDDED_UNKNOWN_PHRASES)
     if isinstance(value, list):
         return any(contains_unknown(item) for item in value)
     if isinstance(value, dict):

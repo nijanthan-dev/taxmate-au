@@ -112,6 +112,7 @@ class ReviewGuardrailTests(unittest.TestCase):
 
         self.assertTrue(any("contains_unknown" in finding.detail for finding in findings))
         self.assertTrue(any("wfh_answers" in finding.detail for finding in findings))
+        self.assertTrue(any("has_abn_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("has_bas_inputs" in finding.detail for finding in findings))
         self.assertTrue(any("confirmed" in finding.detail for finding in findings))
         self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
@@ -338,6 +339,12 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Evidence", deductions["status"])
 
+    def test_embedded_unconfirmed_answers_render_as_evidence(self) -> None:
+        rows = taxmate_intake.base_items(taxmate_intake.sample_answers())
+        private_health = next(row for row in rows if row["number"] == "private_health_cover")
+
+        self.assertEqual("Evidence", private_health["status"])
+
     def test_ai_extracted_values_require_confirmation(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         data = taxmate_taxpack.load_guide_payload(payload)
@@ -476,6 +483,16 @@ class IndividualIntakeTests(unittest.TestCase):
         rows = taxmate_intake.bas_rows({"gst_collected": 300, "gst_credits": 110})
 
         self.assertEqual("Accountant review", rows[0]["status"])
+
+    def test_zero_amount_abn_answers_stay_review(self) -> None:
+        rows = taxmate_intake.abn_rows({"abn_income": 0, "abn_expenses": 0})
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+
+    def test_embedded_unconfirmed_answers_create_evidence_rows(self) -> None:
+        rows = taxmate_intake.evidence_rows(taxmate_intake.sample_answers())
+
+        self.assertTrue(any(row["ato_area"] == "M2 / Private health" for row in rows))
 
     def test_individual_html_pack_has_print_boundary_sections(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
