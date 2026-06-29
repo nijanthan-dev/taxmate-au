@@ -118,6 +118,8 @@ class ReviewGuardrailTests(unittest.TestCase):
         self.assertTrue(any("confirmed" in finding.detail for finding in findings))
         self.assertTrue(any("2025-09-26" in finding.detail for finding in findings))
         self.assertTrue(any("2026-06-08" in finding.detail for finding in findings))
+        self.assertTrue(any("hours_per_day" in finding.detail for finding in findings))
+        self.assertTrue(any("work_use != 100" in finding.detail for finding in findings))
 
     def test_review_guardrails_detect_wrong_local_marketplace_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -466,6 +468,22 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn("0.00 hours", wfh["answer"])
 
+    def test_wfh_unknown_hours_remain_evidence(self) -> None:
+        rows = taxmate_intake.wfh_rows(
+            {
+                "state": "VIC",
+                "start": "2026-06-09",
+                "end": "2026-06-09",
+                "weekdays": [1],
+                "hours_per_day": "not sure",
+                "records": "timesheet",
+                "actual_cost_records": "unknown",
+            }
+        )
+
+        self.assertEqual("Evidence", rows[0]["status"])
+        self.assertIn("unknown hours; fixed-rate candidate unknown", rows[0]["answer"])
+
     def test_monitor_over_300_is_not_full_immediate_claim(self) -> None:
         rows = taxmate_intake.asset_rows(
             [
@@ -482,6 +500,22 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "Accountant review")
         self.assertIn("work-use amount 320.00", rows[0]["answer"])
         self.assertIn("not full immediate claim", rows[0]["answer"])
+
+    def test_low_cost_mixed_use_asset_stays_review(self) -> None:
+        rows = taxmate_intake.asset_rows(
+            [
+                {
+                    "description": "$250 monitor",
+                    "cost": 250,
+                    "work_use_percent": 80,
+                    "method_preference": "immediate",
+                    "evidence": "receipt",
+                }
+            ]
+        )
+
+        self.assertEqual("Accountant review", rows[0]["status"])
+        self.assertIn("mixed-use", rows[0]["answer"])
 
     def test_bas_worksheet_calculates_totals_and_stays_review(self) -> None:
         rows = taxmate_intake.bas_rows(

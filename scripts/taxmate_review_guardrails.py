@@ -78,7 +78,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #53 intake",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, and use taxpayer state plus full-year state holidays for WFH.",
+        "Individual intake must keep missing or nested unknown answers as Evidence, require literal boolean AI confirmation, preserve BAS values as review, use taxpayer state plus full-year state holidays for WFH, keep unknown WFH hours as evidence, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -220,6 +220,11 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 '"NT": {"2025-08-04", "2026-05-04", "2026-06-08"}',
                 "holiday_not_worked = current in holidays and current not in worked_public",
                 "holiday_worked = current in worked_public",
+                "hours_per_day = money_value(raw.get(\"hours_per_day\"), unknown_as_missing=True)",
+                "if hours_per_day is None:",
+                "fixed_rate_text = money_text(fixed_candidate)",
+                "work_use != 100",
+                "mixed-use",
             ],
         )
     )

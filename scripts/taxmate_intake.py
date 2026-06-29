@@ -367,15 +367,17 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
     if not isinstance(raw, dict) or not raw:
         return []
     hours = calculate_wfh_hours(raw)
-    fixed_candidate = round(hours * WFH_FIXED_RATE_2025_26, 2)
+    fixed_candidate = None if hours is None else round(hours * WFH_FIXED_RATE_2025_26, 2)
+    hours_text = "unknown" if hours is None else f"{hours:.2f}"
+    fixed_rate_text = money_text(fixed_candidate)
     records = raw.get("records")
-    status = "Evidence" if is_unknown(records) else "Accountant review"
+    status = "Evidence" if hours is None or contains_unknown(records) else "Accountant review"
     return [
         guide_row(
             "WFH",
             "D5 Other work-related expenses",
             "WFH fixed-rate and actual-cost comparison",
-            f"{hours:.2f} hours; fixed-rate candidate {fixed_candidate:.2f}; actual-cost records {display_value(raw.get('actual_cost_records'))}",
+            f"{hours_text} hours; fixed-rate candidate {fixed_rate_text}; actual-cost records {display_value(raw.get('actual_cost_records'))}",
             "Calendar helper excludes non-work public holidays and leave, includes confirmed weekends/holidays worked, and still requires records/method review.",
             status,
             [ATO_WFH_FIXED_SOURCE, ATO_WFH_ACTUAL_SOURCE, PUBLIC_HOLIDAY_SOURCE],
@@ -384,14 +386,16 @@ def wfh_rows(raw: Any) -> List[Dict[str, Any]]:
     ]
 
 
-def calculate_wfh_hours(raw: Dict[str, Any]) -> float:
+def calculate_wfh_hours(raw: Dict[str, Any]) -> Optional[float]:
     try:
         start = date.fromisoformat(str(raw.get("start", "2025-07-01")))
         end = date.fromisoformat(str(raw.get("end", "2026-06-30")))
     except ValueError:
         return 0.0
     weekdays = {int(day) for day in raw.get("weekdays", []) if isinstance(day, int) or str(day).isdigit()}
-    hours_per_day = money(raw.get("hours_per_day"))
+    hours_per_day = money_value(raw.get("hours_per_day"), unknown_as_missing=True)
+    if hours_per_day is None:
+        return None
     leave = parse_dates(raw.get("leave_dates", []))
     worked_public = parse_dates(raw.get("worked_public_holidays", []))
     worked_weekends = parse_dates(raw.get("worked_weekends", []))
@@ -464,7 +468,7 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
 def asset_status(cost: Optional[float], work_use: Optional[float]) -> str:
     if cost is None or work_use is None:
         return "Evidence"
-    return "Accountant review" if cost > 300 else "Evidence"
+    return "Accountant review" if cost > 300 or work_use != 100 else "Evidence"
 
 
 def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preference: Any) -> str:
@@ -476,6 +480,8 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
         )
     if cost > 300:
         return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; {display_value(preference)} candidate, not full immediate claim"
+    if work_use != 100:
+        return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; mixed-use immediate/depreciation method needs review"
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
 
 
