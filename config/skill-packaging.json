@@ -2,6 +2,7 @@
   "skillsCliVersion": "1.5.13",
   "publicPortable": [
     "taxmate-australia",
+    "individual-return",
     "employment-deductions",
     "work-from-home",
     "abn-business",

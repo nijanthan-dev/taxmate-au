@@ -76,6 +76,10 @@ Full setup details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 Ask for a specific portable skill when the topic is clear:
 
 ```text
+Use the individual-return skill to build a V1 individual return checklist with ABN and BAS review queues.
+```
+
+```text
 Use the capital-gains-tax skill to review this disposal conservatively.
 ```
 
@@ -92,6 +96,7 @@ Run full-runtime commands from a checkout:
 ```bash
 ./scripts/taxmate skills generate
 ./scripts/taxmate refresh --query "payg"
+./scripts/taxmate intake individual --help
 ./scripts/taxmate finance --help
 ```
 
@@ -111,6 +116,7 @@ Open the HTML in a browser and use print/save as PDF. The printed PDF keeps the 
 Public portable entry points:
 
 - `taxmate-australia`
+- `individual-return`
 - `employment-deductions`
 - `work-from-home`
 - `abn-business`

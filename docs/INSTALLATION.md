@@ -85,6 +85,7 @@ Use the full plugin runtime only when you need guide generation, workbook/taxpac
 The source of truth is `config/public-skills.json`.
 
 - `taxmate-australia`
+- `individual-return`
 - `employment-deductions`
 - `work-from-home`
 - `abn-business`

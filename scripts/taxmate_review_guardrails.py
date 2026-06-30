@@ -15,10 +15,12 @@ from typing import Callable, Iterable, List
 
 ROOT_MARKER = os.path.join(".codex-plugin", "plugin.json")
 TAXPACK_OUTPUT_LAYER = "taxpack_output_layer_contract"
+INDIVIDUAL_INTAKE_CONTRACT = "individual_intake_contract"
 ATO_FETCH_BOUNDARY = "ato_fetch_boundary"
 GENERATED_ARTIFACT_CONTRACT = "generated_artifact_contract"
 FINANCE_JSON_WIRE_CONTRACT = "finance_json_wire_contract"
 CALCULATOR_NUMERIC_CONTRACT = "calculator_numeric_contract"
+CALCULATOR_TEMPORAL_CONTRACT = "calculator_temporal_scope_contract"
 PUBLIC_CLAIM_SURFACE_CONTRACT = "public_claim_surface_contract"
 RELEASE_GUARDRAIL_CONTRACT = "release_guardrail_contract"
 ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
@@ -46,8 +48,8 @@ class ReviewPattern:
 REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "PR #7",
-        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
-        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
+        f"{FINANCE_JSON_WIRE_CONTRACT}, {CALCULATOR_NUMERIC_CONTRACT}, {CALCULATOR_TEMPORAL_CONTRACT}, {GENERATED_ARTIFACT_CONTRACT}",
+        "Preserve public JSON wire formats, reject non-finite numbers, keep half-up cent rounding, gate year-specific calculators by supported temporal scope, preserve generated source provenance, compare tracked generated artifacts, and remove stale Go/runtime docs.",
     ),
     ReviewPattern(
         "PR #8",
@@ -70,9 +72,14 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "ATO fetches must call curl --disable -L so user curl config cannot alter source refreshes.",
     ),
     ReviewPattern(
-        "PR #27",
+        "PR #27 / PR #53",
         TAXPACK_OUTPUT_LAYER,
-        "Output layers must preserve Accountant review, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+        "Output layers must preserve Accountant review in main and extended sections, source provenance, falsey display values, dynamic generated dates, unique anchors, safe tab target lookup, and neutral mixed-area headings.",
+    ),
+    ReviewPattern(
+        "PR #53 intake",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "Individual intake must keep missing, malformed, unparseable, or nested unknown answers as Evidence/review, require literal boolean AI confirmation while preserving review-like extraction metadata, keep BAS values as review, use taxpayer state plus state-wide holidays only for supported WFH income years/date ranges, route limited/regional/partial-day public holidays to Evidence, keep unknown WFH parser inputs and incomplete records out of calculated candidates, avoid stale checked-at literals, and keep mixed-use assets under review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -96,6 +103,11 @@ def repo_root() -> Path:
 
 def read(root: Path, rel: str) -> str:
     return root.joinpath(rel).read_text(encoding="utf-8")
+
+
+def read_optional(root: Path, rel: str) -> str:
+    path = root.joinpath(rel)
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 def contains_in_order(text: str, tokens: Iterable[str]) -> bool:
@@ -150,11 +162,29 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def effective_status_kind(",
         "def effective_tab_kind(",
         "def review_text(",
+        "def queue_item_text(",
+        "fallback_tab_text(item.number, effective_status_kind(item))",
         "def row_anchor(item: GuideItem, row_index: int)",
+        "render_queue(\"Missing facts queue\", data.missing_facts, 400)",
+        "render_queue(\"Evidence queue\", data.evidence_items, 500)",
+        "def render_queue(title: str, items: List[GuideItem], offset: int)",
+        "data-anchor=\"{row_anchor(item, offset + index)}",
+        "def rendered_tab_items(",
+        "data.abn_items",
+        "data.bas_items",
+        "data.missing_facts",
+        "data.evidence_items",
+        "400 + index",
+        "500 + index",
+        "for item, row_index in tab_items",
         "findTarget(spread,value)",
         "el.dataset.anchor===value",
         "default_generated_date()",
         "canonical_status(item_status_kind)",
+        "def malformed_section_item(",
+        "def malformed_extraction_row(",
+        "def extraction_status_kind(",
+        "if raw.get(\"confirmed\") is True:",
     ]
     findings.extend(fail_if_missing(TAXPACK_OUTPUT_LAYER, text, required))
     forbidden = [
@@ -173,6 +203,146 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
 
 def check_taxpack_output_layer(root: Path) -> List[Finding]:
     return check_taxpack_output_layer_text(read(root, "scripts/taxmate_taxpack.py"))
+
+
+def check_individual_intake_contract(root: Path) -> List[Finding]:
+    text = read(root, "scripts/taxmate_intake.py")
+    skill_text = read_optional(root, "skills/individual-return/SKILL.md")
+    skill_rules = read_optional(root, "skills/individual-return/references/rules.md")
+    findings: List[Finding] = []
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            text,
+            [
+                "def contains_unknown(",
+                "STATE_ALIASES = {",
+                "WEEKDAY_ALIASES = {",
+                "def normalize_state(",
+                "def wfh_answers(",
+                "def has_abn_inputs(",
+                "def has_bas_inputs(",
+                "def parse_gst_registration(",
+                "def base_item_status(",
+                "REVIEWABLE_COMPLEX_FIELDS = (",
+                "isinstance(value, (dict, list))",
+                "key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == \"gst_registered\"",
+                "items.extend(wfh_rows(wfh_answers(answers)))",
+                "items.extend(asset_rows(asset_answers(answers)))",
+                "gst_registered = answers.get(\"gst_registered\")",
+                "gst_status = parse_gst_registration(gst_registered)",
+                "unknown_as_missing=True",
+                "math.isfinite(amount)",
+                "raise ValueError(f\"invalid money value: {value}\") from None",
+                "phrase in lowered",
+                '"not confirmed"',
+                "confirmed = raw.get(\"confirmed\") is True",
+                '"confirmed": confirmed',
+                "def extraction_status(",
+                "def contains_review_status(",
+                'taxmate_taxpack.known_kind(value) == "review"',
+                "def preserve_review_kinds(",
+                "for key in (\"status\", \"status_kind\", \"tab_kind\")",
+                "for key in (\"status_kind\", \"tab_kind\")",
+                "row[key] = raw.get(key)",
+                "state_key = normalize_state(enriched.get(\"state\"))",
+                "if state_key is not None:",
+                "enriched[\"income_year\"] = text(answers.get(\"income_year\"), DEFAULT_INCOME_YEAR)",
+                "state_key = normalize_state(raw.get(\"state\"))",
+                "if state_key is None:",
+                "state_key = normalize_state(state)",
+                "def normalize_state(value: Any) -> Optional[str]:",
+                "SUPPORTED_WFH_START = date(2025, 7, 1)",
+                "SUPPORTED_WFH_END = date(2026, 6, 30)",
+                "LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {",
+                '"NSW": {"2025-08-04"}',
+                '"TAS": {"2025-10-23", "2025-11-03", "2026-02-09", "2026-04-07"}',
+                '"VIC": {"2025-09-26", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
+                '"NSW": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-08"}',
+                '"QLD": {"2025-10-06", "2026-04-04", "2026-04-05", "2026-05-04"}',
+                '"SA": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-06-08"}',
+                '"TAS": {"2026-03-09", "2026-06-08"}',
+                '"WA": {"2026-03-02", "2026-04-05", "2026-04-27", "2026-06-01"}',
+                '"ACT": {"2025-10-06", "2026-03-09", "2026-04-04", "2026-04-05", "2026-04-27", "2026-06-01", "2026-06-08"}',
+                '"NT": {"2025-08-04", "2026-04-04", "2026-04-05", "2026-05-04", "2026-06-08"}',
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays",
+                "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+                "*PUBLIC_HOLIDAY_SOURCES",
+                "holiday_not_worked = current in holidays and current not in worked_public",
+                "holiday_worked = current in worked_public",
+                "limited_holidays = limited_public_holidays(state_key)",
+                "def limited_public_holidays(",
+                "def limited_public_holiday_may_affect_period(",
+                "if \"start\" not in raw or \"end\" not in raw:",
+                "start = parse_iso_date(raw.get(\"start\"))",
+                "end = parse_iso_date(raw.get(\"end\"))",
+                "if not supported_wfh_income_year(raw):",
+                "if not dates_within_supported_income_year(start, end):",
+                "def supported_wfh_income_year(",
+                "def dates_within_supported_income_year(",
+                "weekdays = parse_weekdays(raw)",
+                "if weekdays is None:",
+                "def parse_weekdays(",
+                '"weekdays" not in raw',
+                "parsed_day = parse_weekday(day)",
+                "if parsed_day is None:",
+                "def parse_weekday(",
+                "hours_per_day = money_value(raw.get(\"hours_per_day\"), unknown_as_missing=True)",
+                "hours_per_day is None or hours_per_day <= 0 or hours_per_day > 24",
+                "def has_complete_wfh_records(",
+                "def wfh_fixed_rate_candidate(",
+                "fixed_candidate = wfh_fixed_rate_candidate(hours, raw)",
+                "actual_cost_record_value = raw.get(\"actual_cost_records\")",
+                "or is_missing(actual_cost_record_value)",
+                "if leave is None or worked_public is None or worked_weekends is None:",
+                "fixed_rate_text = money_text(fixed_candidate)",
+                "def wfh_adjustment_dates(",
+                "required_keys = (\"leave_dates\", \"worked_public_holidays\", \"worked_weekends\")",
+                "def valid_wfh_adjustment_dates(",
+                "day not in holidays for day in worked_public",
+                "day.weekday() < 5 for day in worked_weekends",
+                "def asset_answers(",
+                "work_use != 100",
+                "mixed-use",
+                "def parse_iso_date(",
+                "def parse_dates(raw_values: Any) -> Optional[Set[date]]:",
+                "if contains_unknown(raw_values):",
+                "if start is None or end is None or end < start:",
+                "def generation_checked_at(",
+                '"checked_at": generation_checked_at()',
+            ],
+        )
+    )
+    if '"checked_at": "2026-06-29"' in text:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden stale checked_at literal"))
+    for forbidden in [
+        'raw.get("start", "2025-07-01")',
+        'raw.get("end", "2026-06-30")',
+        'raw.get("leave_dates", [])',
+        'raw.get("worked_public_holidays", [])',
+        'raw.get("worked_weekends", [])',
+        "return {int(day) for day in weekdays",
+        "round(hours * WFH_FIXED_RATE_2025_26, 2)",
+        '"status": "Used" if confirmed else "Evidence"',
+    ]:
+        if forbidden in text:
+            findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, f"forbidden parser fallback: {forbidden}"))
+    stale_holiday_source = "https://data.gov.au/data/dataset/australian-holidays-machine-readable-dataset"
+    if stale_holiday_source in text or stale_holiday_source in skill_rules:
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "forbidden inactive public holiday source"))
+    holiday_guidance = skill_text + "\n" + skill_rules
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            holiday_guidance,
+            [
+                "state-wide public holidays",
+                "regional, capital-city-only, sector-only, and partial-day",
+                "Evidence or `Accountant review`",
+            ],
+        )
+    )
+    return findings
 
 
 def check_fetch_boundary(root: Path) -> List[Finding]:
@@ -234,6 +404,25 @@ def check_finance_and_calc_wire_contract(root: Path) -> List[Finding]:
                 "math.isfinite",
                 "ROUND_HALF_UP",
                 "json.dump(result, out, indent=2, allow_nan=False)",
+            ],
+        )
+    )
+    findings.extend(
+        fail_if_missing(
+            CALCULATOR_TEMPORAL_CONTRACT,
+            calc,
+            [
+                'SUPPORTED_INCOME_YEAR = "2025-26"',
+                'SUPPORTED_FBT_YEAR = "2026"',
+                "def supported_income_year(",
+                "def supported_fbt_year(",
+                "def not_calculated_result(",
+                "def normalize_fbt_type(",
+                "if not supported_income_year(income_year):",
+                "if not supported_fbt_year(fbt_year):",
+                '"calculation": "not_calculated"',
+                'parser.add_argument("--income-year", default=SUPPORTED_INCOME_YEAR)',
+                'parser.add_argument("--fbt-year", default=SUPPORTED_FBT_YEAR)',
             ],
         )
     )
@@ -436,6 +625,7 @@ def render_review_patterns(fmt: str) -> str:
 
 CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_taxpack_output_layer,
+    check_individual_intake_contract,
     check_fetch_boundary,
     check_generated_artifact_contract,
     check_finance_and_calc_wire_contract,
