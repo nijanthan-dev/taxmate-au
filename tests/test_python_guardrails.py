@@ -3283,7 +3283,7 @@ class IndividualIntakeTests(unittest.TestCase):
             (
                 {"interest": -10},
                 "numeric rental amount evidence",
-                "interest -10.00",
+                "interest unknown",
             ),
             (
                 {"private_use": None},
@@ -3333,10 +3333,15 @@ class IndividualIntakeTests(unittest.TestCase):
     def test_rental_property_unusable_expense_keeps_net_unknown(self) -> None:
         cases = [
             {"interest": "unknown"},
+            {"interest": -10},
             {"repairs": "not sure"},
+            {"repairs": -10},
             {"capital_works": True},
+            {"capital_works": -10},
             {"depreciation": "no depreciation schedule"},
+            {"depreciation": -10},
             {"other_expenses": "invalid amount"},
+            {"other_expenses": -10},
         ]
         base = {
             "address": "Example rental",
@@ -3353,6 +3358,67 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertEqual("Evidence", row["status"])
                 self.assertIn("numeric rental amount evidence", row["tab_text"])
                 self.assertIn("worksheet net unknown", row["answer"])
+
+    def test_rental_property_unusable_income_keeps_net_unknown(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": -12000,
+                    "interest": 1000,
+                    "records": "agent statement held",
+                    "private_use": False,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("income unknown", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+
+    def test_rental_property_unusable_item_amount_keeps_net_unknown(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {"address": "Unit 1", "ownership": "individual", "income": 12000, "interest": -10},
+                    {"address": "Unit 2", "ownership": "individual", "income": 8000, "interest": 1000},
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("interest 1000.00", row["answer"])
+        self.assertIn("Unit 1: owner individual, income 12000.00, interest unknown", row["answer"])
+        self.assertNotIn("interest -10.00", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+
+    def test_rental_property_malformed_private_days_need_apportionment_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 12000,
+                    "records": "agent statement held",
+                    "private_use": True,
+                    "private_use_days": -1,
+                    "available_days": 365,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("private-use apportionment evidence", row["tab_text"])
+        self.assertIn("private days unknown", row["answer"])
 
     def test_rental_property_flat_unknown_answers_render_workflow(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload({"rental_property_income": "unknown"})

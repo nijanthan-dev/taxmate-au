@@ -4268,8 +4268,8 @@ def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[
         return True
     if any(rental_property_private_use_signal(record) for record in meaningful):
         return any(
-            rental_property_amount_value(record.get("private_use_days")) is None
-            or rental_property_amount_value(record.get("available_days")) is None
+            rental_property_usable_amount_value(record.get("private_use_days"), "private_use_days") is None
+            or rental_property_usable_amount_value(record.get("available_days"), "available_days") is None
             for record in meaningful
             if rental_property_private_use_signal(record)
         )
@@ -4319,13 +4319,10 @@ def rental_property_net_amount(record: Dict[str, Any]) -> Optional[float]:
     explicit = rental_property_net_loss_amount_value(record.get("net_loss"))
     if explicit is not None:
         return explicit
-    income = rental_property_amount_value(record.get("income"))
+    income = rental_property_usable_amount_value(record.get("income"), "income")
     if income is None:
         return None
-    expenses = [
-        rental_property_amount_value(record.get(key))
-        for key in ("interest", "repairs", "capital_works", "depreciation", "other_expenses")
-    ]
+    expenses = [rental_property_usable_amount_value(record.get(key), key) for key in RENTAL_PROPERTY_EXPENSE_FIELDS]
     known_expenses = [amount for amount in expenses if amount is not None]
     if not known_expenses:
         return income
@@ -4548,7 +4545,7 @@ def rental_property_private_use_signal(record: Dict[str, Any]) -> bool:
 
 
 def rental_property_positive_private_use_days(record: Dict[str, Any]) -> bool:
-    days = rental_property_amount_value(record.get("private_use_days"))
+    days = rental_property_usable_amount_value(record.get("private_use_days"), "private_use_days")
     return days is not None and days > 0
 
 
@@ -4579,10 +4576,10 @@ def rental_property_amount_field_text(
 ) -> str:
     if rental_property_amount_missing_document_value(raw.get(key)):
         return display_value(raw.get(key))
-    direct = rental_property_amount_value(raw.get(key))
+    direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return money_text(direct) if money else rental_property_number_text(direct)
-    values = [rental_property_amount_value(item.get(key)) for item in items]
+    values = [rental_property_usable_amount_value(item.get(key), key) for item in items]
     real_values = [value for value in values if value is not None]
     if real_values:
         total = round(sum(real_values), 2)
@@ -4607,6 +4604,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
         if len(real_item_net_values) == len(items):
             return round(sum(real_item_net_values), 2)
         return None
+    if rental_property_supplied_amount_needs_evidence(raw, items, "income"):
+        return None
     income = rental_property_display_amount_value(raw, items, "income")
     if income is None:
         return None
@@ -4620,10 +4619,10 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
 
 
 def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
-    direct = rental_property_amount_value(raw.get(key))
+    direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return direct
-    values = [rental_property_amount_value(item.get(key)) for item in items]
+    values = [rental_property_usable_amount_value(item.get(key), key) for item in items]
     real_values = [value for value in values if value is not None]
     return round(sum(real_values), 2) if real_values else None
 
@@ -4640,7 +4639,13 @@ def rental_property_supplied_field_needs_evidence(record: Dict[str, Any], key: s
     value = record.get(key)
     if rental_property_field_absence_value(key, value):
         return False
-    return rental_property_amount_value(value) is None and rental_property_amount_needs_evidence(value, key)
+    return rental_property_amount_needs_evidence(value, key)
+
+
+def rental_property_usable_amount_value(value: Any, key: str) -> Optional[float]:
+    if rental_property_amount_needs_evidence(value, key):
+        return None
+    return rental_property_amount_value(value)
 
 
 def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
@@ -4656,15 +4661,19 @@ def rental_property_items_text(items: List[Dict[str, Any]]) -> str:
         label = rental_property_record_field_text(item, "address") or f"property {idx}"
         details.append(
             f"{label}: owner {rental_property_text_or_unknown(item, 'ownership')}, "
-            f"income {money_text(rental_property_amount_value(item.get('income')))}, "
-            f"interest {money_text(rental_property_amount_value(item.get('interest')))}, "
-            f"repairs {money_text(rental_property_amount_value(item.get('repairs')))}, "
-            f"capital works {money_text(rental_property_amount_value(item.get('capital_works')))}, "
-            f"depreciation {money_text(rental_property_amount_value(item.get('depreciation')))}, "
+            f"income {rental_property_item_amount_text(item, 'income')}, "
+            f"interest {rental_property_item_amount_text(item, 'interest')}, "
+            f"repairs {rental_property_item_amount_text(item, 'repairs')}, "
+            f"capital works {rental_property_item_amount_text(item, 'capital_works')}, "
+            f"depreciation {rental_property_item_amount_text(item, 'depreciation')}, "
             f"private use {rental_property_text_or_unknown(item, 'private_use')}, "
             f"records {rental_property_text_or_unknown(item, 'records')}"
         )
     return " | ".join(details)
+
+
+def rental_property_item_amount_text(item: Dict[str, Any], key: str) -> str:
+    return money_text(rental_property_usable_amount_value(item.get(key), key))
 
 
 def rental_property_text_or_unknown(record: Dict[str, Any], key: str) -> str:
