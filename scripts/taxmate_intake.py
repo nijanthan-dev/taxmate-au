@@ -4190,10 +4190,10 @@ def rental_property_identity_needs_evidence(raw: Dict[str, Any], items: List[Dic
 
 
 def rental_property_income_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
-    if rental_property_has_field_value(raw, "income"):
-        return rental_property_amount_needs_evidence(raw.get("income"), "income")
     if items:
         return any(rental_property_item_income_needs_evidence(item) for item in items)
+    if rental_property_has_field_value(raw, "income"):
+        return rental_property_amount_needs_evidence(raw.get("income"), "income")
     return rental_property_has_facts(raw) or bool(items)
 
 

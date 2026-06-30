@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -887,6 +887,7 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def rental_property_boolean_amount_evidence_gap(",
                 "key != \"net_loss\" and value is True",
                 "def rental_property_display_amount_value(",
+                "if items:\n        return any(rental_property_item_income_needs_evidence(item) for item in items)",
                 "def rental_property_item_income_needs_evidence(",
                 "def rental_property_net_loss_signal(",
                 "def rental_property_net_loss_amount_value(",

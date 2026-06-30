@@ -3508,30 +3508,33 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("private-use review", row["tab_text"])
 
     def test_rental_property_items_require_income_per_property(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload(
+        itemized = [
             {
-                "rental_property_items": [
-                    {
-                        "address": "Unit 1",
-                        "ownership": "individual",
-                        "income": 10000,
-                        "records": "agent statement held",
-                        "private_use": False,
-                    },
-                    {
-                        "address": "Unit 2",
-                        "ownership": "individual",
-                        "interest": 12000,
-                        "records": "loan statement held",
-                        "private_use": False,
-                    },
-                ]
-            }
-        )
-        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+                "address": "Unit 1",
+                "ownership": "individual",
+                "income": 10000,
+                "records": "agent statement held",
+                "private_use": False,
+            },
+            {
+                "address": "Unit 2",
+                "ownership": "individual",
+                "interest": 12000,
+                "records": "loan statement held",
+                "private_use": False,
+            },
+        ]
+        cases = [
+            {"rental_property_items": itemized},
+            {"rental_property_income": 22000, "rental_property_items": itemized},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
-        self.assertIn("rental income evidence", row["tab_text"])
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("rental income evidence", row["tab_text"])
 
     def test_rental_property_net_uses_displayed_item_expenses(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
