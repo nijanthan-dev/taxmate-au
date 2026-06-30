@@ -3979,7 +3979,7 @@ def rental_property_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         for flat_key, nested_key in RENTAL_PROPERTY_FLAT_FIELD_KEYS.items()
     }
     fields["items"] = answers.get("rental_property_items")
-    flat_values = {key: value for key, value in fields.items() if has_meaningful_rental_property_flat_value(key, value)}
+    flat_values = rental_property_answer_values(fields)
     flat_declines = rental_property_decline_values(fields)
     if not isinstance(raw, dict):
         return rental_property_values_with_declines(flat_values, flat_declines)
@@ -4055,6 +4055,14 @@ def has_meaningful_rental_property_flat_value(key: str, value: Any) -> bool:
 
 def has_meaningful_rental_property_override(key: str, value: Any) -> bool:
     return has_meaningful_rental_property_flat_value(key, value)
+
+
+def rental_property_answer_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    values: Dict[str, Any] = {}
+    for key, value in record.items():
+        if has_meaningful_rental_property_flat_value(key, value) or has_explicit_rental_property_evidence_gap(key, value):
+            values[key] = value
+    return values
 
 
 def has_explicit_rental_property_evidence_gap(key: str, value: Any) -> bool:
@@ -4290,8 +4298,8 @@ def rental_property_has_private_use(raw: Dict[str, Any], items: List[Dict[str, A
 
 def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
     display_net = rental_property_display_net_amount(raw, items)
-    if display_net is not None and display_net < 0:
-        return True
+    if display_net is not None:
+        return display_net < 0
     for record in [raw, *items]:
         net_amount = rental_property_net_amount(record)
         if net_amount is not None and net_amount < 0:
@@ -4517,10 +4525,12 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     explicit = rental_property_net_loss_amount_value(raw.get("net_loss"))
     if explicit is not None:
         return explicit
-    item_net_values = [rental_property_net_loss_amount_value(item.get("net_loss")) for item in items]
-    real_item_net_values = [value for value in item_net_values if value is not None]
-    if real_item_net_values:
-        return round(sum(real_item_net_values), 2)
+    if any(rental_property_net_loss_amount_value(item.get("net_loss")) is not None for item in items):
+        item_net_values = [rental_property_net_amount(item) for item in items]
+        real_item_net_values = [value for value in item_net_values if value is not None]
+        if len(real_item_net_values) == len(items):
+            return round(sum(real_item_net_values), 2)
+        return None
     income = rental_property_display_amount_value(raw, items, "income")
     if income is None:
         return None

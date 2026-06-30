@@ -3307,6 +3307,16 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn("numeric rental amount evidence", row["tab_text"])
                 self.assertIn(expected_answer, row["answer"])
 
+    def test_rental_property_flat_unknown_answers_render_workflow(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload({"rental_property_income": "unknown"})
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("rental income evidence", row["tab_text"])
+        self.assertIn("income unknown", row["answer"])
+        for url in taxmate_intake.ATO_RENTAL_PROPERTY_SOURCES:
+            self.assertIn(url, row["source_urls"])
+
     def test_rental_property_negative_private_use_text_stays_false(self) -> None:
         for private_use in ["no private use", "no personal use"]:
             with self.subTest(private_use=private_use):
@@ -3464,6 +3474,24 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn("worksheet net -2000.00", row["answer"])
         self.assertIn("net rental loss review", row["tab_text"])
+
+    def test_rental_property_mixed_item_net_loss_uses_all_item_nets(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {"address": "Unit 2", "ownership": "individual", "income": 10000, "interest": 2000},
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertIn("income 20000.00", row["answer"])
+        self.assertIn("interest 2000.00", row["answer"])
+        self.assertIn("worksheet net 6500.00", row["answer"])
+        self.assertNotIn("net rental loss review", row["tab_text"])
 
     def test_rental_property_items_render_and_review_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
