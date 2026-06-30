@@ -880,7 +880,9 @@ def ess_item_values(raw_items: Any) -> List[Dict[str, Any]]:
 
 
 def has_meaningful_ess_item(item: Dict[str, Any]) -> bool:
-    return any(has_meaningful_ess_signal(key, item.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
+    if any(has_meaningful_ess_signal(key, item.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS):
+        return True
+    return any(ess_amount_needs_evidence(item.get(key)) for key in ESS_AMOUNT_FIELDS)
 
 
 def has_meaningful_ess_signal(key: str, value: Any) -> bool:
@@ -934,9 +936,15 @@ def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> boo
 
 
 def ess_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
-    if any(ess_amount_malformed(raw.get(key)) for key in ESS_AMOUNT_FIELDS):
+    if any(ess_amount_needs_evidence(raw.get(key)) for key in ESS_AMOUNT_FIELDS):
         return True
-    return any(ess_amount_malformed(item.get(key)) for item in items for key in ESS_AMOUNT_FIELDS)
+    return any(ess_amount_needs_evidence(item.get(key)) for item in items for key in ESS_AMOUNT_FIELDS)
+
+
+def ess_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or ess_amount_malformed(value)
 
 
 def ess_amount_malformed(value: Any) -> bool:
@@ -961,6 +969,8 @@ def ess_tab_text(statement_evidence: bool, amount_conflict: bool, amount_evidenc
         return "ESS discounts need ESS statement evidence and corrected amount totals before accountant review."
     if amount_conflict:
         return "ESS top-level and item amounts conflict; correct ESS amount totals before accountant review."
+    if amount_evidence and statement_evidence:
+        return "ESS discounts need ESS statement evidence and numeric amount evidence before accountant review."
     if amount_evidence:
         return "ESS amount fields need numeric evidence before accountant review."
     if statement_evidence:
