@@ -380,7 +380,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("feat: add foreign income workflow", titles)
         self.assertNotIn("feat: add PSI deep workflow", titles)
         self.assertNotIn("feat: add crypto CGT workflow", titles)
-        self.assertEqual(7, len(issues))
+        self.assertNotIn("feat: add rental property worksheet", titles)
+        self.assertEqual(6, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -3165,6 +3166,240 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_CRYPTO_RECORDS_SOURCE, rules)
         self.assertIn(taxmate_intake.ATO_CRYPTO_BUSINESS_SOURCE, rules)
         self.assertNotIn("crypto CGT", out_of_scope)
+
+    def test_rental_property_workflow_renders_source_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Property Example rental unit", row["answer"])
+        self.assertIn("income 18000.00", row["answer"])
+        self.assertIn("interest 12500.00", row["answer"])
+        self.assertIn("repairs 2400.00", row["answer"])
+        self.assertIn("capital works 4500.00", row["answer"])
+        self.assertIn("depreciation 1800.00", row["answer"])
+        self.assertIn("private use true", row["answer"])
+        self.assertIn("private days 14", row["answer"])
+        self.assertIn("worksheet net -4800.00", row["answer"])
+        self.assertIn("capital works or depreciation review", row["tab_text"])
+        self.assertIn("private-use review", row["tab_text"])
+        self.assertIn("net rental loss review", row["tab_text"])
+        for url in taxmate_intake.ATO_RENTAL_PROPERTY_SOURCES:
+            self.assertIn(url, row["source_urls"])
+
+    def test_no_rental_property_answers_do_not_render_workflow_or_base_rows(self) -> None:
+        cases = [
+            {"rental_property_address": "no rental property"},
+            {"rental_property_income": "no rental income this year"},
+            {"rental_property": {"address": "I do not have a rental property"}},
+            {"rental_property": {"records": "not applicable"}},
+            {"rental_property_repairs": "no repairs"},
+            {"rental_property_private_use": False},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("RENTAL-PROPERTY", rendered_numbers)
+                self.assertFalse(any(str(number).startswith("rental_property_") for number in rendered_numbers))
+
+    def test_no_rental_property_plus_facts_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_address": "no rental property",
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 12000,
+                    "records": "agent statement held",
+                },
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("no-rental answer with rental facts", row["tab_text"])
+        self.assertIn("Property Example rental", row["answer"])
+        self.assertIn("decline signals address no rental property", row["answer"])
+
+    def test_rental_property_missing_records_stay_evidence(self) -> None:
+        for records in ["no rental records", "without agent statements", "records not provided", "I do not have loan interest statements"]:
+            with self.subTest(records=records):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": records,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("rental records", row["tab_text"])
+
+    def test_rental_property_ambiguous_facts_stay_evidence(self) -> None:
+        cases = [
+            (
+                {"repairs": "bathroom renovation and replacement"},
+                "repairs versus capital classification",
+                "repairs unknown",
+            ),
+            (
+                {"private_use": True},
+                "private-use apportionment evidence",
+                "private use true",
+            ),
+            (
+                {"income": "unknown"},
+                "rental income evidence",
+                "income unknown",
+            ),
+            (
+                {"interest": -10},
+                "numeric rental amount evidence",
+                "interest -10.00",
+            ),
+            (
+                {"private_use": None},
+                "private-use apportionment evidence",
+                "private use unknown",
+            ),
+        ]
+        base = {
+            "address": "Example rental",
+            "ownership": "individual",
+            "income": 12000,
+            "interest": 5000,
+            "records": "agent statement and loan statement held",
+            "private_use": False,
+        }
+        for override, expected_gap, expected_answer in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"rental_property": {**base, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(expected_gap, row["tab_text"])
+                self.assertIn(expected_answer, row["answer"])
+
+    def test_rental_property_false_private_use_and_net_loss_are_preserved(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_address": "Example rental",
+                "rental_property_ownership": "individual",
+                "rental_property_income": 10000,
+                "rental_property_interest": 12000,
+                "rental_property_records": "agent statement and loan statement held",
+                "rental_property_private_use": False,
+                "rental_property_net_loss": -2000,
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("private use false", row["answer"])
+        self.assertIn("worksheet net -2000.00", row["answer"])
+        self.assertIn("net rental loss review", row["tab_text"])
+        self.assertNotIn("numeric rental amount evidence", row["tab_text"])
+
+    def test_rental_property_boolean_amounts_do_not_satisfy_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": True,
+                    "interest": False,
+                    "records": "agent statement held",
+                    "private_use": False,
+                    "net_loss": True,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("rental income evidence", row["tab_text"])
+        self.assertIn("net rental loss review", row["tab_text"])
+        self.assertNotIn("income true", row["answer"])
+        self.assertIn("income unknown", row["answer"])
+
+    def test_rental_property_items_render_and_review_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 10000,
+                        "interest": 7000,
+                        "repairs": 500,
+                        "capital_works": 1000,
+                        "records": "agent statement held",
+                        "private_use": False,
+                    },
+                    {
+                        "address": "Holiday unit",
+                        "ownership": "individual",
+                        "income": 4000,
+                        "interest": 5000,
+                        "records": "agent statement held",
+                        "private_use": True,
+                    },
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("properties Unit 1", row["answer"])
+        self.assertIn("Holiday unit", row["answer"])
+        self.assertIn("per-property rental evidence", row["tab_text"])
+        self.assertIn("private-use apportionment evidence", row["tab_text"])
+
+    def test_rental_property_review_row_appears_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Rental property worksheet", body)
+        self.assertIn("Rental property worksheet stays accountant review", body)
+        self.assertIn("net rental loss review", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_rental_property_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_RENTAL_PROPERTY_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("property-rental-cgt", covered[url]["skills"])
+
+    def test_individual_return_portable_skill_covers_rental_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        root_skill = (root / "skills" / "taxmate-australia" / "SKILL.md").read_text()
+        prep_doc = (root / "docs" / "INDIVIDUAL_RETURN_PREP.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("rental property worksheet", skill)
+        self.assertIn("repairs versus capital", skill)
+        self.assertIn("net rental loss", skill)
+        self.assertIn("`property-rental-cgt`", skill)
+        self.assertIn("rental property worksheet", prep_doc)
+        self.assertIn("rental property", root_skill)
+        self.assertIn(taxmate_intake.ATO_RENTAL_RECORDS_SOURCE, rules)
+        self.assertIn(taxmate_intake.ATO_RENTAL_HOME_USE_SOURCE, rules)
+        self.assertNotIn("rental property", out_of_scope)
 
     def test_no_answer_signals_survive_flat_nested_merges(self) -> None:
         cases = [

@@ -86,6 +86,21 @@ REVIEWABLE_CRYPTO_FIELDS = (
     "crypto_business_use",
     "crypto_private_use",
 )
+REVIEWABLE_RENTAL_PROPERTY_FIELDS = (
+    "rental_property_address",
+    "rental_property_ownership",
+    "rental_property_income",
+    "rental_property_interest",
+    "rental_property_repairs",
+    "rental_property_capital_works",
+    "rental_property_depreciation",
+    "rental_property_other_expenses",
+    "rental_property_private_use",
+    "rental_property_private_use_days",
+    "rental_property_available_days",
+    "rental_property_records",
+    "rental_property_net_loss",
+)
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
     "lump_sum_arrears_statement",
@@ -465,6 +480,69 @@ CRYPTO_FIELD_ABSENCE_PHRASES = (
 )
 BOOLEAN_UNCERTAIN_PHRASES = frozenset({"maybe", "possibly", "unclear", "not clear"})
 CRYPTO_DECLINE_SIGNAL_KEY = "_decline_signals"
+RENTAL_PROPERTY_FLAT_FIELD_KEYS = {
+    "rental_property_address": "address",
+    "rental_property_ownership": "ownership",
+    "rental_property_income": "income",
+    "rental_property_interest": "interest",
+    "rental_property_repairs": "repairs",
+    "rental_property_capital_works": "capital_works",
+    "rental_property_depreciation": "depreciation",
+    "rental_property_other_expenses": "other_expenses",
+    "rental_property_private_use": "private_use",
+    "rental_property_private_use_days": "private_use_days",
+    "rental_property_available_days": "available_days",
+    "rental_property_records": "records",
+    "rental_property_net_loss": "net_loss",
+}
+RENTAL_PROPERTY_AMOUNT_FIELDS = (
+    "income",
+    "interest",
+    "repairs",
+    "capital_works",
+    "depreciation",
+    "other_expenses",
+    "private_use_days",
+    "available_days",
+    "net_loss",
+)
+RENTAL_PROPERTY_FLAT_AMOUNT_FIELDS = tuple(
+    key for key, nested in RENTAL_PROPERTY_FLAT_FIELD_KEYS.items() if nested in RENTAL_PROPERTY_AMOUNT_FIELDS
+)
+RENTAL_PROPERTY_SOURCE_KEY_FACTS = (
+    "address",
+    "ownership",
+    "income",
+    "interest",
+    "repairs",
+    "capital_works",
+    "depreciation",
+    "other_expenses",
+    "private_use",
+    "private_use_days",
+    "available_days",
+    "records",
+    "net_loss",
+)
+RENTAL_PROPERTY_DECLINE_PHRASES = (
+    "no rental",
+    "no rental property",
+    "no rental properties",
+    "no investment property",
+    "no investment properties",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+RENTAL_PROPERTY_FIELD_ABSENCE_PHRASES = (
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+    "none",
+)
+RENTAL_PROPERTY_DECLINE_SIGNAL_KEY = "_decline_signals"
 REVIEWABLE_COMPLEX_FIELDS = (
     "employee_deductions",
     "wfh_work_pattern",
@@ -473,6 +551,7 @@ REVIEWABLE_COMPLEX_FIELDS = (
     "ess_items",
     "foreign_income_items",
     "crypto_items",
+    "rental_property_items",
 )
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure", "uncertain"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -576,12 +655,19 @@ ATO_CRYPTO_SOURCES = [
     ATO_CRYPTO_RECORDS_SOURCE,
     ATO_CRYPTO_BUSINESS_SOURCE,
 ]
+ATO_RENTAL_RECORDS_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/property-and-land/residential-rental-properties/records-for-rental-properties-and-holiday-homes"
+ATO_RENTAL_CGT_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax"
+ATO_RENTAL_HOME_USE_SOURCE = "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/property-and-capital-gains-tax/your-main-residence-home/using-your-home-for-rental-or-business"
+ATO_RENTAL_PROPERTY_SOURCES = [
+    ATO_RENTAL_RECORDS_SOURCE,
+    ATO_RENTAL_CGT_SOURCE,
+    ATO_RENTAL_HOME_USE_SOURCE,
+]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
     ("feat: add partnership return intake", "Partnership return prep, partner shares, partnership income/loss allocations."),
     ("feat: add full supplementary return coverage", "Full supplementary labels beyond common V1 gates."),
-    ("feat: add rental property worksheet", "Rental income, interest, repairs versus capital, private use, depreciation, net rental loss."),
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
 ]
@@ -676,6 +762,19 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("crypto_ownership_entity", "Crypto", "Crypto owner or entity", "Crypto asset investments", False),
         QuestionSpec("crypto_business_use", "Crypto", "Business/trading use?", "Crypto assets and business", False),
         QuestionSpec("crypto_private_use", "Crypto", "Private/investment use?", "Crypto asset investments", False),
+        QuestionSpec("rental_property_address", "Rental property", "Rental property address or label", "Rental property records", False),
+        QuestionSpec("rental_property_ownership", "Rental property", "Rental property owner or ownership share", "Rental property records", False),
+        QuestionSpec("rental_property_income", "Rental property", "Gross rental income", "Rental property records", False),
+        QuestionSpec("rental_property_interest", "Rental property", "Rental loan interest", "Rental property records", False),
+        QuestionSpec("rental_property_repairs", "Rental property", "Repairs and maintenance", "Rental property records", False),
+        QuestionSpec("rental_property_capital_works", "Rental property", "Capital works or improvements", "Property and CGT records", False),
+        QuestionSpec("rental_property_depreciation", "Rental property", "Depreciating assets or decline in value", "Property and CGT records", False),
+        QuestionSpec("rental_property_other_expenses", "Rental property", "Other rental expenses", "Rental property records", False),
+        QuestionSpec("rental_property_private_use", "Rental property", "Private or holiday-home use?", "Using your home for rental or business", False),
+        QuestionSpec("rental_property_private_use_days", "Rental property", "Private-use days", "Using your home for rental or business", False),
+        QuestionSpec("rental_property_available_days", "Rental property", "Days available for rent", "Rental property records", False),
+        QuestionSpec("rental_property_records", "Rental property", "Rental statements and records held?", "Rental property records", False),
+        QuestionSpec("rental_property_net_loss", "Rental property", "Net rental loss or carried issue", "Rental property records", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -781,6 +880,21 @@ def sample_answers() -> Dict[str, Any]:
             "business_use": False,
             "private_use": True,
         },
+        "rental_property": {
+            "address": "Example rental unit",
+            "ownership": "50% individual owner",
+            "income": 18000,
+            "interest": 12500,
+            "repairs": 2400,
+            "capital_works": 4500,
+            "depreciation": 1800,
+            "other_expenses": 1600,
+            "private_use": True,
+            "private_use_days": 14,
+            "available_days": 351,
+            "records": "agent statement, loan interest statement, invoices held",
+            "net_loss": True,
+        },
         "ess": {
             "employer": "Example Pty Ltd",
             "statement": "ESS statement held",
@@ -882,6 +996,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(foreign_income_rows(foreign_income_answers(answers)))
     items.extend(psi_rows(psi_answers(answers)))
     items.extend(crypto_rows(crypto_answers(answers)))
+    items.extend(rental_property_rows(rental_property_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -957,6 +1072,12 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         or crypto_field_absence_value(spec.key.removeprefix("crypto_"), value)
     ):
         return False
+    if spec.key in RENTAL_PROPERTY_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key == "rental_property_private_use" and rental_property_private_use_false(value):
+        return False
+    if spec.key in REVIEWABLE_RENTAL_PROPERTY_FIELDS and rental_property_flat_value_is_absent(spec.key, value):
+        return False
     return spec.required or has_meaningful_value(value)
 
 
@@ -984,6 +1105,18 @@ def foreign_income_flat_value_is_absent(key: str, value: Any) -> bool:
 
 def foreign_income_flat_field_key(key: str) -> str:
     return FOREIGN_INCOME_FLAT_FIELD_KEYS.get(key, key)
+
+
+def rental_property_flat_value_is_absent(key: str, value: Any) -> bool:
+    nested_key = rental_property_flat_field_key(key)
+    return rental_property_source_declines_workflow(nested_key, value) or rental_property_field_absence_value(
+        nested_key,
+        value,
+    )
+
+
+def rental_property_flat_field_key(key: str) -> str:
+    return RENTAL_PROPERTY_FLAT_FIELD_KEYS.get(key, key)
 
 
 def base_item_status(key: str, value: Any) -> str:
@@ -1018,6 +1151,13 @@ def base_item_status(key: str, value: Any) -> str:
         if key in CRYPTO_FLAT_AMOUNT_FIELDS and crypto_amount_malformed(value):
             return "Evidence"
         if key in CRYPTO_FLAT_DATE_FIELDS and crypto_date_needs_evidence(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_RENTAL_PROPERTY_FIELDS:
+        nested_key = rental_property_flat_field_key(key)
+        if key == "rental_property_records" and rental_property_records_missing(value):
+            return "Evidence"
+        if nested_key in RENTAL_PROPERTY_AMOUNT_FIELDS and rental_property_amount_malformed(value, nested_key):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -3830,6 +3970,563 @@ def crypto_tab_text(evidence: List[str]) -> str:
     if evidence:
         return f"Crypto workflow needs {', '.join(evidence)} before accountant review."
     return "Crypto disposals, swaps, exchanges, conversions, rewards, transfers, wallet records, and cost base stay accountant review before manual copy."
+
+
+def rental_property_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("rental_property")
+    fields = {
+        nested_key: answers.get(flat_key)
+        for flat_key, nested_key in RENTAL_PROPERTY_FLAT_FIELD_KEYS.items()
+    }
+    fields["items"] = answers.get("rental_property_items")
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_rental_property_flat_value(key, value)}
+    flat_declines = rental_property_decline_values(fields)
+    if not isinstance(raw, dict):
+        return rental_property_values_with_declines(flat_values, flat_declines)
+    if not has_meaningful_value(raw):
+        return rental_property_values_with_declines(flat_values, flat_declines)
+    raw_declines = rental_property_decline_values(raw)
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if has_meaningful_rental_property_override(key, value):
+            merged[key] = value
+        elif key not in merged and has_explicit_rental_property_evidence_gap(key, value):
+            merged[key] = value
+    return rental_property_values_with_declines(merged, {**flat_declines, **raw_declines})
+
+
+def rental_property_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_rental_property_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    items = rental_property_item_values(raw.get("items"))
+    evidence = rental_property_evidence_gaps(raw, items)
+    review = rental_property_review_flags(raw, items)
+    status = "Evidence" if evidence else "Accountant review"
+    answer = (
+        f"Property {rental_property_field_text(raw, items, 'address')}; "
+        f"owner {rental_property_field_text(raw, items, 'ownership')}; "
+        f"income {rental_property_amount_field_text(raw, items, 'income')}; "
+        f"interest {rental_property_amount_field_text(raw, items, 'interest')}; "
+        f"repairs {rental_property_amount_field_text(raw, items, 'repairs')}; "
+        f"capital works {rental_property_amount_field_text(raw, items, 'capital_works')}; "
+        f"depreciation {rental_property_amount_field_text(raw, items, 'depreciation')}; "
+        f"other expenses {rental_property_amount_field_text(raw, items, 'other_expenses')}; "
+        f"private use {rental_property_field_text(raw, items, 'private_use')}; "
+        f"private days {rental_property_amount_field_text(raw, items, 'private_use_days', money=False)}; "
+        f"available days {rental_property_amount_field_text(raw, items, 'available_days', money=False)}; "
+        f"records {rental_property_field_text(raw, items, 'records')}; "
+        f"worksheet net {rental_property_net_text(raw, items)}"
+    )
+    item_text = rental_property_items_text(items)
+    if item_text:
+        answer = f"{answer}; properties {item_text}"
+    decline_text = rental_property_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    return [
+        guide_row(
+            "RENTAL-PROPERTY",
+            "Rental property worksheet",
+            "Rental income, interest, repairs/capital, private use, depreciation, and net loss review",
+            answer,
+            "Rental property handling collects income, expenses, records, private-use apportionment, repairs versus capital indicators, depreciation, and net-loss flags for accountant review before manual copy.",
+            status,
+            ATO_RENTAL_PROPERTY_SOURCES,
+            tab_text=rental_property_tab_text(evidence, review),
+        )
+    ]
+
+
+def has_meaningful_rental_property_flat_value(key: str, value: Any) -> bool:
+    if key == "items":
+        return bool(rental_property_item_values(value))
+    if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
+        return key == "net_loss" and value is True
+    if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (
+        rental_property_source_declines_workflow(key, value) or rental_property_field_absence_value(key, value)
+    ):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_meaningful_rental_property_override(key: str, value: Any) -> bool:
+    return has_meaningful_rental_property_flat_value(key, value)
+
+
+def has_explicit_rental_property_evidence_gap(key: str, value: Any) -> bool:
+    if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (
+        rental_property_source_declines_workflow(key, value) or rental_property_field_absence_value(key, value)
+    ):
+        return False
+    if key in RENTAL_PROPERTY_AMOUNT_FIELDS:
+        return rental_property_amount_needs_evidence(value, key)
+    if key in ("address", "ownership", "records", "private_use"):
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def rental_property_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not rental_property_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        if not rental_property_has_field_value(merged, key):
+            merged[key] = value
+    merged[RENTAL_PROPERTY_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def rental_property_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and rental_property_source_declines_workflow(key, value)
+    }
+
+
+def rental_property_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and rental_property_has_facts(item)]
+
+
+def has_rental_property_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if rental_property_declines_without_facts(raw):
+        return False
+    return rental_property_has_facts(raw)
+
+
+def rental_property_has_facts(record: Dict[str, Any]) -> bool:
+    if rental_property_item_values(record.get("items")):
+        return True
+    return any(
+        rental_property_has_signal(key, value) or has_explicit_rental_property_evidence_gap(key, value)
+        for key, value in record.items()
+        if key != "items"
+        and key != RENTAL_PROPERTY_DECLINE_SIGNAL_KEY
+        and not rental_property_source_declines_workflow(key, value)
+        and not rental_property_field_absence_value(key, value)
+    )
+
+
+def rental_property_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not rental_property_decline_values(raw):
+        return False
+    return not rental_property_has_facts(raw)
+
+
+def rental_property_has_signal(key: str, value: Any) -> bool:
+    if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key == "private_use" and rental_property_private_use_false(value):
+        return False
+    if key in RENTAL_PROPERTY_SOURCE_KEY_FACTS and (
+        rental_property_source_declines_workflow(key, value) or rental_property_field_absence_value(key, value)
+    ):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def rental_property_evidence_gaps(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    evidence: List[str] = []
+    if rental_property_decline_contradiction(raw, items):
+        evidence.append("no-rental answer with rental facts")
+    if rental_property_identity_needs_evidence(raw, items):
+        evidence.append("property identity and ownership evidence")
+    if rental_property_income_needs_evidence(raw, items):
+        evidence.append("rental income evidence")
+    if rental_property_records_evidence(raw, items):
+        evidence.append("rental records")
+    if rental_property_amounts_need_evidence(raw, items):
+        evidence.append("numeric rental amount evidence")
+    if rental_property_repair_classification_needs_evidence(raw, items):
+        evidence.append("repairs versus capital classification")
+    if rental_property_private_use_needs_evidence(raw, items):
+        evidence.append("private-use apportionment evidence")
+    if any(rental_property_item_needs_evidence(raw, item) for item in items):
+        evidence.append("per-property rental evidence")
+    return evidence
+
+
+def rental_property_review_flags(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> List[str]:
+    flags: List[str] = []
+    if rental_property_has_capital_or_depreciation(raw, items):
+        flags.append("capital works or depreciation review")
+    if rental_property_has_private_use(raw, items):
+        flags.append("private-use review")
+    if rental_property_has_net_loss(raw, items):
+        flags.append("net rental loss review")
+    if rental_property_has_repairs_and_capital(raw, items):
+        flags.append("repairs versus capital review")
+    return flags
+
+
+def rental_property_identity_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for key in ("address", "ownership"):
+        if not rental_property_has_field_value(raw, key):
+            if not any(rental_property_has_field_value(item, key) for item in items):
+                return True
+        elif contains_unknown(raw.get(key)):
+            return True
+    return any(contains_unknown(item.get(key)) for item in items for key in ("address", "ownership"))
+
+
+def rental_property_income_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if rental_property_has_field_value(raw, "income"):
+        return rental_property_amount_needs_evidence(raw.get("income"), "income")
+    if any(rental_property_has_field_value(item, "income") for item in items):
+        return any(rental_property_amount_needs_evidence(item.get("income"), "income") for item in items)
+    return rental_property_has_facts(raw) or bool(items)
+
+
+def rental_property_records_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    records = raw.get("records")
+    if has_meaningful_value(records) and rental_property_records_missing(records):
+        return True
+    if items:
+        return any(rental_property_item_records_need_evidence(raw, item) for item in items)
+    return not rental_property_has_field_value(raw, "records")
+
+
+def rental_property_item_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    return (
+        rental_property_declines_with_facts(item)
+        or any(rental_property_item_context_field_needs_evidence(raw, item, key) for key in ("address", "ownership"))
+        or rental_property_item_records_need_evidence(raw, item)
+        or any(rental_property_amount_needs_evidence(item.get(key), key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS)
+        or rental_property_private_use_needs_evidence(item, [])
+        or rental_property_repair_classification_needs_evidence(item, [])
+    )
+
+
+def rental_property_item_context_field_needs_evidence(raw: Dict[str, Any], item: Dict[str, Any], key: str) -> bool:
+    value = item.get(key)
+    if not is_missing(value):
+        return contains_unknown(value) or rental_property_field_absence_value(key, value)
+    return not rental_property_has_field_value(raw, key)
+
+
+def rental_property_item_records_need_evidence(raw: Dict[str, Any], item: Dict[str, Any]) -> bool:
+    value = item.get("records")
+    if not is_missing(value):
+        return rental_property_records_missing(value) or rental_property_field_absence_value("records", value)
+    return not rental_property_has_field_value(raw, "records")
+
+
+def rental_property_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(rental_property_amount_needs_evidence(raw.get(key), key) for key in RENTAL_PROPERTY_AMOUNT_FIELDS) or any(
+        rental_property_amount_needs_evidence(item.get(key), key) for item in items for key in RENTAL_PROPERTY_AMOUNT_FIELDS
+    )
+
+
+def rental_property_repair_classification_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return rental_property_repairs_are_ambiguous(raw.get("repairs")) or any(
+        rental_property_repairs_are_ambiguous(item.get("repairs")) for item in items
+    )
+
+
+def rental_property_repairs_are_ambiguous(value: Any) -> bool:
+    if not isinstance(value, str) or rental_property_field_absence_value("repairs", value):
+        return False
+    lowered = value.strip().lower()
+    return any(term in lowered for term in ("renovation", "improvement", "capital", "replace", "replacement", "initial repair"))
+
+
+def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    records = [raw, *items]
+    meaningful = [record for record in records if rental_property_has_facts(record)]
+    if meaningful and not any(rental_property_has_field_value(record, "private_use") for record in meaningful):
+        return True
+    if any(contains_unknown(record.get("private_use")) for record in meaningful):
+        return True
+    if any(rental_property_private_use_true(record.get("private_use")) for record in meaningful):
+        return any(
+            rental_property_amount_value(record.get("private_use_days")) is None
+            or rental_property_amount_value(record.get("available_days")) is None
+            for record in meaningful
+            if rental_property_private_use_true(record.get("private_use"))
+        )
+    return False
+
+
+def rental_property_has_capital_or_depreciation(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(
+        (rental_property_amount_value(record.get("capital_works")) or 0) > 0
+        or (rental_property_amount_value(record.get("depreciation")) or 0) > 0
+        for record in [raw, *items]
+    )
+
+
+def rental_property_has_repairs_and_capital(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(
+        (rental_property_amount_value(record.get("repairs")) or 0) > 0
+        and (
+            (rental_property_amount_value(record.get("capital_works")) or 0) > 0
+            or (rental_property_amount_value(record.get("depreciation")) or 0) > 0
+        )
+        for record in [raw, *items]
+    )
+
+
+def rental_property_has_private_use(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return any(rental_property_private_use_true(record.get("private_use")) for record in [raw, *items])
+
+
+def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for record in [raw, *items]:
+        net_amount = rental_property_net_amount(record)
+        if net_amount is not None and net_amount < 0:
+            return True
+        if rental_property_net_loss_signal(record.get("net_loss")):
+            return True
+    return False
+
+
+def rental_property_net_amount(record: Dict[str, Any]) -> Optional[float]:
+    explicit = rental_property_amount_value(record.get("net_loss"))
+    if explicit is not None:
+        return explicit
+    income = rental_property_amount_value(record.get("income"))
+    if income is None:
+        return None
+    expenses = [
+        rental_property_amount_value(record.get(key))
+        for key in ("interest", "repairs", "capital_works", "depreciation", "other_expenses")
+    ]
+    known_expenses = [amount for amount in expenses if amount is not None]
+    if not known_expenses:
+        return income
+    return round(income - sum(known_expenses), 2)
+
+
+def rental_property_decline_contradiction(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    return rental_property_declines_with_facts(raw) or any(rental_property_declines_with_facts(item) for item in items)
+
+
+def rental_property_declines_with_facts(record: Dict[str, Any]) -> bool:
+    if record.get(RENTAL_PROPERTY_DECLINE_SIGNAL_KEY):
+        return True
+    if not rental_property_decline_values(record):
+        return False
+    return rental_property_has_facts(record)
+
+
+def rental_property_records_missing(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if is_missing(value) or contains_unknown(value):
+        return True
+    if rental_property_declines_workflow(value):
+        return True
+    lowered = text(value).strip().lower()
+    if rental_property_record_context(lowered) and lowered.startswith(("no ", "without ", "missing ")):
+        return True
+    if rental_property_record_context(lowered) and any(
+        phrase in lowered for phrase in ("do not have", "don't have", "dont have", "not held", "not available", "not provided")
+    ):
+        return True
+    return lowered in {"no", "n", "false", "none", "not held", "not available"}
+
+
+def rental_property_record_context(lowered: str) -> bool:
+    return any(term in lowered for term in ("record", "records", "statement", "invoice", "invoices", "agent", "loan", "interest"))
+
+
+def rental_property_declines_workflow(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    if contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if rental_property_record_context(lowered):
+        return False
+    if lowered in RENTAL_PROPERTY_DECLINE_PHRASES:
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "do not have rental property",
+            "do not have a rental property",
+            "don't have rental property",
+            "don't have a rental property",
+            "dont have rental property",
+            "no rental income this year",
+        )
+    )
+
+
+def rental_property_source_declines_workflow(key: str, value: Any) -> bool:
+    if rental_property_field_absence_value(key, value):
+        return False
+    return rental_property_declines_workflow(value)
+
+
+def rental_property_field_absence_value(key: str, value: Any) -> bool:
+    if not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if lowered in {"no rental", "no rental property", "no rental properties", "no investment property", "no investment properties"}:
+        return False
+    if key in {"interest", "repairs", "capital_works", "depreciation", "other_expenses", "private_use_days", "net_loss"} and lowered.startswith("no "):
+        return True
+    return lowered in RENTAL_PROPERTY_FIELD_ABSENCE_PHRASES
+
+
+def rental_property_has_field_value(record: Dict[str, Any], key: str) -> bool:
+    value = record.get(key)
+    if key in RENTAL_PROPERTY_AMOUNT_FIELDS and isinstance(value, bool):
+        return key == "net_loss" and value is True
+    return (
+        has_meaningful_value(value)
+        and not rental_property_source_declines_workflow(key, value)
+        and not rental_property_field_absence_value(key, value)
+    )
+
+
+def rental_property_amount_needs_evidence(value: Any, key: str = "") -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if rental_property_declines_workflow(value) or rental_property_field_absence_value(key, value):
+        return False
+    return contains_unknown(value) or rental_property_amount_malformed(value, key)
+
+
+def rental_property_amount_malformed(value: Any, key: str = "") -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    if rental_property_field_absence_value(key, value):
+        return False
+    try:
+        amount = money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return amount is not None and amount < 0 and key != "net_loss"
+
+
+def rental_property_amount_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def rental_property_private_use_true(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    lowered = text(value).strip().lower()
+    return lowered in {"true", "yes", "y", "private", "holiday home", "mixed use", "mixed-use"} or any(
+        phrase in lowered for phrase in ("private use", "holiday home", "personal use")
+    )
+
+
+def rental_property_private_use_false(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    lowered = text(value).strip().lower()
+    return lowered in {"false", "no", "n", "0", "no private use", "no personal use", "not private"}
+
+
+def rental_property_net_loss_signal(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    lowered = text(value).strip().lower()
+    return "loss" in lowered and not rental_property_field_absence_value("net_loss", value)
+
+
+def rental_property_field_text(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> str:
+    direct = rental_property_record_field_text(raw, key)
+    if direct:
+        return direct
+    values = [value for item in items if (value := rental_property_record_field_text(item, key))]
+    return ", ".join(values) if values else "unknown"
+
+
+def rental_property_amount_field_text(
+    raw: Dict[str, Any],
+    items: List[Dict[str, Any]],
+    key: str,
+    money: bool = True,
+) -> str:
+    direct = rental_property_amount_value(raw.get(key))
+    if direct is not None:
+        return money_text(direct) if money else rental_property_number_text(direct)
+    values = [rental_property_amount_value(item.get(key)) for item in items]
+    real_values = [value for value in values if value is not None]
+    if real_values:
+        total = round(sum(real_values), 2)
+        return money_text(total) if money else rental_property_number_text(total)
+    return "unknown"
+
+
+def rental_property_net_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    direct = rental_property_net_amount(raw)
+    if direct is not None:
+        return money_text(direct)
+    values = [rental_property_net_amount(item) for item in items]
+    real_values = [value for value in values if value is not None]
+    return money_text(round(sum(real_values), 2)) if real_values else "unknown"
+
+
+def rental_property_items_text(items: List[Dict[str, Any]]) -> str:
+    details: List[str] = []
+    for idx, item in enumerate(items, start=1):
+        label = rental_property_record_field_text(item, "address") or f"property {idx}"
+        details.append(
+            f"{label}: owner {rental_property_text_or_unknown(item, 'ownership')}, "
+            f"income {money_text(rental_property_amount_value(item.get('income')))}, "
+            f"interest {money_text(rental_property_amount_value(item.get('interest')))}, "
+            f"repairs {money_text(rental_property_amount_value(item.get('repairs')))}, "
+            f"capital works {money_text(rental_property_amount_value(item.get('capital_works')))}, "
+            f"depreciation {money_text(rental_property_amount_value(item.get('depreciation')))}, "
+            f"private use {rental_property_text_or_unknown(item, 'private_use')}, "
+            f"records {rental_property_text_or_unknown(item, 'records')}"
+        )
+    return " | ".join(details)
+
+
+def rental_property_text_or_unknown(record: Dict[str, Any], key: str) -> str:
+    value = rental_property_record_field_text(record, key)
+    return value if value != "" else "unknown"
+
+
+def rental_property_record_field_text(record: Dict[str, Any], key: str) -> str:
+    if rental_property_field_absence_value(key, record.get(key)):
+        return ""
+    return display_value(record.get(key))
+
+
+def rental_property_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(RENTAL_PROPERTY_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
+def rental_property_number_text(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.8g}"
+
+
+def rental_property_tab_text(evidence: List[str], review: List[str]) -> str:
+    if evidence and review:
+        return (
+            f"Rental property worksheet needs {', '.join(evidence)} and stays accountant review for "
+            f"{', '.join(review)} before manual copy."
+        )
+    if evidence:
+        return f"Rental property worksheet needs {', '.join(evidence)} before accountant review."
+    if review:
+        return f"Rental property worksheet stays accountant review for {', '.join(review)} before manual copy."
+    return "Rental property worksheet stays accountant review before manual copy."
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
