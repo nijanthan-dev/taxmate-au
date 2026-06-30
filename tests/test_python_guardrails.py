@@ -3348,6 +3348,26 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("net rental loss review", row["tab_text"])
         self.assertNotIn("numeric rental amount evidence", row["tab_text"])
 
+    def test_rental_property_positive_net_loss_amount_renders_as_loss(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property": {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 10000,
+                    "interest": 12000,
+                    "records": "agent statement and loan statement held",
+                    "private_use": False,
+                    "net_loss": 2000,
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("worksheet net -2000.00", row["answer"])
+        self.assertIn("net rental loss review", row["tab_text"])
+
     def test_rental_property_boolean_amounts_do_not_satisfy_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -3427,6 +3447,22 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn("interest 13000.00", row["answer"])
         self.assertIn("worksheet net -3000.00", row["answer"])
+        self.assertIn("net rental loss review", row["tab_text"])
+
+    def test_rental_property_item_net_loss_amounts_render_as_losses(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {"address": "Unit 2", "ownership": "individual", "income": 8000, "net_loss": 500},
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertIn("worksheet net -2000.00", row["answer"])
         self.assertIn("net rental loss review", row["tab_text"])
 
     def test_rental_property_items_render_and_review_queue(self) -> None:

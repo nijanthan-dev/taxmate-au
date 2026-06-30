@@ -4302,7 +4302,7 @@ def rental_property_has_net_loss(raw: Dict[str, Any], items: List[Dict[str, Any]
 
 
 def rental_property_net_amount(record: Dict[str, Any]) -> Optional[float]:
-    explicit = rental_property_amount_value(record.get("net_loss"))
+    explicit = rental_property_net_loss_amount_value(record.get("net_loss"))
     if explicit is not None:
         return explicit
     income = rental_property_amount_value(record.get("income"))
@@ -4514,10 +4514,10 @@ def rental_property_net_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -
 
 
 def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> Optional[float]:
-    explicit = rental_property_amount_value(raw.get("net_loss"))
+    explicit = rental_property_net_loss_amount_value(raw.get("net_loss"))
     if explicit is not None:
         return explicit
-    item_net_values = [rental_property_amount_value(item.get("net_loss")) for item in items]
+    item_net_values = [rental_property_net_loss_amount_value(item.get("net_loss")) for item in items]
     real_item_net_values = [value for value in item_net_values if value is not None]
     if real_item_net_values:
         return round(sum(real_item_net_values), 2)
@@ -4541,6 +4541,13 @@ def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[s
     values = [rental_property_amount_value(item.get(key)) for item in items]
     real_values = [value for value in values if value is not None]
     return round(sum(real_values), 2) if real_values else None
+
+
+def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
+    amount = rental_property_amount_value(value)
+    if amount is None:
+        return None
+    return -amount if amount > 0 else amount
 
 
 def rental_property_items_text(items: List[Dict[str, Any]]) -> str:
