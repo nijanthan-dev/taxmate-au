@@ -358,6 +358,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def ess_label_text(",
                 "display_value(raw.get(\"provider\"))",
                 "def has_ess_inputs(",
+                "if has_meaningful_ess_statement(raw.get(\"statement\")):",
+                "def has_meaningful_ess_statement(",
                 "def has_meaningful_ess_value(",
                 "if isinstance(value, list):",
                 "return any(has_meaningful_value(item) for item in value)",

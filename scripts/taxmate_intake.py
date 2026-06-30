@@ -961,7 +961,13 @@ def has_ess_inputs(raw: Any) -> bool:
         return False
     if ess_item_values(raw.get("items")):
         return True
+    if has_meaningful_ess_statement(raw.get("statement")):
+        return True
     return any(has_meaningful_ess_signal(key, raw.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
+
+
+def has_meaningful_ess_statement(value: Any) -> bool:
+    return has_meaningful_value(value) and not contains_unknown(value)
 
 
 def has_meaningful_ess_value(value: Any) -> bool:
