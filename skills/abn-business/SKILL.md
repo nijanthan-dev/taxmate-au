@@ -45,3 +45,7 @@ Use for ABN and business income or expenses. Do not use for employee-only expens
 - dates acquired, used, paid, received, and disposed
 - records held and missing evidence
 - prior claims, reimbursements, and duplicate-risk factors
+- personal services income amount and income type
+- PSI contract or invoice evidence
+- results test, 80% client concentration, unrelated clients test, employment test, and business premises test
+- personal services business determination, attribution, deductions, and business structure facts

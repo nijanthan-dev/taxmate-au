@@ -378,7 +378,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("feat: add ESS workflow", titles)
         self.assertNotIn("feat: add ETP and lump sum workflow", titles)
         self.assertNotIn("feat: add foreign income workflow", titles)
-        self.assertEqual(9, len(issues))
+        self.assertNotIn("feat: add PSI deep workflow", titles)
+        self.assertEqual(8, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -396,6 +397,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "Income",
                 "Complex income",
                 "Foreign income",
+                "PSI",
                 "ABN",
                 "BAS",
                 "Deductions",
@@ -421,6 +423,12 @@ class IndividualIntakeTests(unittest.TestCase):
                 "foreign_tax_paid",
                 "foreign_income_residency_status",
                 "foreign_income_tax_offset_claim",
+                "psi_income",
+                "psi_contract_evidence",
+                "psi_results_test",
+                "psi_80_percent_test",
+                "psi_unrelated_clients_test",
+                "psi_business_structure",
             }.issubset(keys)
         )
 
@@ -1535,6 +1543,178 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn(taxmate_intake.ATO_FOREIGN_EMPLOYMENT_EXEMPT_SOURCE, rules)
         self.assertIn(taxmate_intake.ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE, rules)
         self.assertNotIn("foreign income", out_of_scope.lower())
+
+    def test_psi_workflow_renders_source_backed_review(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        row = next(item for item in payload["items"] if item["number"] == "PSI")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Income 18000.00", row["answer"])
+        self.assertIn("type IT consulting", row["answer"])
+        self.assertIn("results test true", row["answer"])
+        self.assertIn("80% test false", row["answer"])
+        self.assertIn("business premises test false", row["answer"])
+        self.assertIn("structure sole trader ABN", row["answer"])
+        self.assertIn(taxmate_intake.ATO_PSI_SOURCE, row["source_urls"])
+
+    def test_no_psi_answers_do_not_render_workflow_row(self) -> None:
+        for answers in [
+            {"psi_contract_evidence": "no PSI"},
+            {"psi_contract_evidence": "no personal services income"},
+            {"psi_income": "no PSI"},
+            {"psi_income": "no personal services income"},
+            {"psi_income": "not applicable"},
+            {"psi_business_structure": "no PSI"},
+            {"psi_deductions": "not applicable"},
+            {"psi_results_test": "no personal services income"},
+            {"psi_contract_evidence": "I do not have personal services income"},
+            {"psi": {"contract_evidence": "I don't have PSI"}},
+            {"psi": {"income": "no PSI"}},
+            {"psi": {"business_structure": "no personal services income"}},
+            {"psi": {"contract_evidence": "not applicable"}},
+        ]:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rendered_numbers = {row["number"] for row in payload["items"]}
+
+                self.assertNotIn("PSI", rendered_numbers)
+                self.assertNotIn("psi_income", rendered_numbers)
+                self.assertNotIn("psi_business_structure", rendered_numbers)
+                self.assertNotIn("psi_deductions", rendered_numbers)
+                self.assertNotIn("psi_results_test", rendered_numbers)
+
+    def test_psi_document_denial_stays_evidence(self) -> None:
+        for statement in ["no PSI contract", "no personal services income invoice"]:
+            with self.subTest(statement=statement):
+                payload = taxmate_intake.answers_to_pack_payload({"psi_contract_evidence": statement})
+                row = next(item for item in payload["items"] if item["number"] == "PSI")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("contract or invoice evidence", row["tab_text"])
+
+    def test_no_psi_plus_facts_stays_evidence(self) -> None:
+        cases = [
+            {
+                "psi_contract_evidence": "no PSI",
+                "psi_income": 5000,
+                "psi_results_test": True,
+                "psi_80_percent_test": False,
+            },
+            {
+                "psi_income": "no PSI",
+                "psi_results_test": True,
+                "psi_80_percent_test": False,
+            },
+            {
+                "psi": {
+                    "income": "no personal services income",
+                    "results_test": True,
+                    "eighty_percent_test": False,
+                }
+            },
+            {
+                "psi_business_structure": "no PSI",
+                "psi_results_test": True,
+                "psi_80_percent_test": False,
+            },
+            {
+                "psi": {
+                    "business_structure": "not applicable",
+                    "results_test": True,
+                    "eighty_percent_test": False,
+                }
+            },
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "PSI")
+                rendered_numbers = {item["number"] for item in payload["items"]}
+
+                self.assertEqual("Evidence", row["status"])
+                if answers.get("psi_income") == "no PSI" or (
+                    isinstance(answers.get("psi"), dict) and answers["psi"].get("income") == "no personal services income"
+                ):
+                    self.assertNotIn("psi_income", rendered_numbers)
+                self.assertNotIn("psi_business_structure", rendered_numbers)
+
+    def test_psi_missing_or_ambiguous_facts_stay_evidence(self) -> None:
+        cases = [
+            {"psi": {"income": "about $100", "contract_evidence": "contracts held"}},
+            {"psi": {"income": 100, "contract_evidence": "contracts held", "results_test": "unknown"}},
+            {"psi": {"income": 100, "contract_evidence": "contracts held", "results_test": True}},
+            {"psi": {"income": 100, "contract_evidence": "contract not provided", "results_test": True}},
+        ]
+        for answers in cases:
+            with self.subTest(answers=answers):
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(item for item in payload["items"] if item["number"] == "PSI")
+
+                self.assertEqual("Evidence", row["status"])
+
+    def test_psi_zero_and_false_values_are_preserved(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "psi": {
+                    "income": 0,
+                    "income_type": "consulting",
+                    "contract_evidence": "contracts and invoices held",
+                    "results_test": False,
+                    "eighty_percent_test": False,
+                    "unrelated_clients_test": False,
+                    "employment_test": False,
+                    "business_premises_test": False,
+                    "psb_determination": False,
+                    "attribution_entity": "individual",
+                    "deductions": "none",
+                    "business_structure": "sole trader",
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "PSI")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("Income 0.00", row["answer"])
+        self.assertIn("results test false", row["answer"])
+        self.assertIn("PSB determination false", row["answer"])
+
+    def test_psi_review_row_appears_in_html_pack(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("Personal services income", body)
+        self.assertIn("PSI tests, attribution, deductions, and structure stay accountant review before manual copy.", body)
+        self.assertIn("80% test false", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_psi_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.ATO_PSI_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("abn-business", covered[url]["skills"])
+
+    def test_individual_return_portable_skill_covers_psi_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        out_of_scope = skill.split("## Out Of Scope", 1)[1].split("## Method", 1)[0]
+
+        self.assertIn("PSI deep", skill)
+        self.assertIn("results test", skill)
+        self.assertIn("80% client concentration", skill)
+        self.assertIn("unrelated clients test", skill)
+        self.assertIn("employment test", skill)
+        self.assertIn("business premises test", skill)
+        self.assertIn("business structure", skill)
+        self.assertIn(taxmate_intake.ATO_PSI_SOURCE, rules)
+        self.assertNotIn("PSI deep", out_of_scope)
 
     def test_asset_items_alias_gets_typed_asset_review(self) -> None:
         answers = taxmate_intake.sample_answers()

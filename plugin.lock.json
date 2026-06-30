@@ -39,7 +39,7 @@
         "type": "local",
         "path": "skills/abn-business"
       },
-      "integrity": "sha256:62eafffdf813deafedc021ac7fbcfd438e2a5d2aedea7db355c441eff5881c21"
+      "integrity": "sha256:9b3ae24076fa5342d752898b3f3b7e92cbdd29de82d5a096d9a56d9e27ac682b"
     },
     {
       "id": "capital-gains-tax",
@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:854923cf851371497524019cb27c28e3b3d6af2ea60c11b44c8b88bbef5c317b"
+      "integrity": "sha256:766bc846ce83871a16d8e43e50add2a4a9eab4c2b57375a5d16c778052673fd6"
     },
     {
       "id": "payg-employer",
