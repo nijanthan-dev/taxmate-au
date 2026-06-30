@@ -22,6 +22,7 @@ This orchestration skill does not bundle extracted tax-treatment summaries. It c
 - ATO foreign and temporary resident income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/foreign-and-temporary-resident-income
 - ATO tax-exempt foreign employment income: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/foreign-and-worldwide-income/tax-exempt-income-from-foreign-employment
 - ATO foreign income tax offset rules guide: https://www.ato.gov.au/forms-and-instructions/foreign-income-tax-offset-rules-guide-2026
+- ATO personal services income: https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income
 - Fair Work 2025 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2025-public-holidays
 - Fair Work 2026 public holidays: https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays
 
@@ -38,6 +39,8 @@ ESS handling is prep-only. Collect statement evidence, employer or scheme labels
 ETP, lump sum in arrears, super lump sum, and super income stream handling is prep-only. Collect official statements, payer or fund labels, payment type, payment dates, taxable and tax-free components, prior-year allocation where relevant, and withholding. Explicit no-payment answers without facts should skip the workflow; no-payment answers plus amounts, unknown statements, malformed amounts, and incomplete prior-year allocation stay Evidence or `Accountant review`.
 
 Foreign income handling is prep-only. Collect source statements, country, income type, amount, foreign tax paid, exchange-rate support, residency-specific or temporary-resident evidence, foreign income tax offset claims, and exempt foreign employment claims. Explicit no-foreign-income answers without facts should skip the workflow; no-foreign-income plus amount facts, missing statements, unknown or malformed amounts, exchange-rate gaps, missing residency or temporary-resident evidence, and offset claims without foreign tax paid evidence stay Evidence or `Accountant review`.
+
+PSI deep handling is prep-only. Collect personal services income amount and type, contract or invoice evidence, results test, 80% client concentration, unrelated clients test, employment test, business premises test, personal services business determination, attribution, deductions, and business structure. Explicit no-PSI answers without facts should skip the workflow; no-PSI plus facts, missing contracts, unknown or malformed income, unknown tests, missing attribution, missing deduction facts, and missing business structure stay Evidence or `Accountant review`. Completed PSI rows stay `Accountant review`; do not decide final PSI treatment.
 
 ## Accountant review
 

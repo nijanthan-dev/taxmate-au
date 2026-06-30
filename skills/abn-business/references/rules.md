@@ -227,6 +227,10 @@ These are conservative topic summaries from official sources, not copied ATO pag
 - Do not claim source-backed treatment from metadata-only sources without explicit validation.
 
 ## Accountant-review boundaries
+PSI deep handling is prep-only. Collect personal services income amount and type, contract or invoice evidence, results test, 80% client concentration, unrelated clients test, employment test, business premises test, personal services business determination, attribution, deductions, and business structure.
+
+Explicit no-PSI answers without facts should skip the workflow. No-PSI plus facts, missing contracts, unknown or malformed income, unknown tests, missing attribution, missing deduction facts, and missing business structure stay Evidence or `Accountant review`. Completed PSI rows stay `Accountant review`; do not decide final PSI treatment.
+
 - pre-revenue
 - PSI
 - business versus hobby

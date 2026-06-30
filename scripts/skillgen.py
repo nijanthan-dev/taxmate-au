@@ -944,6 +944,15 @@ def skillMarkdown(topic_obj: Topic) -> str:
         "records held and missing evidence",
         "prior claims, reimbursements, and duplicate-risk factors",
     ]
+    if topic_obj.slug == "abn-business":
+        facts.extend(
+            [
+                "personal services income amount and income type",
+                "PSI contract or invoice evidence",
+                "results test, 80% client concentration, unrelated clients test, employment test, and business premises test",
+                "personal services business determination, attribution, deductions, and business structure facts",
+            ]
+        )
     for fact in facts:
         lines.append(f"- {fact}")
     return "\n".join(lines) + "\n"
@@ -1001,6 +1010,15 @@ def rulesMarkdown(topic_obj: Topic, sources: List[Source]) -> str:
             "## Accountant-review boundaries",
         ]
     )
+    if topic_obj.slug == "abn-business":
+        lines.extend(
+            [
+                "PSI deep handling is prep-only. Collect personal services income amount and type, contract or invoice evidence, results test, 80% client concentration, unrelated clients test, employment test, business premises test, personal services business determination, attribution, deductions, and business structure.",
+                "",
+                "Explicit no-PSI answers without facts should skip the workflow. No-PSI plus facts, missing contracts, unknown or malformed income, unknown tests, missing attribution, missing deduction facts, and missing business structure stay Evidence or `Accountant review`. Completed PSI rows stay `Accountant review`; do not decide final PSI treatment.",
+                "",
+            ]
+        )
     for review in topic_obj.review:
         lines.append(f"- {review}")
     lines.extend(["- mixed business/private use", "- missing ownership or entity details", "- missing evidence", "- pre-revenue expenses", "- capital versus revenue treatment", "- GST/BAS, FBT, payroll, or complex CGT uncertainty"])

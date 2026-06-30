@@ -97,6 +97,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "Foreign income intake must skip explicit no-income/employment/pension answers only when no facts exist, inspect item lists before decline matching treats a workflow as factless, let unknown or uncertain wording override decline matching, avoid no-tax-paid wording as a workflow decline, block tax-paid contexts before any no-income absence phrase, treat do-not-have income wording as no-income only when it is not tax-paid or statement/payment-summary context, block decline matching for all statement/payment-summary document contexts, keep no foreign income payment summary and no foreign employment statement as Evidence, match short decline tokens exactly, preserve nested and flat false foreign-income claim booleans once another signal renders the row, suppress standalone flat negative claim strings, never let nested false booleans or field-specific negative claim strings clear an existing flat true offset/exemption signal, do not let negative offset/exemption claim-only strings keep a no-income workflow alive, treat no-offset and no-foreign-income-tax-offset wording as negative offset claims, treat no-exemption and no-foreign-employment-exemption wording as negative exemption claims, preserve zero foreign tax paid for display, require positive foreign-tax-paid support for affirmative offset claims, keep no-plus-facts, missing statement phrases, unknown or malformed amounts, residency uncertainty, boolean, missing, malformed, zero, or negative exchange rates with numeric amounts, exchange-rate gaps, item-specific exchange-rate support for top-level totals, and top-level-vs-item total conflicts as Evidence, keep affirmative or ambiguous offset claims without top-level or item-level positive foreign-tax-paid evidence as Evidence, let item offset claims use valid aggregate top-level positive foreign-tax-paid evidence, never add exchange rates together, require item-level statement evidence unless a valid top-level statement only covers omitted item statements, and keep all completed foreign income rows under Accountant review.",
     ),
     ReviewPattern(
+        "Issue #51 PSI",
+        INDIVIDUAL_INTAKE_CONTRACT,
+        "PSI intake must skip explicit no-PSI answers only when no facts exist even when entered into any PSI prompt, preserve zero income and false PSI test answers once another signal renders the row, keep no-PSI plus facts, missing contracts, malformed income, unknown tests, missing attribution, deductions, or structure facts as Evidence, never decide PSI treatment as final, and keep completed PSI rows under Accountant review.",
+    ),
+    ReviewPattern(
         "PR #38",
         LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
         "Local Codex plugin setup docs must point codex plugin marketplace add at the repo root when .agents/plugins/marketplace.json uses source.path ./.",
@@ -575,6 +580,50 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "residency or temporary-resident evidence",
                 "foreign tax paid evidence",
                 "Foreign and worldwide income",
+                "ATO_PSI_SOURCE = \"https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income\"",
+                "REVIEWABLE_PSI_FIELDS = (",
+                "PSI_AMOUNT_FIELDS = (\"income\",)",
+                "PSI_FLAT_AMOUNT_FIELDS = (\"psi_income\",)",
+                "PSI_BOOLEAN_FIELDS = (",
+                "PSI_FLAT_BOOLEAN_FIELDS = (",
+                "PSI_DECLINE_PHRASES = (",
+                "\"no personal services income\"",
+                "items.extend(psi_rows(psi_answers(answers)))",
+                "if spec.key in PSI_FLAT_AMOUNT_FIELDS and isinstance(value, bool):",
+                "if spec.key in REVIEWABLE_PSI_FIELDS and psi_declines_workflow(value):",
+                "if key in REVIEWABLE_PSI_FIELDS:",
+                "def psi_answers(",
+                "def psi_rows(",
+                "status = \"Evidence\" if evidence else \"Accountant review\"",
+                "PSI tests, attribution, deductions, and structure workflow",
+                "def has_meaningful_psi_flat_value(",
+                "if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):",
+                "if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):",
+                "def has_meaningful_psi_override(",
+                "def has_explicit_psi_evidence_gap(",
+                "if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):",
+                "def has_psi_inputs(",
+                "def psi_declines_without_facts(",
+                "def has_meaningful_psi_signal(",
+                "if key in PSI_SIGNAL_FIELDS and psi_declines_workflow(value):",
+                "def psi_evidence_gaps(",
+                "numeric income evidence",
+                "contract or invoice evidence",
+                "80% client concentration test",
+                "attribution evidence",
+                "business structure evidence",
+                "def psi_contract_evidence_missing(",
+                "def psi_declines_workflow(",
+                "if psi_document_context(lowered):",
+                "\"do not have personal services income\"",
+                "def psi_document_context(",
+                "if lowered in PSI_DECLINE_PHRASES:",
+                "def psi_test_needs_evidence(",
+                "def psi_amount_needs_evidence(",
+                "if psi_declines_workflow(value):",
+                "def psi_amount_malformed(",
+                "def psi_money_value(",
+                "def psi_bool_text(",
                 "def parse_iso_date(",
                 "def parse_dates(raw_values: Any) -> Optional[Set[date]]:",
                 "if contains_unknown(raw_values):",
@@ -685,6 +734,28 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list ETP/lump sum"))
     if "foreign income" in out_of_scope.lower():
         findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list foreign income"))
+    psi_guidance = skill_text + "\n" + skill_rules
+    findings.extend(
+        fail_if_missing(
+            INDIVIDUAL_INTAKE_CONTRACT,
+            psi_guidance,
+            [
+                "PSI deep",
+                "personal services income",
+                "results test",
+                "80% client concentration",
+                "unrelated clients test",
+                "employment test",
+                "business premises test",
+                "attribution",
+                "deductions",
+                "business structure",
+                "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income",
+            ],
+        )
+    )
+    if "PSI deep" in out_of_scope or "personal services income" in out_of_scope.lower():
+        findings.append(Finding(INDIVIDUAL_INTAKE_CONTRACT, "individual-return out-of-scope must not list PSI deep"))
     return findings
 
 

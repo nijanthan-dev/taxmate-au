@@ -55,6 +55,20 @@ REVIEWABLE_FOREIGN_INCOME_FIELDS = (
     "foreign_income_tax_offset_claim",
     "foreign_employment_exempt_claim",
 )
+REVIEWABLE_PSI_FIELDS = (
+    "psi_income",
+    "psi_income_type",
+    "psi_contract_evidence",
+    "psi_results_test",
+    "psi_80_percent_test",
+    "psi_unrelated_clients_test",
+    "psi_employment_test",
+    "psi_business_premises_test",
+    "psi_psb_determination",
+    "psi_attribution_entity",
+    "psi_deductions",
+    "psi_business_structure",
+)
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
     "lump_sum_arrears_statement",
@@ -240,6 +254,62 @@ FOREIGN_INCOME_DECLINE_PHRASES = (
     "n/a",
     "na",
 )
+PSI_AMOUNT_FIELDS = ("income",)
+PSI_FLAT_AMOUNT_FIELDS = ("psi_income",)
+PSI_BOOLEAN_FIELDS = (
+    "results_test",
+    "eighty_percent_test",
+    "unrelated_clients_test",
+    "employment_test",
+    "business_premises_test",
+    "psb_determination",
+)
+PSI_FLAT_BOOLEAN_FIELDS = (
+    "psi_results_test",
+    "psi_80_percent_test",
+    "psi_unrelated_clients_test",
+    "psi_employment_test",
+    "psi_business_premises_test",
+    "psi_psb_determination",
+)
+PSI_SIGNAL_FIELDS = (
+    "income",
+    "income_type",
+    "occupation",
+    "client",
+    "contract_evidence",
+    "results_test",
+    "eighty_percent_test",
+    "unrelated_clients_test",
+    "employment_test",
+    "business_premises_test",
+    "psb_determination",
+    "attribution_entity",
+    "deductions",
+    "business_structure",
+)
+PSI_DECLINE_PHRASES = (
+    "no psi",
+    "no personal services income",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+PSI_SOURCE_KEY_FACTS = (
+    "income",
+    "income_type",
+    "contract_evidence",
+    "results_test",
+    "eighty_percent_test",
+    "unrelated_clients_test",
+    "employment_test",
+    "business_premises_test",
+    "psb_determination",
+    "attribution_entity",
+    "deductions",
+    "business_structure",
+)
 REVIEWABLE_COMPLEX_FIELDS = (
     "employee_deductions",
     "wfh_work_pattern",
@@ -336,6 +406,12 @@ ATO_FOREIGN_INCOME_SOURCES = [
     ATO_FOREIGN_EMPLOYMENT_EXEMPT_SOURCE,
     ATO_FOREIGN_INCOME_TAX_OFFSET_SOURCE,
 ]
+ATO_BUSINESS_INCOME_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business"
+ATO_PSI_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/personal-services-income"
+ATO_PSI_SOURCES = [
+    ATO_PSI_SOURCE,
+    ATO_BUSINESS_INCOME_SOURCE,
+]
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -344,7 +420,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add rental property worksheet", "Rental income, interest, repairs versus capital, private use, depreciation, net rental loss."),
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
-    ("feat: add PSI deep workflow", "PSI tests, attribution, deductions, and business structure impacts."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
 ]
 
@@ -412,6 +487,18 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("foreign_income_residency_status", "Foreign income", "Residency or temporary-resident status for foreign income", "Foreign and worldwide income", False),
         QuestionSpec("foreign_income_tax_offset_claim", "Foreign income", "Foreign income tax offset claimed?", "Foreign income tax offset", False),
         QuestionSpec("foreign_employment_exempt_claim", "Foreign income", "Foreign employment exemption claimed?", "Tax-exempt foreign employment income", False),
+        QuestionSpec("psi_income", "PSI", "Personal services income amount", "Personal services income", False),
+        QuestionSpec("psi_income_type", "PSI", "PSI occupation or income type", "Personal services income", False),
+        QuestionSpec("psi_contract_evidence", "PSI", "PSI contract or invoice evidence held?", "Personal services income", False),
+        QuestionSpec("psi_results_test", "PSI", "PSI results test passed?", "Personal services income", False),
+        QuestionSpec("psi_80_percent_test", "PSI", "80% PSI client concentration test", "Personal services income", False),
+        QuestionSpec("psi_unrelated_clients_test", "PSI", "Unrelated clients test passed?", "Personal services income", False),
+        QuestionSpec("psi_employment_test", "PSI", "Employment test passed?", "Personal services income", False),
+        QuestionSpec("psi_business_premises_test", "PSI", "Business premises test passed?", "Personal services income", False),
+        QuestionSpec("psi_psb_determination", "PSI", "Personal services business determination held?", "Personal services income", False),
+        QuestionSpec("psi_attribution_entity", "PSI", "PSI attribution entity or individual", "Personal services income", False),
+        QuestionSpec("psi_deductions", "PSI", "PSI deductions needing review", "Personal services income", False),
+        QuestionSpec("psi_business_structure", "PSI", "PSI business structure", "Personal services income", False),
         QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
         QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
         QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
@@ -484,6 +571,22 @@ def sample_answers() -> Dict[str, Any]:
             "residency_status": "Australian resident for tax purposes all year",
             "foreign_tax_offset_claim": False,
             "foreign_employment_exempt_claim": False,
+        },
+        "psi": {
+            "income": 18000,
+            "income_type": "IT consulting",
+            "occupation": "Software engineer",
+            "client": "Example Client Pty Ltd",
+            "contract_evidence": "contracts and invoices held",
+            "results_test": True,
+            "eighty_percent_test": False,
+            "unrelated_clients_test": False,
+            "employment_test": False,
+            "business_premises_test": False,
+            "psb_determination": False,
+            "attribution_entity": "sole trader",
+            "deductions": "home office and software subscriptions",
+            "business_structure": "sole trader ABN",
         },
         "ess": {
             "employer": "Example Pty Ltd",
@@ -584,6 +687,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(asset_rows(asset_answers(answers)))
     items.extend(complex_payment_rows(complex_payment_answers(answers)))
     items.extend(foreign_income_rows(foreign_income_answers(answers)))
+    items.extend(psi_rows(psi_answers(answers)))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -640,6 +744,10 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
         value,
     ):
         return False
+    if spec.key in PSI_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key in REVIEWABLE_PSI_FIELDS and psi_declines_workflow(value):
+        return False
     return spec.required or has_meaningful_value(value)
 
 
@@ -661,6 +769,12 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "foreign_income_statement" and foreign_income_statement_missing(value):
             return "Evidence"
         if key in FOREIGN_INCOME_FLAT_AMOUNT_FIELDS and foreign_income_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_PSI_FIELDS:
+        if key == "psi_contract_evidence" and psi_contract_evidence_missing(value):
+            return "Evidence"
+        if key in PSI_FLAT_AMOUNT_FIELDS and psi_amount_malformed(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -1990,6 +2104,262 @@ def foreign_income_tab_text(
     if evidence:
         return f"Foreign income needs {', '.join(evidence)} before accountant review."
     return "Foreign income needs source-backed accountant review."
+
+
+def psi_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("psi")
+    fields = {
+        "income": answers.get("psi_income"),
+        "income_type": answers.get("psi_income_type"),
+        "occupation": answers.get("psi_occupation"),
+        "client": answers.get("psi_client"),
+        "contract_evidence": answers.get("psi_contract_evidence"),
+        "results_test": answers.get("psi_results_test"),
+        "eighty_percent_test": answers.get("psi_80_percent_test"),
+        "unrelated_clients_test": answers.get("psi_unrelated_clients_test"),
+        "employment_test": answers.get("psi_employment_test"),
+        "business_premises_test": answers.get("psi_business_premises_test"),
+        "psb_determination": answers.get("psi_psb_determination"),
+        "attribution_entity": answers.get("psi_attribution_entity"),
+        "deductions": answers.get("psi_deductions"),
+        "business_structure": answers.get("psi_business_structure"),
+    }
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_psi_flat_value(key, value)}
+    if not isinstance(raw, dict):
+        return flat_values
+    if not has_meaningful_value(raw):
+        return flat_values
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if has_meaningful_psi_override(key, value):
+            merged[key] = value
+        elif key not in merged and has_explicit_psi_evidence_gap(key, value):
+            merged[key] = value
+    return merged
+
+
+def psi_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_psi_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    income = psi_money_value(raw.get("income"))
+    evidence = psi_evidence_gaps(raw)
+    status = "Evidence" if evidence else "Accountant review"
+    answer = (
+        f"Income {money_text(income)}; "
+        f"type {display_value(raw.get('income_type')) or 'unknown'}; "
+        f"occupation {display_value(raw.get('occupation')) or 'unknown'}; "
+        f"client {display_value(raw.get('client')) or 'unknown'}; "
+        f"contract evidence {display_value(raw.get('contract_evidence')) or 'unknown'}; "
+        f"results test {psi_bool_text(raw.get('results_test'))}; "
+        f"80% test {psi_bool_text(raw.get('eighty_percent_test'))}; "
+        f"unrelated clients test {psi_bool_text(raw.get('unrelated_clients_test'))}; "
+        f"employment test {psi_bool_text(raw.get('employment_test'))}; "
+        f"business premises test {psi_bool_text(raw.get('business_premises_test'))}; "
+        f"PSB determination {psi_bool_text(raw.get('psb_determination'))}; "
+        f"attribution {display_value(raw.get('attribution_entity')) or 'unknown'}; "
+        f"deductions {display_value(raw.get('deductions')) or 'unknown'}; "
+        f"structure {display_value(raw.get('business_structure')) or 'unknown'}"
+    )
+    return [
+        guide_row(
+            "PSI",
+            "Personal services income",
+            "PSI tests, attribution, deductions, and structure workflow",
+            answer,
+            "PSI handling collects test facts, contracts, client concentration, attribution, deductions, and structure impacts for accountant review before manual copy.",
+            status,
+            ATO_PSI_SOURCES,
+            tab_text=psi_tab_text(evidence),
+        )
+    ]
+
+
+def has_meaningful_psi_flat_value(key: str, value: Any) -> bool:
+    if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_meaningful_psi_override(key: str, value: Any) -> bool:
+    if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_explicit_psi_evidence_gap(key: str, value: Any) -> bool:
+    if key in PSI_SOURCE_KEY_FACTS and psi_declines_workflow(value):
+        return False
+    if key in PSI_AMOUNT_FIELDS:
+        return psi_amount_needs_evidence(value)
+    if key in PSI_SOURCE_KEY_FACTS:
+        return has_meaningful_value(value) and contains_unknown(value)
+    return False
+
+
+def has_psi_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if psi_declines_without_facts(raw):
+        return False
+    if any(has_explicit_psi_evidence_gap(key, raw.get(key)) for key in PSI_SOURCE_KEY_FACTS):
+        return True
+    return any(has_meaningful_psi_signal(key, raw.get(key)) for key in PSI_SIGNAL_FIELDS)
+
+
+def psi_declines_without_facts(raw: Dict[str, Any]) -> bool:
+    if not psi_declines_workflow(raw.get("contract_evidence")):
+        return False
+    return not any(
+        has_meaningful_psi_signal(key, value) or has_explicit_psi_evidence_gap(key, value)
+        for key, value in raw.items()
+        if key != "contract_evidence"
+    )
+
+
+def has_meaningful_psi_signal(key: str, value: Any) -> bool:
+    if key in PSI_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in PSI_SIGNAL_FIELDS and psi_declines_workflow(value):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def psi_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    evidence: List[str] = []
+    if is_missing(raw.get("income")) or psi_amount_needs_evidence(raw.get("income")):
+        evidence.append("numeric income evidence")
+    if psi_contract_evidence_missing(raw.get("contract_evidence")):
+        evidence.append("contract or invoice evidence")
+    missing_tests = [
+        label
+        for key, label in (
+            ("results_test", "results test"),
+            ("eighty_percent_test", "80% client concentration test"),
+            ("unrelated_clients_test", "unrelated clients test"),
+            ("employment_test", "employment test"),
+            ("business_premises_test", "business premises test"),
+            ("psb_determination", "PSB determination"),
+        )
+        if psi_test_needs_evidence(raw.get(key))
+    ]
+    if missing_tests:
+        evidence.append(", ".join(missing_tests))
+    for key, label in (
+        ("income_type", "income type"),
+        ("attribution_entity", "attribution evidence"),
+        ("deductions", "deduction evidence"),
+        ("business_structure", "business structure evidence"),
+    ):
+        if is_missing(raw.get(key)) or contains_unknown(raw.get(key)):
+            evidence.append(label)
+    return evidence
+
+
+def psi_tab_text(evidence: List[str]) -> str:
+    if evidence:
+        return f"PSI needs {', '.join(evidence)} before accountant review."
+    return "PSI tests, attribution, deductions, and structure stay accountant review before manual copy."
+
+
+def psi_contract_evidence_missing(value: Any) -> bool:
+    if isinstance(value, bool):
+        return not value
+    if is_missing(value) or contains_unknown(value):
+        return True
+    if psi_declines_workflow(value):
+        return True
+    lowered = text(value).strip().lower()
+    if psi_document_context(lowered) and lowered.startswith(("no ", "without ", "missing ")):
+        return True
+    return lowered in {"no", "n", "false", "none", "not held", "not available"} or any(
+        phrase in lowered
+        for phrase in (
+            "no contract",
+            "no contracts",
+            "no invoice",
+            "no invoices",
+            "contract not held",
+            "contract not available",
+            "contract not provided",
+            "invoice not held",
+            "invoice not available",
+            "invoice not provided",
+            "do not have",
+            "don't have",
+        )
+    )
+
+
+def psi_declines_workflow(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    if contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if psi_document_context(lowered):
+        return False
+    if lowered in PSI_DECLINE_PHRASES:
+        return True
+    return any(
+        phrase in lowered
+        for phrase in (
+            "do not have personal services income",
+            "do not have any personal services income",
+            "don't have personal services income",
+            "don't have any personal services income",
+            "do not have psi",
+            "don't have psi",
+            "no psi income",
+            "no personal services income this year",
+        )
+    )
+
+
+def psi_document_context(lowered: str) -> bool:
+    return "contract" in lowered or "invoice" in lowered
+
+
+def psi_test_needs_evidence(value: Any) -> bool:
+    return is_missing(value) or contains_unknown(value)
+
+
+def psi_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    if psi_declines_workflow(value):
+        return False
+    return contains_unknown(value) or psi_amount_malformed(value)
+
+
+def psi_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def psi_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def psi_bool_text(value: Any) -> str:
+    return display_value(value) if not is_missing(value) else "unknown"
 
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
