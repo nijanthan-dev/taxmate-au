@@ -269,7 +269,7 @@ def has_meaningful_value(value: Any) -> bool:
     if is_missing(value):
         return False
     if isinstance(value, bool):
-        return value
+        return True
     if isinstance(value, list):
         return any(has_meaningful_value(item) for item in value)
     if isinstance(value, dict):
@@ -437,9 +437,9 @@ def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(raw, dict) or not has_meaningful_value(raw):
         return {}
     enriched = dict(raw)
-    if is_missing(enriched.get("records")) and not is_missing(answers.get("wfh_records")):
+    if not has_meaningful_value(enriched.get("records")) and has_meaningful_value(answers.get("wfh_records")):
         enriched["records"] = answers.get("wfh_records")
-    if is_missing(enriched.get("state")) and not is_missing(answers.get("state")):
+    if not has_meaningful_value(enriched.get("state")) and has_meaningful_value(answers.get("state")):
         enriched["state"] = answers.get("state")
     enriched["income_year"] = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
     state_key = normalize_state(enriched.get("state"))
@@ -742,7 +742,7 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
 
 def asset_answers(answers: Dict[str, Any]) -> Any:
     raw_assets = answers.get("assets")
-    if isinstance(raw_assets, list):
+    if isinstance(raw_assets, list) and has_meaningful_value(raw_assets):
         return raw_assets
     return answers.get("asset_items", [])
 
@@ -769,8 +769,6 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
 
 def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("ess")
-    if isinstance(raw, dict):
-        return raw
     fields = {
         "statement": answers.get("ess_statement"),
         "taxed_upfront_discount": answers.get("ess_taxed_upfront_discount"),
@@ -778,7 +776,16 @@ def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
         "foreign_source_discount": answers.get("ess_foreign_source_discount"),
         "items": answers.get("ess_items"),
     }
-    return {key: value for key, value in fields.items() if not is_missing(value)}
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_value(value)}
+    if not isinstance(raw, dict):
+        return flat_values
+    if not has_meaningful_value(raw):
+        return flat_values
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if has_meaningful_value(value):
+            merged[key] = value
+    return merged
 
 
 def ess_rows(raw: Any) -> List[Dict[str, Any]]:

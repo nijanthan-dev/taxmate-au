@@ -522,6 +522,45 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("asset_items", rendered_numbers)
         self.assertNotIn("ess_items", rendered_numbers)
 
+    def test_explicit_false_optional_answers_still_render_base_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["gst_registered"] = False
+        answers["private_health_cover"] = False
+        answers["spouse_had"] = False
+
+        rows = taxmate_intake.base_items(answers)
+        rendered = {row["number"]: row for row in rows}
+
+        self.assertEqual("Accountant review", rendered["gst_registered"]["status"])
+        self.assertEqual("Used", rendered["private_health_cover"]["status"])
+        self.assertEqual("Used", rendered["spouse_had"]["status"])
+        self.assertEqual("false", rendered["gst_registered"]["answer"])
+
+    def test_empty_nested_ess_falls_back_to_flat_answers(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["ess"] = {"items": []}
+        answers["ess_statement"] = "ESS statement held"
+        answers["ess_taxed_upfront_discount"] = 100
+        answers["ess_deferred_discount"] = 0
+        answers["ess_foreign_source_discount"] = 25
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+        self.assertEqual("Accountant review", ess["status"])
+        self.assertIn("taxed-upfront discount 100.00", ess["answer"])
+        self.assertIn("deferred discount 0.00", ess["answer"])
+
+    def test_nested_ess_meaningful_values_override_flat_answers(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["ess"] = {"statement": "Nested ESS statement", "taxed_upfront_discount": 200}
+        answers["ess_taxed_upfront_discount"] = 100
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        ess = next(row for row in payload["items"] if row["number"] == "ESS")
+
+        self.assertIn("taxed-upfront discount 200.00", ess["answer"])
+
     def test_empty_workflow_containers_do_not_render_rows(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["wfh"] = {}
@@ -539,6 +578,40 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("UNC-1", rendered_numbers)
         self.assertNotIn("ESS", rendered_numbers)
         self.assertEqual([], payload["extracted_values"])
+
+    def test_wfh_placeholder_fields_fall_back_to_flat_answers(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["state"] = "VIC"
+        answers["wfh"] = {
+            "state": {},
+            "records": [],
+            "start": "2026-06-09",
+            "end": "2026-06-10",
+            "weekdays": ["Tuesday", "Wednesday"],
+            "hours_per_day": 8,
+            "actual_cost_records": "none",
+            "leave_dates": [],
+            "worked_public_holidays": [],
+            "worked_weekends": [],
+        }
+        answers["wfh_records"] = "timesheet"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        wfh = next(row for row in payload["items"] if row["number"] == "WFH")
+
+        self.assertEqual("Accountant review", wfh["status"])
+        self.assertIn("16.00 hours; fixed-rate candidate 11.20", wfh["answer"])
+
+    def test_empty_assets_fall_back_to_asset_items(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["assets"] = [{}]
+        answers["asset_items"] = [{"description": "Monitor", "cost": 280, "work_use_percent": 100}]
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        asset = next(row for row in payload["items"] if row["number"] == "ASSET-1")
+
+        self.assertIn("Monitor", asset["question"])
+        self.assertIn("immediate deduction candidate", asset["answer"])
 
     def test_ess_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
