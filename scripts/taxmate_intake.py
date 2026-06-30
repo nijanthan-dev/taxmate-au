@@ -4467,6 +4467,8 @@ def rental_property_private_use_true(value: Any) -> bool:
         return value
     if rental_property_private_use_false(value):
         return False
+    if contains_unknown(value):
+        return False
     lowered = text(value).strip().lower()
     return lowered in {"true", "yes", "y", "private", "holiday home", "mixed use", "mixed-use"} or any(
         phrase in lowered for phrase in ("private use", "holiday home", "personal use")
@@ -4476,8 +4478,36 @@ def rental_property_private_use_true(value: Any) -> bool:
 def rental_property_private_use_false(value: Any) -> bool:
     if isinstance(value, bool):
         return not value
+    if contains_unknown(value):
+        return False
     lowered = text(value).strip().lower()
-    return lowered in {"false", "no", "n", "0", "no private use", "no personal use", "not private"}
+    return rental_property_private_use_negative_text(lowered)
+
+
+def rental_property_private_use_negative_text(lowered: str) -> bool:
+    if lowered in {"false", "no", "n", "0", "no private use", "no personal use", "not private"}:
+        return True
+    if any(
+        phrase in lowered
+        for phrase in (
+            "not private use",
+            "not for private use",
+            "not personal use",
+            "not for personal use",
+            "no holiday home use",
+            "no holiday-home use",
+            "not a holiday home",
+            "not holiday home",
+        )
+    ):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:not|never|without)\b(?:\W+\w+){0,3}\W+(?:private use|personal use|holiday[- ]home(?: use)?)\b",
+            lowered,
+        )
+        or re.search(r"\bno\W+(?:private use|personal use|holiday[- ]home(?: use)?)\b", lowered)
+    )
 
 
 def rental_property_net_loss_signal(value: Any) -> bool:
