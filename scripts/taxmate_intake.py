@@ -4387,8 +4387,33 @@ def rental_property_field_absence_value(key: str, value: Any) -> bool:
     if lowered in {"no rental", "no rental property", "no rental properties", "no investment property", "no investment properties"}:
         return False
     if key in {"interest", "repairs", "capital_works", "depreciation", "other_expenses", "private_use_days", "net_loss"} and lowered.startswith("no "):
-        return True
+        return not rental_property_amount_missing_document_text(lowered)
     return lowered in RENTAL_PROPERTY_FIELD_ABSENCE_PHRASES
+
+
+def rental_property_amount_missing_document_text(lowered: str) -> bool:
+    if not lowered.startswith(("no ", "without ", "missing ")):
+        return False
+    return any(
+        term in lowered
+        for term in (
+            "document",
+            "documents",
+            "invoice",
+            "invoices",
+            "receipt",
+            "receipts",
+            "record",
+            "records",
+            "statement",
+            "statements",
+            "substantiation",
+        )
+    )
+
+
+def rental_property_amount_missing_document_value(value: Any) -> bool:
+    return isinstance(value, str) and rental_property_amount_missing_document_text(value.strip().lower())
 
 
 def rental_property_has_field_value(record: Dict[str, Any], key: str) -> bool:
@@ -4432,6 +4457,8 @@ def rental_property_amount_value(value: Any) -> Optional[float]:
 def rental_property_private_use_true(value: Any) -> bool:
     if isinstance(value, bool):
         return value
+    if rental_property_private_use_false(value):
+        return False
     lowered = text(value).strip().lower()
     return lowered in {"true", "yes", "y", "private", "holiday home", "mixed use", "mixed-use"} or any(
         phrase in lowered for phrase in ("private use", "holiday home", "personal use")
@@ -4466,6 +4493,8 @@ def rental_property_amount_field_text(
     key: str,
     money: bool = True,
 ) -> str:
+    if rental_property_amount_missing_document_value(raw.get(key)):
+        return display_value(raw.get(key))
     direct = rental_property_amount_value(raw.get(key))
     if direct is not None:
         return money_text(direct) if money else rental_property_number_text(direct)

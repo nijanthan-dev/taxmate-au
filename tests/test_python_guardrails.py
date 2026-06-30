@@ -3286,6 +3286,48 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertIn(expected_gap, row["tab_text"])
                 self.assertIn(expected_answer, row["answer"])
 
+    def test_rental_property_missing_amount_documents_stay_evidence(self) -> None:
+        cases = [
+            ({"interest": "no loan statement"}, "interest no loan statement"),
+            ({"repairs": "no invoice for repairs"}, "repairs no invoice for repairs"),
+        ]
+        base = {
+            "address": "Example rental",
+            "ownership": "individual",
+            "income": 12000,
+            "records": "agent statement held",
+            "private_use": False,
+        }
+        for override, expected_answer in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"rental_property": {**base, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric rental amount evidence", row["tab_text"])
+                self.assertIn(expected_answer, row["answer"])
+
+    def test_rental_property_negative_private_use_text_stays_false(self) -> None:
+        for private_use in ["no private use", "no personal use"]:
+            with self.subTest(private_use=private_use):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": "agent statement held",
+                            "private_use": private_use,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertIn(f"private use {private_use}", row["answer"])
+                self.assertNotIn("private-use apportionment evidence", row["tab_text"])
+                self.assertNotIn("private-use review", row["tab_text"])
+
     def test_rental_property_false_private_use_and_net_loss_are_preserved(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
