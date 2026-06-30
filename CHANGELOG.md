@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.5.0...v0.6.0) (2026-06-30)
+
+
+### Features
+
+* add foreign income workflow ([4deca46](https://github.com/nijanthan-dev/taxmate-australia/commit/4deca4615f7f564a5680c5ed5ff9d0112093a3b3))
+
 ## [0.5.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.4.0...v0.5.0) (2026-06-30)
 
 
