@@ -34,7 +34,7 @@ ESS_AMOUNT_FIELDS = (
     "foreign_source_discount",
     "tfn_amount_withheld",
 )
-ESS_ITEM_SIGNAL_FIELDS = ("statement", "employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
+ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
 ESS_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
@@ -830,7 +830,7 @@ def ess_rows(raw: Any) -> List[Dict[str, Any]]:
     statement = raw.get("statement")
     if not has_meaningful_value(statement):
         statement = next((item.get("statement") for item in items if has_meaningful_value(item.get("statement"))), None)
-    status = "Evidence" if ess_statement_missing(statement) else "Accountant review"
+    status = "Evidence" if ess_statement_missing(statement) or ess_items_need_statement_evidence(items) or ess_amount_conflict(raw, items) else "Accountant review"
     item_text = ess_items_text(items)
     employer = ess_employer_text(raw, items)
     answer = (
@@ -890,14 +890,27 @@ def has_meaningful_ess_override(key: str, value: Any) -> bool:
 
 
 def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
-    top_level = money_value(raw.get(key), unknown_as_missing=True)
-    if top_level is not None:
-        return top_level
+    item_total = ess_item_amount_total(items, key)
+    if item_total is not None:
+        return item_total
+    return money_value(raw.get(key), unknown_as_missing=True)
+
+
+def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
     item_amounts = [money_value(item.get(key), unknown_as_missing=True) for item in items]
     real_amounts = [amount for amount in item_amounts if amount is not None]
     if not real_amounts:
         return None
     return round(sum(real_amounts), 2)
+
+
+def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for key in ESS_AMOUNT_FIELDS:
+        top_level = money_value(raw.get(key), unknown_as_missing=True)
+        item_total = ess_item_amount_total(items, key)
+        if top_level is not None and item_total is not None and top_level != item_total:
+            return True
+    return False
 
 
 def ess_statement_missing(statement: Any) -> bool:
@@ -909,6 +922,10 @@ def ess_statement_missing(statement: Any) -> bool:
     if lowered in {"no", "n", "false", "not held", "not available", "none"}:
         return True
     return any(phrase in lowered for phrase in ESS_STATEMENT_MISSING_PHRASES)
+
+
+def ess_items_need_statement_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(ess_statement_missing(item.get("statement")) for item in items)
 
 
 def ess_items_text(items: List[Dict[str, Any]]) -> str:
