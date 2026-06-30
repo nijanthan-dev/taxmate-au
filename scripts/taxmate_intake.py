@@ -33,7 +33,7 @@ ESS_AMOUNT_FIELDS = (
     "foreign_source_discount",
     "tfn_amount_withheld",
 )
-ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
+ESS_ITEM_SIGNAL_FIELDS = ("statement", "employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
 REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
@@ -851,16 +851,18 @@ def has_meaningful_ess_item(item: Dict[str, Any]) -> bool:
 def has_meaningful_ess_signal(key: str, value: Any) -> bool:
     if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
         return False
+    if contains_unknown(value):
+        return False
     return has_meaningful_ess_value(value)
 
 
 def has_meaningful_ess_override(key: str, value: Any) -> bool:
+    if key == "items":
+        return bool(ess_item_values(value))
     if not has_meaningful_value(value) or contains_unknown(value):
         return False
     if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
         return False
-    if key == "items":
-        return bool(ess_item_values(value))
     return True
 
 
