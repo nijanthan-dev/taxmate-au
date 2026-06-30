@@ -398,6 +398,17 @@ CRYPTO_FLAT_DATE_FIELDS = ("crypto_acquired_date", "crypto_disposed_date")
 CRYPTO_USE_CONTEXT_FIELDS = ("business_use", "private_use")
 CRYPTO_BOOLEAN_FIELDS = ("transfer_between_wallets", *CRYPTO_USE_CONTEXT_FIELDS)
 CRYPTO_FLAT_BOOLEAN_FIELDS = tuple(f"crypto_{field}" for field in CRYPTO_BOOLEAN_FIELDS)
+CRYPTO_IDENTITY_FIELDS = ("exchange_or_wallet", "asset", "ownership_entity")
+CRYPTO_IDENTITY_ABSENCE_CONTEXTS = {
+    "exchange_or_wallet": ("exchange", "exchanges", "wallet", "wallets", "platform", "platforms"),
+    "asset": ("asset", "assets"),
+    "ownership_entity": ("owner", "owners", "ownership", "entity", "entities"),
+}
+CRYPTO_IDENTITY_ABSENCE_EXACT_PHRASES = {
+    "exchange_or_wallet": ("no exchange", "no wallet"),
+    "asset": ("no asset", "no assets"),
+    "ownership_entity": ("no ownership entity", "no owner", "no entity"),
+}
 CRYPTO_SIGNAL_FIELDS = (
     "event_type",
     "exchange_or_wallet",
@@ -3585,11 +3596,28 @@ def crypto_field_absence_value(key: str, value: Any) -> bool:
     if not isinstance(value, str) or contains_unknown(value):
         return False
     lowered = value.strip().lower()
+    if crypto_identity_absence_value(key, lowered):
+        return True
     if lowered in {"no crypto", "no crypto asset", "no crypto assets", "no cryptocurrency", "no cryptocurrencies", "no digital currency", "no digital currencies"}:
         return False
     if lowered in {"no staking rewards", "no crypto rewards"}:
         return key == "rewards_income"
     return key != "event_type" and lowered in CRYPTO_FIELD_ABSENCE_PHRASES
+
+
+def crypto_identity_absence_value(key: str, lowered: str) -> bool:
+    if key not in CRYPTO_IDENTITY_FIELDS:
+        return False
+    if lowered in CRYPTO_IDENTITY_ABSENCE_EXACT_PHRASES[key]:
+        return True
+    context_pattern = "|".join(re.escape(term) for term in CRYPTO_IDENTITY_ABSENCE_CONTEXTS[key])
+    return bool(
+        re.search(rf"\b(?:no|without|missing)\b(?:\s+\w+){{0,3}}\s+\b(?:{context_pattern})\b", lowered)
+        or re.search(
+            rf"\b(?:do not have|don't have|dont have)\b(?:\s+\w+){{0,3}}\s+\b(?:{context_pattern})\b",
+            lowered,
+        )
+    )
 
 
 def crypto_has_field_value(record: Dict[str, Any], key: str) -> bool:

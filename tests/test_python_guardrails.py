@@ -1958,6 +1958,64 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Accountant review", row["status"])
         self.assertNotIn("wallet or exchange records", row["tab_text"])
 
+    def test_crypto_identity_denials_stay_evidence(self) -> None:
+        complete_sale = {
+            "event_type": "sale",
+            "asset": "BTC",
+            "exchange_or_wallet": "Exchange CSV",
+            "quantity": 1,
+            "acquired_date": "2025-07-01",
+            "disposed_date": "2026-01-01",
+            "cost_base": 100,
+            "capital_proceeds": 300,
+            "wallet_records": "records held",
+            "ownership_entity": "individual",
+            "business_use": False,
+            "private_use": True,
+        }
+        cases = [
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "no exchange"}),
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "no wallet"}),
+            ("asset and exchange/wallet identity evidence", {"exchange_or_wallet": "I do not have a wallet"}),
+            ("asset and exchange/wallet identity evidence", {"asset": "no asset"}),
+            ("ownership or entity evidence", {"ownership_entity": "no ownership entity"}),
+            ("ownership or entity evidence", {"ownership_entity": "missing owner"}),
+        ]
+        for expected_gap, override in cases:
+            with self.subTest(override=override):
+                payload = taxmate_intake.answers_to_pack_payload({"crypto": {**complete_sale, **override}})
+                row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn(expected_gap, row["tab_text"])
+                self.assertNotIn("no-crypto answer with crypto facts", row["tab_text"])
+
+    def test_crypto_item_identity_denials_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "crypto_items": [
+                    {
+                        "event_type": "sale",
+                        "asset": "ETH",
+                        "exchange_or_wallet": "no wallet",
+                        "quantity": 1,
+                        "acquired_date": "2025-07-01",
+                        "disposed_date": "2026-01-01",
+                        "cost_base": 100,
+                        "capital_proceeds": 300,
+                        "wallet_records": "records held",
+                        "ownership_entity": "individual",
+                        "business_use": False,
+                        "private_use": True,
+                    }
+                ]
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "CRYPTO-CGT")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("per-item crypto evidence", row["tab_text"])
+
     def test_crypto_item_record_denials_stay_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -3396,6 +3454,12 @@ class IndividualIntakeTests(unittest.TestCase):
                 {"crypto": {**complete_crypto, "wallet_records": "not applicable"}},
                 "wallet or exchange records",
                 "records not applicable",
+            ),
+            (
+                "CRYPTO-CGT",
+                {"crypto": {**complete_crypto, "exchange_or_wallet": "no exchange"}},
+                "asset and exchange/wallet identity evidence",
+                "exchange/wallet no exchange",
             ),
         ]
         for number, answers, expected_tab, absent_answer in cases:
