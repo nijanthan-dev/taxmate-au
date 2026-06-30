@@ -1033,6 +1033,7 @@ def assignTopic(rec: atodata.SourceRecord, text: str) -> tuple[Topic, int]:
         ("working-from-home-expenses", "work-from-home"),
         ("home-based-business-expenses", "abn-business"),
         ("business-activity-statements-bas", "gst-bas"),
+        ("employee-share-scheme", "employment-deductions"),
         ("gst-excise-and-indirect-taxes/gst", "gst-bas"),
         ("fringe-benefits-tax", "payg-employer"),
         ("payg-withholding", "payg-employer"),

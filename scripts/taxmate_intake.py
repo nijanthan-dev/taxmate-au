@@ -21,7 +21,48 @@ SUPPORTED_WFH_END = date(2026, 6, 30)
 WFH_FIXED_RATE_2025_26 = 0.70
 REVIEWABLE_ABN_FIELDS = ("abn_income", "abn_expenses")
 REVIEWABLE_BAS_FIELDS = ("bas_period", "gst_collected", "gst_credits")
-REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items")
+REVIEWABLE_ESS_FIELDS = (
+    "ess_statement",
+    "ess_taxed_upfront_discount",
+    "ess_deferred_discount",
+    "ess_foreign_source_discount",
+    "ess_tfn_amount_withheld",
+)
+ESS_AMOUNT_FIELDS = (
+    "taxed_upfront_discount",
+    "deferred_discount",
+    "foreign_source_discount",
+    "tfn_amount_withheld",
+)
+ESS_FLAT_AMOUNT_FIELDS = tuple(f"ess_{field}" for field in ESS_AMOUNT_FIELDS)
+ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
+ESS_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "no ess statement",
+    "no employee share scheme statement",
+    "statement not held",
+    "statement not available",
+    "statement not provided",
+    "statement not received",
+    "not provided",
+    "not received",
+    "not supplied",
+    "ess statement not held",
+    "ess statement not available",
+    "ess statement not provided",
+    "ess statement not received",
+)
+ESS_DECLINE_PHRASES = (
+    "no ess",
+    "no employee share scheme",
+    "no employee share schemes",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+REVIEWABLE_COMPLEX_FIELDS = ("employee_deductions", "wfh_work_pattern", "wfh_records", "asset_items", "ess_items")
 EXACT_UNKNOWN_PHRASES = frozenset({"unknown", "missing", "not sure", "unsure"})
 EMBEDDED_UNKNOWN_PHRASES = (
     "not confirmed",
@@ -90,6 +131,8 @@ ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-
 ATO_ASSET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work"
 ATO_BAS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/preparing-lodging-and-paying/business-activity-statements-bas"
 ATO_GST_CREDITS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/claiming-gst-credits"
+ATO_ESS_SOURCE = "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes"
+ATO_ESS_STATEMENT_SOURCE = "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement"
 OMITTED_SCOPE_ITEMS = [
     ("feat: add company return intake", "Company/entity return prep, company tax labels, directors, dividends, franking, retained earnings."),
     ("feat: add trust return intake", "Trust return prep, beneficiary distributions, trustee-assessed income, family trust items."),
@@ -99,7 +142,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
     ("feat: add foreign income workflow", "Foreign employment, pensions, tax offsets, and residency-specific review."),
-    ("feat: add ESS workflow", "Employee share scheme labels, taxed upfront and deferral, and foreign source discounts."),
     ("feat: add ETP and lump sum workflow", "ETP, lump sum in arrears, and super lump sum or stream detailed handling."),
     ("feat: add PSI deep workflow", "PSI tests, attribution, deductions, and business structure impacts."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
@@ -146,6 +188,11 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("interest_income", "Income", "Gross interest", "10 Gross interest", False),
         QuestionSpec("dividend_income", "Income", "Dividends or ETF distributions", "11 Dividends", False),
         QuestionSpec("government_payments", "Income", "Government payments or allowances", "5/6 Government payments", False),
+        QuestionSpec("ess_statement", "ESS", "ESS statement held?", "Employee share schemes", False),
+        QuestionSpec("ess_taxed_upfront_discount", "ESS", "ESS taxed-upfront discount", "Employee share schemes", False),
+        QuestionSpec("ess_deferred_discount", "ESS", "ESS deferred discount", "Employee share schemes", False),
+        QuestionSpec("ess_foreign_source_discount", "ESS", "ESS foreign-source discount", "Employee share schemes", False),
+        QuestionSpec("ess_tfn_amount_withheld", "ESS", "ESS TFN amount withheld", "Employee share schemes", False),
         QuestionSpec("abn_income", "ABN", "Sole-trader ABN income", "Business income / supplementary gate", False),
         QuestionSpec("abn_expenses", "ABN", "Sole-trader ABN expenses", "Business expenses / supplementary gate", False),
         QuestionSpec("gst_registered", "BAS", "GST registered?", "BAS worksheet", False),
@@ -177,6 +224,14 @@ def sample_answers() -> Dict[str, Any]:
         "interest_income": 120,
         "dividend_income": 430,
         "government_payments": 0,
+        "ess": {
+            "employer": "Example Pty Ltd",
+            "statement": "ESS statement held",
+            "taxed_upfront_discount": 1500,
+            "deferred_discount": 2400,
+            "foreign_source_discount": 300,
+            "tfn_amount_withheld": 0,
+        },
         "abn_income": 9000,
         "abn_expenses": 2200,
         "gst_registered": True,
@@ -245,6 +300,18 @@ def is_missing(value: Any) -> bool:
     return False
 
 
+def has_meaningful_value(value: Any) -> bool:
+    if is_missing(value):
+        return False
+    if isinstance(value, bool):
+        return True
+    if isinstance(value, list):
+        return any(has_meaningful_value(item) for item in value)
+    if isinstance(value, dict):
+        return any(has_meaningful_value(item) for item in value.values())
+    return True
+
+
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
@@ -254,6 +321,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     evidence_items = evidence_rows(answers)
     items.extend(wfh_rows(wfh_answers(answers)))
     items.extend(asset_rows(asset_answers(answers)))
+    items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
         "income_year": text(answers.get("income_year"), DEFAULT_INCOME_YEAR),
@@ -271,7 +339,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for spec in question_specs():
         value = answers.get(spec.key)
-        if spec.required or not is_missing(value):
+        if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
             rows.append(
                 guide_row(
@@ -288,7 +356,21 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     return rows
 
 
+def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
+    if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key == "ess_statement" and ess_statement_declines_workflow(value):
+        return False
+    return spec.required or has_meaningful_value(value)
+
+
 def base_item_status(key: str, value: Any) -> str:
+    if key in REVIEWABLE_ESS_FIELDS:
+        if key == "ess_statement" and ess_statement_missing(value):
+            return "Evidence"
+        if key in ESS_FLAT_AMOUNT_FIELDS and ess_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_COMPLEX_FIELDS or isinstance(value, (dict, list)):
@@ -339,6 +421,8 @@ def extraction_rows(raw_values: Any) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     for idx, raw in enumerate(raw_values, start=1):
         if not isinstance(raw, dict):
+            continue
+        if not has_meaningful_value(raw):
             continue
         confirmed = raw.get("confirmed") is True
         row = {
@@ -395,14 +479,14 @@ def missing_fact_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def wfh_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("wfh")
-    if (not isinstance(raw, dict) or not raw) and isinstance(answers.get("wfh_work_pattern"), dict):
+    if not has_meaningful_value(raw) and isinstance(answers.get("wfh_work_pattern"), dict):
         raw = answers.get("wfh_work_pattern")
-    if not isinstance(raw, dict):
+    if not isinstance(raw, dict) or not has_meaningful_value(raw):
         return {}
     enriched = dict(raw)
-    if is_missing(enriched.get("records")) and not is_missing(answers.get("wfh_records")):
+    if not has_meaningful_value(enriched.get("records")) and has_meaningful_value(answers.get("wfh_records")):
         enriched["records"] = answers.get("wfh_records")
-    if is_missing(enriched.get("state")) and not is_missing(answers.get("state")):
+    if not has_meaningful_value(enriched.get("state")) and has_meaningful_value(answers.get("state")):
         enriched["state"] = answers.get("state")
     enriched["income_year"] = text(answers.get("income_year"), DEFAULT_INCOME_YEAR)
     state_key = normalize_state(enriched.get("state"))
@@ -683,6 +767,8 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
     for idx, asset in enumerate(raw_assets, start=1):
         if not isinstance(asset, dict):
             continue
+        if not has_meaningful_value(asset):
+            continue
         cost = money_value(asset.get("cost"), unknown_as_missing=True)
         work_use = money_value(asset.get("work_use_percent"), unknown_as_missing=True)
         claim_basis = asset_claim_basis(cost, work_use, asset.get("method_preference"))
@@ -703,7 +789,7 @@ def asset_rows(raw_assets: Any) -> List[Dict[str, Any]]:
 
 def asset_answers(answers: Dict[str, Any]) -> Any:
     raw_assets = answers.get("assets")
-    if isinstance(raw_assets, list):
+    if isinstance(raw_assets, list) and has_meaningful_value(raw_assets):
         return raw_assets
     return answers.get("asset_items", [])
 
@@ -728,11 +814,265 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
 
 
+def ess_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("ess")
+    fields = {
+        "employer": answers.get("ess_employer"),
+        "scheme": answers.get("ess_scheme"),
+        "provider": answers.get("ess_provider"),
+        "statement": answers.get("ess_statement"),
+        "taxed_upfront_discount": answers.get("ess_taxed_upfront_discount"),
+        "deferred_discount": answers.get("ess_deferred_discount"),
+        "foreign_source_discount": answers.get("ess_foreign_source_discount"),
+        "tfn_amount_withheld": answers.get("ess_tfn_amount_withheld"),
+        "items": answers.get("ess_items"),
+    }
+    flat_values = {key: value for key, value in fields.items() if has_meaningful_value(value)}
+    if not isinstance(raw, dict):
+        return flat_values
+    if not has_meaningful_value(raw):
+        return flat_values
+    merged = dict(flat_values)
+    for key, value in raw.items():
+        if has_meaningful_ess_override(key, value):
+            merged[key] = value
+        elif key not in merged and has_explicit_ess_evidence_gap(key, value):
+            merged[key] = value
+    return merged
+
+
+def ess_rows(raw: Any) -> List[Dict[str, Any]]:
+    if not has_ess_inputs(raw):
+        return []
+    if not isinstance(raw, dict):
+        return []
+    items = ess_item_values(raw.get("items"))
+    taxed_upfront = ess_amount_value(raw, items, "taxed_upfront_discount")
+    deferred = ess_amount_value(raw, items, "deferred_discount")
+    foreign_source = ess_amount_value(raw, items, "foreign_source_discount")
+    tfn_withheld = ess_amount_value(raw, items, "tfn_amount_withheld")
+    statement = raw.get("statement")
+    if not has_meaningful_value(statement):
+        statement = next((item.get("statement") for item in items if has_meaningful_value(item.get("statement"))), None)
+    statement_evidence = ess_statement_missing(statement) or ess_items_need_statement_evidence(items)
+    amount_conflict = ess_amount_conflict(raw, items)
+    amount_evidence = ess_amounts_need_evidence(raw, items)
+    status = "Evidence" if statement_evidence or amount_conflict or amount_evidence else "Accountant review"
+    item_text = ess_items_text(items)
+    employer = ess_employer_text(raw, items)
+    answer = (
+        f"Employer {employer}; "
+        f"taxed-upfront discount {money_text(taxed_upfront)}; "
+        f"deferred discount {money_text(deferred)}; "
+        f"foreign-source discount {money_text(foreign_source)}; "
+        f"TFN amount withheld {money_text(tfn_withheld)}"
+    )
+    if item_text:
+        answer = f"{answer}; items {item_text}"
+    tab_text = ess_tab_text(statement_evidence, amount_conflict, amount_evidence)
+    return [
+        guide_row(
+            "ESS",
+            "Employee share schemes",
+            "ESS statement and discount workflow",
+            answer,
+            "ESS discounts need the ESS statement, deferred taxing-point timing, foreign-source split, and label mapping reviewed before manual copy.",
+            status,
+            [ATO_ESS_SOURCE, ATO_ESS_STATEMENT_SOURCE],
+            tab_text=tab_text,
+        )
+    ]
+
+
+def ess_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and has_meaningful_ess_item(item)]
+
+
+def has_meaningful_ess_item(item: Dict[str, Any]) -> bool:
+    if any(has_meaningful_ess_signal(key, item.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS):
+        return True
+    return any(ess_amount_needs_evidence(item.get(key)) for key in ESS_AMOUNT_FIELDS)
+
+
+def has_meaningful_ess_signal(key: str, value: Any) -> bool:
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_ess_value(value)
+
+
+def has_meaningful_ess_override(key: str, value: Any) -> bool:
+    if key == "items":
+        return bool(ess_item_values(value))
+    if not has_meaningful_value(value) or contains_unknown(value):
+        return False
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return True
+
+
+def has_explicit_ess_evidence_gap(key: str, value: Any) -> bool:
+    if key not in ("statement", *ESS_AMOUNT_FIELDS):
+        return False
+    if key in ESS_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return has_meaningful_value(value) and contains_unknown(value)
+
+
+def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    item_total = ess_item_amount_total(items, key)
+    if item_total is not None:
+        return item_total
+    return ess_money_value(raw.get(key))
+
+
+def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    item_amounts = [ess_money_value(item.get(key)) for item in items]
+    real_amounts = [amount for amount in item_amounts if amount is not None]
+    if not real_amounts:
+        return None
+    return round(sum(real_amounts), 2)
+
+
+def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    for key in ESS_AMOUNT_FIELDS:
+        top_level = ess_money_value(raw.get(key))
+        item_total = ess_item_amount_total(items, key)
+        if top_level is not None and item_total is not None and top_level != item_total:
+            return True
+    return False
+
+
+def ess_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
+    if any(ess_amount_needs_evidence(raw.get(key)) for key in ESS_AMOUNT_FIELDS):
+        return True
+    return any(ess_amount_needs_evidence(item.get(key)) for item in items for key in ESS_AMOUNT_FIELDS)
+
+
+def ess_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or ess_amount_malformed(value)
+
+
+def ess_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def ess_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def ess_tab_text(statement_evidence: bool, amount_conflict: bool, amount_evidence: bool) -> str:
+    if amount_conflict and statement_evidence:
+        return "ESS discounts need ESS statement evidence and corrected amount totals before accountant review."
+    if amount_conflict:
+        return "ESS top-level and item amounts conflict; correct ESS amount totals before accountant review."
+    if amount_evidence and statement_evidence:
+        return "ESS discounts need ESS statement evidence and numeric amount evidence before accountant review."
+    if amount_evidence:
+        return "ESS amount fields need numeric evidence before accountant review."
+    if statement_evidence:
+        return "ESS discounts need ESS statement evidence before accountant review."
+    return "ESS discounts need statement-backed accountant review."
+
+
+def ess_statement_missing(statement: Any) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    if ess_statement_declines_workflow(statement):
+        return True
+    lowered = text(statement).strip().lower()
+    if lowered in {"no", "n", "false", "not held", "not available", "none"}:
+        return True
+    return any(phrase in lowered for phrase in ESS_STATEMENT_MISSING_PHRASES)
+
+
+def ess_items_need_statement_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(ess_statement_missing(item.get("statement")) for item in items)
+
+
+def ess_items_text(items: List[Dict[str, Any]]) -> str:
+    details: List[str] = []
+    for idx, item in enumerate(items, start=1):
+        name = ess_label_text(item) or f"item {idx}"
+        details.append(
+            f"{name}: taxed-upfront {money_text(ess_money_value(item.get('taxed_upfront_discount')))}, "
+            f"deferred {money_text(ess_money_value(item.get('deferred_discount')))}, "
+            f"foreign-source {money_text(ess_money_value(item.get('foreign_source_discount')))}, "
+            f"TFN withheld {money_text(ess_money_value(item.get('tfn_amount_withheld')))}"
+        )
+    return " | ".join(details)
+
+
+def ess_employer_text(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> str:
+    direct = ess_label_text(raw)
+    if direct:
+        return direct
+    for item in items:
+        name = ess_label_text(item)
+        if name:
+            return name
+    return "unknown"
+
+
+def ess_label_text(raw: Dict[str, Any]) -> str:
+    return display_value(raw.get("employer")) or display_value(raw.get("scheme")) or display_value(raw.get("provider"))
+
+
+def has_ess_inputs(raw: Any) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    if ess_item_values(raw.get("items")):
+        return True
+    if has_meaningful_ess_statement(raw.get("statement")):
+        return True
+    if any(
+        has_explicit_ess_evidence_gap(key, raw.get(key))
+        for key in ("statement", *ESS_AMOUNT_FIELDS)
+    ):
+        return True
+    return any(has_meaningful_ess_signal(key, raw.get(key)) for key in ESS_ITEM_SIGNAL_FIELDS)
+
+
+def has_meaningful_ess_statement(value: Any) -> bool:
+    if not has_meaningful_value(value) or contains_unknown(value):
+        return False
+    return not ess_statement_declines_workflow(value)
+
+
+def ess_statement_declines_workflow(statement: Any) -> bool:
+    if not isinstance(statement, str):
+        return False
+    lowered = statement.strip().lower()
+    return lowered in ESS_DECLINE_PHRASES
+
+
+def has_meaningful_ess_value(value: Any) -> bool:
+    return has_meaningful_value(value)
+
+
 def uncommon_income_rows(raw_values: Any) -> List[Dict[str, Any]]:
     if not isinstance(raw_values, list):
         return []
     rows: List[Dict[str, Any]] = []
     for idx, value in enumerate(raw_values, start=1):
+        if not has_meaningful_value(value):
+            continue
         rows.append(
             guide_row(
                 f"UNC-{idx}",

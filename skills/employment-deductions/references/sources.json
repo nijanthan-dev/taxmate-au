@@ -555,6 +555,21 @@
     "assignment_reason": "topic match + verified source content"
   },
   {
+    "source_id": "ato-a6fa285829bc",
+    "url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes",
+    "final_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes",
+    "title": "Employee share schemes",
+    "last_updated": "2023-10-15T13:00:00.000+00:00",
+    "checked_at": "2026-06-30T03:11:39Z",
+    "content_hash": "cbee1eefb1e885e8ea89f5465aed9a9a78955cf6239df5728deff55e8f32bf71",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
     "source_id": "ato-aa57da95ed01",
     "url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/clothes-and-items-you-wear-at-work",
     "final_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/clothes-and-items-you-wear-at-work",
@@ -712,6 +727,21 @@
     "last_updated": "2026-06-07T14:00:00.000+00:00",
     "checked_at": "2026-06-23T09:04:57Z",
     "content_hash": "ff81c7f481ba26bef8343b2f2bad4cff3a2cdbe77972caa368eab5f6ace6b66f",
+    "assigned_skill": "employment-deductions",
+    "reference": "references/rules.md",
+    "duplicate_of": "",
+    "status": "verified",
+    "reason": "",
+    "assignment_reason": "topic match + verified source content"
+  },
+  {
+    "source_id": "ato-f126cf386aae",
+    "url": "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement",
+    "final_url": "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement",
+    "title": "Employee share scheme statement",
+    "last_updated": "2020-04-21T14:00:00.000+00:00",
+    "checked_at": "2026-06-30T03:11:40Z",
+    "content_hash": "582c04058676864f2cc3c71e71e6a4e5b55d745ef7561f9f965b1b13a2c7ce77",
     "assigned_skill": "employment-deductions",
     "reference": "references/rules.md",
     "duplicate_of": "",
