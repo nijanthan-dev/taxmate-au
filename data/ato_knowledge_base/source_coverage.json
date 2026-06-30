@@ -7232,6 +7232,42 @@
       "reason": "topic match + verified source content"
     },
     {
+      "source_id": "ato-a6fa285829bc",
+      "original_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes",
+      "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes",
+      "source_title": "Employee share schemes",
+      "source_last_updated": "2023-10-15T13:00:00.000+00:00",
+      "checked_at": "2026-06-30T03:11:39Z",
+      "content_hash": "cbee1eefb1e885e8ea89f5465aed9a9a78955cf6239df5728deff55e8f32bf71",
+      "status": "verified",
+      "skills": [
+        "employment-deductions"
+      ],
+      "references": [
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
+      ],
+      "covered_concepts": [
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
+        "records-you-need-to-keep",
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
       "source_id": "ato-aa24577ab271",
       "original_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
       "canonical_url": "https://www.ato.gov.au/businesses-and-organisations/income-deductions-and-concessions/income-and-deductions-for-business/deductions/deductions-for-home-based-business-expenses/home-based-business-expenses-sole-trader-or-partnership",
@@ -7553,7 +7589,7 @@
       "canonical_url": "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/claiming-deductions",
       "source_title": "Claiming deductions",
       "source_last_updated": "2025-05-19T14:00:00.000+00:00",
-      "checked_at": "2026-06-23T09:04:57Z",
+      "checked_at": "2026-06-30T03:11:40Z",
       "content_hash": "",
       "status": "duplicate",
       "skills": [],
@@ -9647,6 +9683,42 @@
         "non-commercial",
         "personal-services-income",
         "sole trader"
+      ],
+      "duplicate_of": "",
+      "duplicate_evidence": "",
+      "reason": "topic match + verified source content"
+    },
+    {
+      "source_id": "ato-f126cf386aae",
+      "original_url": "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement",
+      "canonical_url": "https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement",
+      "source_title": "Employee share scheme statement",
+      "source_last_updated": "2020-04-21T14:00:00.000+00:00",
+      "checked_at": "2026-06-30T03:11:40Z",
+      "content_hash": "582c04058676864f2cc3c71e71e6a4e5b55d745ef7561f9f965b1b13a2c7ce77",
+      "status": "verified",
+      "skills": [
+        "employment-deductions"
+      ],
+      "references": [
+        "skills/employment-deductions/references/rules.md",
+        "skills/employment-deductions/references/sources.json"
+      ],
+      "covered_concepts": [
+        "allowance",
+        "allowances",
+        "deduction",
+        "deductions-you-can-claim",
+        "education",
+        "employee",
+        "meals",
+        "occupancy",
+        "records-you-need-to-keep",
+        "salary",
+        "tools",
+        "travel",
+        "wages",
+        "work-related"
       ],
       "duplicate_of": "",
       "duplicate_evidence": "",

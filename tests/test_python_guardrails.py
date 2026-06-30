@@ -375,7 +375,8 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn("feat: add company return intake", titles)
         self.assertIn("feat: add advanced document extraction", titles)
-        self.assertEqual(12, len(issues))
+        self.assertNotIn("feat: add ESS workflow", titles)
+        self.assertEqual(11, len(issues))
         for item in issues:
             self.assertIn("Omitted from V1", item["body"])
             self.assertIn("prep-only", item["body"])
@@ -691,6 +692,19 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("ESS discounts need statement-backed accountant review.", body)
         self.assertIn("foreign-source discount 300.00", body)
         self.assertNotIn("lodgment-ready", body)
+
+    def test_ess_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in [taxmate_intake.ATO_ESS_SOURCE, taxmate_intake.ATO_ESS_STATEMENT_SOURCE]:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+                self.assertIn("employment-deductions", covered[url]["skills"])
 
     def test_wfh_work_pattern_alias_gets_typed_wfh_review(self) -> None:
         answers = taxmate_intake.sample_answers()

@@ -265,6 +265,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: 6aa98af02ccec691839ba8a3d46b2e01bc363b7512b66e3b1c7a55beb3bae494
 
+- Employee share schemes
+  - Source ID: ato-a6fa285829bc
+  - URL: https://www.ato.gov.au/businesses-and-organisations/corporate-tax-measures-and-assurance/employee-share-schemes
+  - Source last updated: 2023-10-15T13:00:00.000+00:00
+  - Checked at: 2026-06-30T03:11:39Z
+  - Content hash: cbee1eefb1e885e8ea89f5465aed9a9a78955cf6239df5728deff55e8f32bf71
+
 - Clothes and items you wear at work
   - Source ID: ato-aa57da95ed01
   - URL: https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/clothes-and-items-you-wear-at-work
@@ -341,6 +348,13 @@ These are conservative topic summaries from official sources, not copied ATO pag
   - Source last updated: 2026-06-07T14:00:00.000+00:00
   - Checked at: 2026-06-23T09:04:57Z
   - Content hash: ff81c7f481ba26bef8343b2f2bad4cff3a2cdbe77972caa368eab5f6ace6b66f
+
+- Employee share scheme statement
+  - Source ID: ato-f126cf386aae
+  - URL: https://www.ato.gov.au/forms-and-instructions/employee-share-scheme-statement
+  - Source last updated: 2020-04-21T14:00:00.000+00:00
+  - Checked at: 2026-06-30T03:11:40Z
+  - Content hash: 582c04058676864f2cc3c71e71e6a4e5b55d745ef7561f9f965b1b13a2c7ce77
 
 - Income, deductions, offsets and records
   - Source ID: ato-f230a7798407

@@ -114,7 +114,6 @@ OMITTED_SCOPE_ITEMS = [
     ("feat: add full CGT schedule workflow", "CGT events, cost base, discounts, carried losses, main residence, small business concessions."),
     ("feat: add crypto CGT workflow", "Buys, sells, swaps, staking, rewards, transfers, wallet records, and cost-base tracking."),
     ("feat: add foreign income workflow", "Foreign employment, pensions, tax offsets, and residency-specific review."),
-    ("feat: add ESS workflow", "Employee share scheme labels, taxed upfront and deferral, and foreign source discounts."),
     ("feat: add ETP and lump sum workflow", "ETP, lump sum in arrears, and super lump sum or stream detailed handling."),
     ("feat: add PSI deep workflow", "PSI tests, attribution, deductions, and business structure impacts."),
     ("feat: add advanced document extraction", "Robust OCR and templates for arbitrary PDFs/images beyond AI-assisted candidate extraction."),
