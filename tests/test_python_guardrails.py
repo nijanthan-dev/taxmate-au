@@ -4370,6 +4370,48 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("private-use apportionment evidence", row["tab_text"])
         self.assertIn("net rental loss review", row["tab_text"])
 
+    def test_rental_property_mixed_item_net_loss_blocks_item_amount_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {"address": "Unit 2", "ownership": "individual", "income": 10000, "interest": "unknown"},
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertIn("interest unknown", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("net rental loss review", row["tab_text"])
+
+    def test_rental_property_explicit_item_net_loss_blocks_item_amount_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {"address": "Unit 1", "ownership": "individual", "income": 10000, "net_loss": 1500},
+                    {
+                        "address": "Unit 2",
+                        "ownership": "individual",
+                        "income": 12000,
+                        "interest": "unknown",
+                        "net_loss": 500,
+                    },
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertIn("interest unknown", row["answer"])
+        self.assertIn("net loss -500.00", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+
     def test_rental_property_explicit_item_net_loss_sums_with_private_use_review(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

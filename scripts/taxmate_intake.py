@@ -4711,6 +4711,8 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     item_explicit_net_values = [rental_property_net_loss_amount_value(item.get("net_loss")) for item in items]
     real_item_explicit_net_values = [value for value in item_explicit_net_values if value is not None]
     if real_item_explicit_net_values:
+        if rental_property_item_amounts_need_evidence(items):
+            return None
         if len(real_item_explicit_net_values) == len(items):
             return round(sum(real_item_explicit_net_values), 2)
         if rental_property_private_use_expense_apportionment_blocks_net(raw, items):
@@ -4765,6 +4767,14 @@ def rental_property_supplied_amount_needs_evidence(raw: Dict[str, Any], items: L
         or rental_property_supplied_field_needs_evidence(raw, key)
         or any(rental_property_supplied_field_needs_evidence(item, key) for item in items)
         or rental_property_amount_conflict(raw, items, key)
+    )
+
+
+def rental_property_item_amounts_need_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(
+        rental_property_supplied_field_needs_evidence(item, key)
+        for item in items
+        for key in RENTAL_PROPERTY_AMOUNT_FIELDS
     )
 
 
