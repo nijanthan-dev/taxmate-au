@@ -109,7 +109,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #45 rental property",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied expense facts are parseable or clearly absent, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days as private-use review even when the boolean field is false, treat negated private-use and holiday-home text as false without adding private-use review, keep uncertain private-use wording as Evidence, and keep completed rental rows under Accountant review.",
+        "Rental intake must preserve explicit unknown, records-none, boolean-true amount, and missing-document answers as Evidence, calculate worksheet net from the same flat/item facts shown to the user only when supplied expense facts are parseable or clearly absent, normalize positive net_loss fields as losses, require per-property income evidence before any aggregate-income short-circuit, keep standalone, item-level, and mixed net-loss flags visible before aggregate worksheet math, treat positive private-use days and serialized true/on/checked private-use answers as private-use review even when the boolean field is false, treat negated private-use and serialized false/off/unchecked holiday-home text as false without adding private-use review, keep uncertain private-use wording including maybe/possibly/unclear/not clear as Evidence, and keep completed rental rows under Accountant review.",
     ),
     ReviewPattern(
         "PR #38",
@@ -901,6 +901,10 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "has_explicit_rental_property_evidence_gap(key, value)",
                 "item_net_values = [rental_property_net_amount(item) for item in items]",
                 "def rental_property_private_use_negative_text(",
+                "def rental_property_private_use_uncertain(",
+                "\"1\", \"on\", \"checked\"",
+                "\"0\", \"off\", \"unchecked\"",
+                "BOOLEAN_UNCERTAIN_PHRASES",
                 "def rental_property_private_use_signal(",
                 "def rental_property_positive_private_use_days(",
                 "def rental_property_private_use_conflict(",

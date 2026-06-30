@@ -4264,7 +4264,7 @@ def rental_property_private_use_needs_evidence(raw: Dict[str, Any], items: List[
         return True
     if meaningful and not any(rental_property_has_field_value(record, "private_use") for record in meaningful):
         return True
-    if any(contains_unknown(record.get("private_use")) for record in meaningful):
+    if any(rental_property_private_use_uncertain(record.get("private_use")) for record in meaningful):
         return True
     if any(rental_property_private_use_signal(record) for record in meaningful):
         return any(
@@ -4483,12 +4483,14 @@ def rental_property_amount_value(value: Any) -> Optional[float]:
 def rental_property_private_use_true(value: Any) -> bool:
     if isinstance(value, bool):
         return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    if rental_property_private_use_uncertain(value):
+        return False
     if rental_property_private_use_false(value):
         return False
-    if contains_unknown(value):
-        return False
     lowered = text(value).strip().lower()
-    return lowered in {"true", "yes", "y", "private", "holiday home", "mixed use", "mixed-use"} or any(
+    return lowered in {"true", "yes", "y", "1", "on", "checked", "private", "holiday home", "mixed use", "mixed-use"} or any(
         phrase in lowered for phrase in ("private use", "holiday home", "personal use")
     )
 
@@ -4496,10 +4498,23 @@ def rental_property_private_use_true(value: Any) -> bool:
 def rental_property_private_use_false(value: Any) -> bool:
     if isinstance(value, bool):
         return not value
-    if contains_unknown(value):
+    if isinstance(value, (int, float)):
+        return value == 0
+    if rental_property_private_use_uncertain(value):
         return False
     lowered = text(value).strip().lower()
+    if lowered in {"false", "no", "n", "0", "off", "unchecked"}:
+        return True
     return rental_property_private_use_negative_text(lowered)
+
+
+def rental_property_private_use_uncertain(value: Any) -> bool:
+    if contains_unknown(value):
+        return True
+    if not isinstance(value, str):
+        return False
+    lowered = value.strip().lower()
+    return lowered in BOOLEAN_UNCERTAIN_PHRASES or any(phrase in lowered for phrase in BOOLEAN_UNCERTAIN_PHRASES)
 
 
 def rental_property_private_use_negative_text(lowered: str) -> bool:

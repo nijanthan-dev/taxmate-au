@@ -3371,6 +3371,9 @@ class IndividualIntakeTests(unittest.TestCase):
             "not private use",
             "not for private use",
             "no holiday home use",
+            "0",
+            "off",
+            "unchecked",
         ]
         for private_use in cases:
             with self.subTest(private_use=private_use):
@@ -3393,22 +3396,45 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertNotIn("private-use review", row["tab_text"])
 
     def test_rental_property_uncertain_private_use_stays_evidence(self) -> None:
-        payload = taxmate_intake.answers_to_pack_payload(
-            {
-                "rental_property": {
-                    "address": "Example rental",
-                    "ownership": "individual",
-                    "income": 12000,
-                    "records": "agent statement held",
-                    "private_use": "not sure private use",
-                }
-            }
-        )
-        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+        cases = ["not sure private use", "maybe", "possibly", "unclear", "not clear", "possibly private use"]
+        for private_use in cases:
+            with self.subTest(private_use=private_use):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": "agent statement held",
+                            "private_use": private_use,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
 
-        self.assertEqual("Evidence", row["status"])
-        self.assertIn("private-use apportionment evidence", row["tab_text"])
-        self.assertNotIn("private-use review", row["tab_text"])
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("private-use apportionment evidence", row["tab_text"])
+                self.assertNotIn("private-use review", row["tab_text"])
+
+    def test_rental_property_serialized_private_use_true_routes_review(self) -> None:
+        for private_use in ["1", "on", "checked"]:
+            with self.subTest(private_use=private_use):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "rental_property": {
+                            "address": "Example rental",
+                            "ownership": "individual",
+                            "income": 12000,
+                            "records": "agent statement held",
+                            "private_use": private_use,
+                        }
+                    }
+                )
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("private-use apportionment evidence", row["tab_text"])
+                self.assertIn("private-use review", row["tab_text"])
 
     def test_rental_property_false_private_use_and_net_loss_are_preserved(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
