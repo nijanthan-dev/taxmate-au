@@ -101,6 +101,12 @@ REVIEWABLE_RENTAL_PROPERTY_FIELDS = (
     "rental_property_records",
     "rental_property_net_loss",
 )
+REVIEWABLE_INVESTMENT_FIELDS = (
+    "investment_interest_items",
+    "investment_dividend_items",
+    "investment_distribution_items",
+    "trust_distribution_items",
+)
 COMPLEX_PAYMENT_STATEMENT_FLAT_FIELDS = (
     "etp_statement",
     "lump_sum_arrears_statement",
@@ -205,6 +211,103 @@ ESS_AMOUNT_FIELDS = (
     "foreign_source_discount",
     "tfn_amount_withheld",
 )
+INVESTMENT_INTEREST_AMOUNT_FIELDS = ("amount", "tfn_withheld")
+INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS = ("amount", "dividend_amount", "cash_amount")
+INVESTMENT_DIVIDEND_AMOUNT_FIELDS = (
+    *INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS,
+    "franked_amount",
+    "unfranked_amount",
+    "franking_credit",
+    "tfn_withheld",
+)
+INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS = ("amount", "distribution_amount")
+INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS = (
+    *INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS,
+    "taxable_amount",
+    "capital_gain",
+    "foreign_income",
+    "foreign_tax_offset",
+    "franking_credit",
+    "tfn_withheld",
+)
+INVESTMENT_TRUST_AMOUNT_FIELDS = (
+    "distribution_amount",
+    "franked_distribution",
+    "franking_credit",
+    "capital_gain",
+    "foreign_income",
+    "foreign_tax_offset",
+    "non_assessable_payment",
+)
+INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS = (("amount",),)
+INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS = (
+    INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS,
+    ("franked_amount", "unfranked_amount"),
+)
+INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS = (
+    (
+        *INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS,
+        "taxable_amount",
+        "capital_gain",
+        "foreign_income",
+    ),
+)
+INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS = (
+    (
+        "distribution_amount",
+        "franked_distribution",
+        "capital_gain",
+        "foreign_income",
+        "non_assessable_payment",
+    ),
+)
+INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS = (
+    "franked_amount",
+    "unfranked_amount",
+    "franked_distribution",
+    "capital_gain",
+    "foreign_income",
+    "franking_credit",
+    "foreign_tax_offset",
+    "non_assessable_payment",
+)
+INVESTMENT_ITEM_ALIASES = {
+    "interest_items": ("interest_items", "investment_interest_items", "bank_interest_items"),
+    "dividend_items": ("dividend_items", "investment_dividend_items"),
+    "distribution_items": ("distribution_items", "investment_distribution_items", "managed_fund_distribution_items"),
+    "trust_distribution_items": ("trust_distribution_items",),
+}
+INVESTMENT_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "dont have",
+    "missing statement",
+    "statement missing",
+    "statement not held",
+    "statement not available",
+    "statement not provided",
+    "statement not received",
+    "no statement",
+    "not provided",
+    "not received",
+    "not supplied",
+    "not confirmed",
+)
+INVESTMENT_FRANKING_UNCERTAIN_PHRASES = (
+    "unknown",
+    "uncertain",
+    "not confirmed",
+    "not sure",
+    "maybe",
+    "unclear",
+)
+INVESTMENT_SOURCES = [
+    "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/investment-income",
+    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/investing-in-bank-accounts-and-income-bonds",
+    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/shares-funds-and-trusts",
+    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/shares-funds-and-trusts/investing-in-shares/refund-of-franking-credits-for-individuals",
+    "https://www.ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/shares-and-similar-investments/trust-non-assessable-payments-cgt-event-e4",
+]
 ESS_FLAT_AMOUNT_FIELDS = tuple(f"ess_{field}" for field in ESS_AMOUNT_FIELDS)
 ESS_ITEM_SIGNAL_FIELDS = ("employer", "scheme", "provider", *ESS_AMOUNT_FIELDS)
 ESS_SOURCE_KEY_FACTS = ("statement", *ESS_ITEM_SIGNAL_FIELDS)
@@ -727,6 +830,10 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("main_occupation", "PAYG", "Main salary and wage occupation", "1 Salary or wages", False),
         QuestionSpec("interest_income", "Income", "Gross interest", "10 Gross interest", False),
         QuestionSpec("dividend_income", "Income", "Dividends or ETF distributions", "11 Dividends", False),
+        QuestionSpec("investment_interest_items", "Investment income", "Bank interest items", "10 Gross interest", False),
+        QuestionSpec("investment_dividend_items", "Investment income", "Dividend and franking items", "11 Dividends", False),
+        QuestionSpec("investment_distribution_items", "Investment income", "Managed fund/ETF/AMIT distributions", "13 Partnerships and trusts", False),
+        QuestionSpec("trust_distribution_items", "Investment income", "Trust distribution statements", "13 Partnerships and trusts", False),
         QuestionSpec("government_payments", "Income", "Government payments or allowances", "5/6 Government payments", False),
         QuestionSpec("etp_statement", "Complex income", "ETP payment summary or income statement held?", "Employment termination payments", False),
         QuestionSpec("etp_taxable_component", "Complex income", "ETP taxable component", "Employment termination payments", False),
@@ -824,7 +931,54 @@ def sample_answers() -> Dict[str, Any]:
         "payg_withheld": 31000,
         "main_occupation": "Software engineer",
         "interest_income": 120,
-        "dividend_income": 430,
+        "dividend_income": 835,
+        "investment_income": {
+            "interest_items": [
+                {
+                    "payer": "Example Bank",
+                    "account": "Saver account",
+                    "amount": 120,
+                    "tfn_withheld": 0,
+                    "statement": "bank interest statement held",
+                }
+            ],
+            "dividend_items": [
+                {
+                    "security": "EXM",
+                    "company": "Example Ltd",
+                    "franked_amount": 300,
+                    "unfranked_amount": 0,
+                    "franking_credit": 128.57,
+                    "tfn_withheld": 0,
+                    "statement": "dividend statement held",
+                    "franking_confirmed": True,
+                }
+            ],
+            "distribution_items": [
+                {
+                    "fund": "Example ETF",
+                    "taxable_amount": 535,
+                    "capital_gain": 80,
+                    "foreign_income": 0,
+                    "foreign_tax_offset": 0,
+                    "franking_credit": 0,
+                    "tfn_withheld": 0,
+                    "statement": "AMMA statement held",
+                    "amit": True,
+                    "cost_base_adjustment": "statement shows annual tax statement cost-base adjustment",
+                    "foreign_components": False,
+                }
+            ],
+            "trust_distribution_items": [
+                {
+                    "trust": "Example Family Trust",
+                    "beneficiary_type": "individual beneficiary",
+                    "distribution_amount": 0,
+                    "statement": "trust distribution statement not confirmed",
+                    "foreign_components": False,
+                }
+            ],
+        },
         "government_payments": 0,
         "etp": {
             "statement": "ETP payment summary held",
@@ -999,6 +1153,7 @@ def has_meaningful_value(value: Any) -> bool:
 
 
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
+    investment = investment_answers(answers)
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
     abn_items = abn_rows(answers)
@@ -1012,6 +1167,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(psi_rows(psi_answers(answers)))
     items.extend(crypto_rows(crypto_answers(answers)))
     items.extend(rental_property_rows(rental_property_answers(answers)))
+    items.extend(investment_rows(investment, answers))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
     return {
@@ -1028,10 +1184,25 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
 
 def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
+    investment = investment_answers(answers)
     for spec in question_specs():
         value = answers.get(spec.key)
+        if spec.key == "interest_income" and investment_has_kind(investment, "interest_items"):
+            continue
+        if spec.key == "dividend_income" and investment_has_dividend_distribution_items(investment):
+            continue
+        if spec.key in REVIEWABLE_INVESTMENT_FIELDS and investment_has_kind(
+            investment,
+            investment_flat_field_key(spec.key),
+        ):
+            continue
         if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
+            source_urls = (
+                INVESTMENT_SOURCES
+                if spec.key in REVIEWABLE_INVESTMENT_FIELDS
+                else ATO_INDIVIDUAL_SOURCE
+            )
             rows.append(
                 guide_row(
                     spec.key,
@@ -1040,7 +1211,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                     display_value(value),
                     "Long-checklist intake answer for manual copy guidance.",
                     status,
-                    ATO_INDIVIDUAL_SOURCE,
+                    source_urls,
                     tab_text=f"{spec.prompt}: {display_value(value)}",
                 )
             )
@@ -1175,6 +1346,10 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "rental_property_records" and rental_property_records_missing(value):
             return "Evidence"
         if nested_key in RENTAL_PROPERTY_AMOUNT_FIELDS and rental_property_amount_malformed(value, nested_key):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_INVESTMENT_FIELDS:
+        if investment_statement_missing(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":
@@ -1347,6 +1522,7 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     wfh = answers.get("wfh", {})
     if isinstance(wfh, dict) and contains_unknown(wfh.get("records")):
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
+    rows.extend(investment_evidence_rows(investment_answers(answers), answers))
     return rows
 
 
@@ -1604,6 +1780,714 @@ def asset_status(cost: Optional[float], work_use: Optional[float]) -> str:
     if cost is None or work_use is None:
         return "Evidence"
     return "Accountant review" if cost > 300 or work_use != 100 else "Evidence"
+
+
+def investment_flat_field_key(key: str) -> str:
+    mapping = {
+        "investment_interest_items": "interest_items",
+        "investment_dividend_items": "dividend_items",
+        "investment_distribution_items": "distribution_items",
+        "trust_distribution_items": "trust_distribution_items",
+    }
+    return mapping.get(key, key)
+
+
+def investment_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    raw = answers.get("investment_income")
+    merged: Dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+    for key, source_keys in INVESTMENT_ITEM_ALIASES.items():
+        value = first_investment_items(merged, source_keys) or first_investment_items(answers, source_keys)
+        if not investment_item_values(merged.get(key)) and investment_item_values(value):
+            merged[key] = value
+    return merged
+
+
+def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    interest_items = investment_item_values(raw.get("interest_items"))
+    dividend_items = investment_item_values(raw.get("dividend_items"))
+    distribution_items = investment_item_values(raw.get("distribution_items"))
+    trust_items = investment_item_values(raw.get("trust_distribution_items"))
+    has_interest_items = bool(interest_items)
+    has_dividend_distribution_items = bool(dividend_items or distribution_items)
+    interest_total = interest_category_total(interest_items)
+    dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
+    interest_conflict = investment_reconciliation_conflict(
+        answers.get("interest_income"),
+        interest_total,
+        has_interest_items,
+    )
+    dividend_conflict = investment_reconciliation_conflict(
+        answers.get("dividend_income"),
+        dividend_total,
+        has_dividend_distribution_items,
+    )
+    for idx, item in enumerate(interest_items, start=1):
+        rows.append(investment_interest_row(idx, item, interest_conflict))
+    for idx, item in enumerate(dividend_items, start=1):
+        rows.append(investment_dividend_row(idx, item, dividend_conflict))
+    for idx, item in enumerate(distribution_items, start=1):
+        rows.append(investment_distribution_row(idx, item, dividend_conflict))
+    for idx, item in enumerate(trust_items, start=1):
+        rows.append(investment_trust_row(idx, item))
+    if investment_has_reconciliation_target(answers, interest_items, dividend_items, distribution_items):
+        rows.append(
+            investment_reconciliation_row(
+                answers,
+                interest_items,
+                dividend_items,
+                distribution_items,
+                interest_conflict,
+                dividend_conflict,
+            )
+        )
+    return rows
+
+
+def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_INTEREST_AMOUNT_FIELDS,
+        INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS,
+    )
+    statement_evidence = investment_statement_missing(item.get("statement"))
+    status = "Evidence" if statement_evidence or amount_evidence or conflict else "Accountant review"
+    return guide_row(
+        f"INT-{index}",
+        "10 Gross interest",
+        "Bank interest statement item",
+        (
+            f"Payer {investment_display_text(item, 'payer')}; account {investment_display_text(item, 'account')}; "
+            f"interest {money_text(investment_money_value(item.get('amount')))}; "
+            f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}"
+        ),
+        "Itemized bank interest is prep-only and needs statement support before manual copy.",
+        status,
+        INVESTMENT_SOURCES[:2],
+        tab_text=investment_tab_text("Bank interest", evidence_terms(statement_evidence, amount_evidence, conflict), []),
+    )
+
+
+def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
+    amount_evidence = dividend_amounts_need_evidence(item) or investment_amounts_need_evidence(
+        item,
+        INVESTMENT_DIVIDEND_AMOUNT_FIELDS,
+        INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS,
+        franked_key="franked_amount",
+    )
+    statement_evidence = investment_statement_missing(item.get("statement"))
+    franking_evidence = investment_franking_uncertain(item)
+    reviews = investment_review_terms(item, include_trust=False)
+    status = "Evidence" if statement_evidence or amount_evidence or franking_evidence or conflict else "Accountant review"
+    return guide_row(
+        f"DIV-{index}",
+        "11 Dividends",
+        "Dividend and franking statement item",
+        (
+            f"Security {investment_label_text(item)}; cash dividend {money_text(dividend_item_total(item))}; "
+            f"franked {money_text(investment_money_value(item.get('franked_amount')))}; "
+            f"unfranked {money_text(investment_money_value(item.get('unfranked_amount')))}; "
+            f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
+            f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}"
+        ),
+        "Dividend rows preserve franking credits and withholding but stay prep-only until statement and franking treatment are reviewed.",
+        status,
+        [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[3]],
+        tab_text=investment_tab_text("Dividend", evidence_terms(statement_evidence, amount_evidence or franking_evidence, conflict), reviews),
+    )
+
+
+def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
+    amount_evidence = distribution_amounts_need_evidence(item) or investment_amounts_need_evidence(
+        item,
+        INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS,
+        INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS,
+    )
+    statement_evidence = investment_statement_missing(item.get("statement"))
+    reviews = investment_review_terms(item, include_trust=False)
+    status = "Evidence" if statement_evidence or amount_evidence or conflict else "Accountant review"
+    return guide_row(
+        f"DIST-{index}",
+        "13 Partnerships and trusts",
+        "Managed fund/ETF/AMIT distribution statement item",
+        (
+            f"Fund {investment_display_text(item, 'fund')}; distribution {money_text(distribution_item_total(item))}; "
+            f"taxable amount {money_text(investment_money_value(item.get('taxable_amount')))}; "
+            f"capital gain {money_text(investment_money_value(item.get('capital_gain')))}; "
+            f"foreign income {money_text(investment_money_value(item.get('foreign_income')))}; "
+            f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
+            f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
+            f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}; "
+            f"foreign components {investment_foreign_components_text(item)}"
+            f"{investment_review_flag_sentence(item)}"
+        ),
+        "Managed fund, ETF, and AMIT distributions need annual statement labels, component review, and cost-base follow-up where flagged.",
+        status,
+        [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[4]],
+        tab_text=investment_tab_text("Managed fund/ETF distribution", evidence_terms(statement_evidence, amount_evidence, conflict), reviews),
+    )
+
+
+def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_TRUST_AMOUNT_FIELDS,
+        INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS,
+        franked_key="franked_distribution",
+    )
+    statement_evidence = investment_statement_missing(item.get("statement"))
+    status = "Evidence" if statement_evidence or amount_evidence else "Accountant review"
+    return guide_row(
+        f"TRUST-DIST-{index}",
+        "13 Partnerships and trusts",
+        "Trust distribution routing for individual beneficiary",
+        (
+            f"Trust {investment_display_text(item, 'trust')}; beneficiary {investment_display_text(item, 'beneficiary_type')}; "
+            f"distribution {money_text(investment_money_value(item.get('distribution_amount')))}; "
+            f"franked distribution {money_text(investment_money_value(item.get('franked_distribution')))}; "
+            f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
+            f"capital gain {money_text(investment_money_value(item.get('capital_gain')))}; "
+            f"foreign income {money_text(investment_money_value(item.get('foreign_income')))}; "
+            f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
+            f"non-assessable payment {money_text(investment_money_value(item.get('non_assessable_payment')))}; "
+            f"foreign components {investment_foreign_components_text(item)}"
+        ),
+        "Individual beneficiary trust distributions are routed for accountant review only; TaxMate does not prepare a trust return.",
+        status,
+        [INVESTMENT_SOURCES[0], INVESTMENT_SOURCES[2], INVESTMENT_SOURCES[4]],
+        tab_text=investment_tab_text("Trust distribution", evidence_terms(statement_evidence, amount_evidence, False), investment_review_terms(item, include_trust=True)),
+    )
+
+
+def investment_reconciliation_row(
+    answers: Dict[str, Any],
+    interest_items: List[Dict[str, Any]],
+    dividend_items: List[Dict[str, Any]],
+    distribution_items: List[Dict[str, Any]],
+    interest_conflict: bool,
+    dividend_conflict: bool,
+) -> Dict[str, Any]:
+    interest_total = interest_category_total(interest_items)
+    dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
+    status = "Evidence" if interest_conflict or dividend_conflict else "Accountant review"
+    answers_text: List[str] = []
+    if interest_items:
+        answers_text.append(
+            f"Interest items {money_text(interest_total)} vs aggregate {money_text(investment_money_value(answers.get('interest_income')))}"
+        )
+    if dividend_items or distribution_items:
+        answers_text.append(
+            f"dividend/distribution items {money_text(dividend_total)} vs aggregate {money_text(investment_money_value(answers.get('dividend_income')))}"
+        )
+    return guide_row(
+        "INVEST-RECON",
+        "10/11/13 Investment income",
+        "Investment income item total reconciliation",
+        "; ".join(answers_text),
+        "Itemized investment rows are reconciled to supplied aggregate totals before manual copy.",
+        status,
+        INVESTMENT_SOURCES,
+        tab_text=investment_reconciliation_tab_text(interest_conflict, dividend_conflict),
+    )
+
+
+def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    groups = (
+        ("Bank interest statement", "10 Gross interest", raw.get("interest_items"), INVESTMENT_INTEREST_AMOUNT_FIELDS, ""),
+        ("Dividend statement", "11 Dividends", raw.get("dividend_items"), INVESTMENT_DIVIDEND_AMOUNT_FIELDS, "franked_amount"),
+        ("Managed fund/ETF annual tax statement", "13 Partnerships and trusts", raw.get("distribution_items"), INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS, ""),
+        ("Trust distribution statement", "13 Partnerships and trusts", raw.get("trust_distribution_items"), INVESTMENT_TRUST_AMOUNT_FIELDS, "franked_distribution"),
+    )
+    for group_label, area, raw_items, amount_fields, franked_key in groups:
+        for idx, item in enumerate(investment_item_values(raw_items), start=1):
+            missing = investment_statement_missing(item.get("statement"))
+            amounts = investment_amounts_need_evidence(
+                item,
+                amount_fields,
+                investment_required_amount_groups(group_label),
+                franked_key=franked_key,
+            )
+            if group_label == "Dividend statement" and dividend_amounts_need_evidence(item):
+                amounts = True
+            if group_label == "Managed fund/ETF annual tax statement" and distribution_amounts_need_evidence(item):
+                amounts = True
+            franking = group_label == "Dividend statement" and investment_franking_uncertain(item)
+            if missing or amounts or franking:
+                rows.append(
+                    guide_row(
+                        f"INV-EVID-{len(rows) + 1}",
+                        area,
+                        "Investment evidence required",
+                        investment_evidence_text(group_label, idx, missing, amounts, franking),
+                        "Investment prep row remains not copy-ready until statement and amount evidence are confirmed.",
+                        "Evidence",
+                        INVESTMENT_SOURCES,
+                    )
+                )
+    interest_items = investment_item_values(raw.get("interest_items"))
+    dividend_items = investment_item_values(raw.get("dividend_items"))
+    distribution_items = investment_item_values(raw.get("distribution_items"))
+    interest_conflict = investment_reconciliation_conflict(
+        answers.get("interest_income"),
+        interest_category_total(interest_items),
+        bool(interest_items),
+    )
+    dividend_conflict = investment_reconciliation_conflict(
+        answers.get("dividend_income"),
+        dividend_distribution_category_total(dividend_items, distribution_items),
+        bool(dividend_items or distribution_items),
+    )
+    if interest_conflict or dividend_conflict:
+        rows.append(
+            guide_row(
+                f"INV-EVID-{len(rows) + 1}",
+                "10/11/13 Investment income",
+                "Investment reconciliation evidence required",
+                investment_reconciliation_tab_text(interest_conflict, dividend_conflict),
+                "Supplied aggregate totals and itemized investment rows conflict.",
+                "Evidence",
+                INVESTMENT_SOURCES,
+            )
+        )
+    return rows
+
+
+def investment_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict) and investment_item_has_facts(item)]
+
+
+def first_investment_items(answers: Dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        value = answers.get(key)
+        if investment_item_values(value):
+            return value
+    return None
+
+
+def investment_item_has_facts(item: Dict[str, Any]) -> bool:
+    ignored_false_only = {"foreign_components", "amit"}
+    return any(has_meaningful_value(value) for key, value in item.items() if key not in ignored_false_only or value is not False)
+
+
+def investment_has_kind(raw: Dict[str, Any], key: str) -> bool:
+    return bool(investment_item_values(raw.get(key)))
+
+
+def investment_has_dividend_distribution_items(raw: Dict[str, Any]) -> bool:
+    return any(investment_has_kind(raw, key) for key in ("dividend_items", "distribution_items"))
+
+
+def investment_has_reconciliation_target(
+    answers: Dict[str, Any],
+    interest_items: List[Dict[str, Any]],
+    dividend_items: List[Dict[str, Any]],
+    distribution_items: List[Dict[str, Any]],
+) -> bool:
+    return (
+        bool(interest_items) and investment_amount_present(answers.get("interest_income"))
+    ) or (
+        bool(dividend_items or distribution_items) and investment_amount_present(answers.get("dividend_income"))
+    )
+
+
+def investment_required_amount_groups(label: str) -> tuple[tuple[str, ...], ...]:
+    if label == "Bank interest statement":
+        return INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS
+    if label == "Dividend statement":
+        return INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS
+    if label == "Managed fund/ETF annual tax statement":
+        return INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS
+    return INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS
+
+
+def investment_amounts_need_evidence(
+    item: Dict[str, Any],
+    fields: tuple[str, ...],
+    required_groups: tuple[tuple[str, ...], ...],
+    *,
+    franked_key: str = "",
+) -> bool:
+    return investment_required_amount_missing(item, required_groups) or any(
+        investment_amount_needs_evidence(item.get(key)) for key in fields
+    ) or investment_franking_credit_missing(item, franked_key)
+
+
+def investment_required_amount_missing(item: Dict[str, Any], required_groups: tuple[tuple[str, ...], ...]) -> bool:
+    return not any(any(investment_amount_is_supplied(item.get(key), key) for key in group) for group in required_groups)
+
+
+def investment_amount_is_supplied(value: Any, key: str = "") -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    amount = investment_money_value(value)
+    if amount is None:
+        return False
+    if key in INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS and amount == 0:
+        return False
+    return True
+
+
+def investment_franking_credit_missing(item: Dict[str, Any], franked_key: str = "") -> bool:
+    if not franked_key:
+        return False
+    franked_amount = investment_money_value(item.get(franked_key))
+    if franked_amount is None or franked_amount <= 0:
+        return False
+    return not investment_amount_is_supplied(item.get("franking_credit"))
+
+
+def investment_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or investment_amount_malformed(value)
+
+
+def investment_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def investment_money_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def investment_statement_missing(statement: Any) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    lowered = text(statement).strip().lower()
+    if lowered in {"no", "n", "false", "not held", "not available", "none"}:
+        return True
+    return any(phrase in lowered for phrase in INVESTMENT_STATEMENT_MISSING_PHRASES)
+
+
+def investment_franking_uncertain(item: Dict[str, Any]) -> bool:
+    if "franking_confirmed" not in item:
+        return False
+    value = item.get("franking_confirmed")
+    if value is True:
+        return False
+    if value is False:
+        return True
+    if is_missing(value) or contains_unknown(value):
+        return True
+    lowered = text(value).strip().lower()
+    if lowered in {"no", "n", "false", "0", "not confirmed", "not held", "not available", "none"}:
+        return True
+    return any(phrase in lowered for phrase in INVESTMENT_FRANKING_UNCERTAIN_PHRASES)
+
+
+def dividend_amounts_need_evidence(item: Dict[str, Any]) -> bool:
+    return investment_direct_amount_unresolved(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS) or dividend_direct_component_conflict(item)
+
+
+def interest_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
+    return investment_itemized_total(investment_money_value(item.get("amount")) for item in items)
+
+
+def dividend_item_total(item: Dict[str, Any]) -> Optional[float]:
+    direct = investment_direct_amount_value(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS)
+    component_total = dividend_component_total(item)
+    if direct is not None:
+        if component_total is not None and investment_total_conflict(direct, component_total):
+            return None
+        return direct
+    if investment_has_direct_amount(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS):
+        return None
+    return component_total
+
+
+def dividend_component_total(item: Dict[str, Any]) -> Optional[float]:
+    values = [
+        investment_money_value(item.get(key))
+        for key in ("franked_amount", "unfranked_amount")
+        if key in item and not is_missing(item.get(key))
+    ]
+    if not values:
+        return None
+    return investment_itemized_total(values)
+
+
+def dividend_direct_component_conflict(item: Dict[str, Any]) -> bool:
+    direct = investment_direct_amount_value(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS)
+    component_total = dividend_component_total(item)
+    return direct is not None and component_total is not None and investment_total_conflict(direct, component_total)
+
+
+def distribution_amounts_need_evidence(item: Dict[str, Any]) -> bool:
+    return investment_direct_amount_unresolved(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS) or distribution_direct_taxable_conflict(item)
+
+
+def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:
+    direct = investment_direct_amount_value(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS)
+    taxable = investment_money_value(item.get("taxable_amount"))
+    if direct is not None:
+        if investment_amount_present(item.get("taxable_amount")):
+            if taxable is None or investment_total_conflict(direct, taxable):
+                return None
+        return direct
+    if investment_has_direct_amount(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS):
+        return None
+    return taxable
+
+
+def distribution_direct_taxable_conflict(item: Dict[str, Any]) -> bool:
+    direct = investment_direct_amount_value(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS)
+    taxable = investment_money_value(item.get("taxable_amount"))
+    return direct is not None and taxable is not None and investment_total_conflict(direct, taxable)
+
+
+def dividend_distribution_total(dividend_items: List[Dict[str, Any]], distribution_items: List[Dict[str, Any]]) -> Optional[float]:
+    return investment_itemized_total(
+        [dividend_item_total(item) for item in dividend_items]
+        + [distribution_item_total(item) for item in distribution_items]
+    )
+
+
+def interest_category_total(items: List[Dict[str, Any]]) -> Optional[float]:
+    return investment_category_total(interest_item_total(items), bool(items))
+
+
+def dividend_distribution_category_total(
+    dividend_items: List[Dict[str, Any]],
+    distribution_items: List[Dict[str, Any]],
+) -> Optional[float]:
+    return investment_category_total(
+        dividend_distribution_total(dividend_items, distribution_items),
+        bool(dividend_items or distribution_items),
+    )
+
+
+def first_present(item: Dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        if key in item and not is_missing(item.get(key)):
+            return item.get(key)
+    return None
+
+
+def investment_has_direct_amount(item: Dict[str, Any], keys: tuple[str, ...]) -> bool:
+    return any(key in item and not is_missing(item.get(key)) for key in keys)
+
+
+def investment_direct_amount_value(item: Dict[str, Any], keys: tuple[str, ...]) -> Optional[float]:
+    if investment_direct_amount_unresolved(item, keys):
+        return None
+    return investment_money_value(first_present(item, keys))
+
+
+def investment_amount_present(value: Any) -> bool:
+    return not isinstance(value, bool) and not is_missing(value)
+
+
+def investment_direct_amount_unresolved(item: Dict[str, Any], keys: tuple[str, ...]) -> bool:
+    values = [
+        investment_money_value(item.get(key))
+        for key in keys
+        if investment_amount_present(item.get(key))
+    ]
+    if any(value is None for value in values):
+        return True
+    return investment_direct_amount_conflict(values)
+
+
+def investment_direct_amount_conflict(values: List[float]) -> bool:
+    if len(values) < 2:
+        return False
+    first = values[0]
+    return any(round(abs(first - value), 2) >= 0.01 for value in values[1:])
+
+
+def investment_total(values: Any) -> Optional[float]:
+    amounts = [value for value in values if value is not None]
+    if not amounts:
+        return None
+    return round(sum(amounts), 2)
+
+
+def investment_itemized_total(values: Any) -> Optional[float]:
+    amounts = list(values)
+    if not amounts or any(value is None for value in amounts):
+        return None
+    return round(sum(amounts), 2)
+
+
+def investment_category_total(item_total: Optional[float], has_items: bool) -> Optional[float]:
+    return item_total if has_items else 0
+
+
+def investment_total_conflict(aggregate_value: Any, item_total: Optional[float]) -> bool:
+    aggregate = investment_money_value(aggregate_value)
+    if aggregate is None or item_total is None:
+        return False
+    return round(abs(aggregate - item_total), 2) >= 0.01
+
+
+def investment_reconciliation_conflict(aggregate_value: Any, item_total: Optional[float], has_items: bool) -> bool:
+    return has_items and investment_reconciliation_needs_evidence(aggregate_value, item_total)
+
+
+def investment_reconciliation_needs_evidence(aggregate_value: Any, item_total: Optional[float]) -> bool:
+    if investment_aggregate_needs_evidence(aggregate_value):
+        return True
+    aggregate = investment_money_value(aggregate_value)
+    if aggregate is None:
+        return False
+    return item_total is None or investment_total_conflict(aggregate_value, item_total)
+
+
+def investment_aggregate_needs_evidence(value: Any) -> bool:
+    if is_missing(value) or isinstance(value, bool):
+        return False
+    return investment_amount_needs_evidence(value)
+
+
+def investment_review_terms(item: Dict[str, Any], *, include_trust: bool) -> List[str]:
+    terms: List[str] = []
+    if investment_boolean_flag_value(item.get("amit")) is True or has_meaningful_value(item.get("amit_status")):
+        terms.append("AMIT label mapping")
+    if investment_review_amount_or_text(item.get("cost_base_adjustment")):
+        terms.append("cost-base adjustment")
+    if investment_has_foreign_components(item):
+        terms.append("foreign components")
+    if include_trust:
+        terms.append("trust distribution routing")
+    return terms
+
+
+def investment_review_flag_sentence(item: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    amit = investment_review_flag_value(item.get("amit"))
+    if amit:
+        parts.append(f"AMIT {amit}")
+    amit_status = investment_review_flag_value(item.get("amit_status"))
+    if amit_status:
+        parts.append(f"AMIT status {amit_status}")
+    cost_base = investment_review_flag_value(item.get("cost_base_adjustment"))
+    if cost_base:
+        parts.append(f"cost-base adjustment {cost_base}")
+    return f"; {'; '.join(parts)}" if parts else ""
+
+
+def investment_review_flag_value(value: Any) -> str:
+    if is_missing(value) or contains_unknown(value):
+        return ""
+    flag = investment_boolean_flag_value(value)
+    if flag is False:
+        return ""
+    if flag is True:
+        return display_value(value)
+    amount = investment_money_value(value)
+    if amount == 0:
+        return ""
+    return display_value(value)
+
+
+def investment_boolean_flag_value(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if not isinstance(value, str) or contains_unknown(value):
+        return None
+    lowered = value.strip().lower()
+    if lowered in {"yes", "y", "true", "1", "on", "checked"}:
+        return True
+    if lowered in {"no", "n", "false", "0", "off", "unchecked", "none", "not applicable", "n/a"}:
+        return False
+    return None
+
+
+def investment_has_foreign_components(item: Dict[str, Any]) -> bool:
+    foreign_flag = investment_boolean_flag_value(item.get("foreign_components"))
+    if foreign_flag is True:
+        return True
+    for key in ("foreign_income", "foreign_tax_offset"):
+        value = investment_money_value(item.get(key))
+        if value is not None and value != 0:
+            return True
+    return False
+
+
+def investment_foreign_components_text(item: Dict[str, Any]) -> str:
+    value = item.get("foreign_components")
+    flag = investment_boolean_flag_value(value)
+    if flag is False:
+        return "false"
+    if is_missing(value):
+        return "unknown"
+    return display_value(value) or "unknown"
+
+
+def investment_review_amount_or_text(value: Any) -> bool:
+    if value is True:
+        return True
+    if value is False or is_missing(value) or contains_unknown(value):
+        return False
+    amount = investment_money_value(value)
+    return amount is None or amount != 0
+
+
+def evidence_terms(statement_evidence: bool, amount_evidence: bool, conflict: bool) -> List[str]:
+    terms: List[str] = []
+    if statement_evidence:
+        terms.append("statement evidence")
+    if amount_evidence:
+        terms.append("numeric amount/franking evidence")
+    if conflict:
+        terms.append("corrected aggregate reconciliation")
+    return terms
+
+
+def investment_tab_text(label: str, evidence: List[str], reviews: List[str]) -> str:
+    if evidence and reviews:
+        return f"{label} needs {', '.join(evidence)} and stays accountant review for {', '.join(reviews)}."
+    if evidence:
+        return f"{label} needs {', '.join(evidence)} before accountant review."
+    if reviews:
+        return f"{label} stays accountant review for {', '.join(reviews)} before manual copy."
+    return f"{label} stays accountant review before manual copy."
+
+
+def investment_reconciliation_tab_text(interest_conflict: bool, dividend_conflict: bool) -> str:
+    gaps: List[str] = []
+    if interest_conflict:
+        gaps.append("interest item total vs aggregate interest")
+    if dividend_conflict:
+        gaps.append("dividend/distribution item total vs aggregate dividend income")
+    if gaps:
+        return f"Investment totals need corrected reconciliation for {', '.join(gaps)} before accountant review."
+    return "Investment item totals reconcile to supplied aggregates; still prep-only and review-first."
+
+
+def investment_evidence_text(label: str, index: int, missing: bool, amounts: bool, franking: bool) -> str:
+    gaps: List[str] = []
+    if missing:
+        gaps.append("statement")
+    if amounts:
+        gaps.append("amount/component values")
+    if franking:
+        gaps.append("franking confirmation")
+    return f"{label} item {index}: confirm {', '.join(gaps)}"
+
+
+def investment_display_text(item: Dict[str, Any], key: str) -> str:
+    return display_value(item.get(key)) or "unknown"
+
+
+def investment_label_text(item: Dict[str, Any]) -> str:
+    return investment_display_text(item, "security") if has_meaningful_value(item.get("security")) else investment_display_text(item, "company")
 
 
 def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preference: Any) -> str:
@@ -2555,6 +3439,8 @@ def foreign_income_amounts_need_evidence(raw: Dict[str, Any], items: List[Dict[s
         return True
     if foreign_income_exchange_rate_missing(raw, items):
         return True
+    if foreign_income_items_need_amount_evidence(items):
+        return True
     if any(foreign_income_amount_needs_evidence(raw.get(key)) for key in FOREIGN_INCOME_AMOUNT_FIELDS):
         return True
     return any(foreign_income_amount_needs_evidence(item.get(key)) for item in items for key in FOREIGN_INCOME_AMOUNT_FIELDS)
@@ -2622,6 +3508,16 @@ def foreign_income_amount_needs_evidence(value: Any) -> bool:
     return contains_unknown(value) or foreign_income_amount_malformed(value)
 
 
+def foreign_income_items_need_amount_evidence(items: List[Dict[str, Any]]) -> bool:
+    return any(not foreign_income_amount_is_supplied(item.get("amount")) for item in items)
+
+
+def foreign_income_amount_is_supplied(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    return foreign_income_money_value(value) is not None
+
+
 def foreign_income_amount_malformed(value: Any) -> bool:
     if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
         return False
@@ -2650,14 +3546,13 @@ def foreign_income_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]]
 
 
 def foreign_income_item_amount_total(items: List[Dict[str, Any]], key: str, alias: str = "") -> Optional[float]:
-    amounts = []
+    amounts: List[Optional[float]] = []
     for item in items:
         amount = foreign_income_money_value(item.get(key))
         if amount is None and alias:
             amount = foreign_income_money_value(item.get(alias))
-        if amount is not None:
-            amounts.append(amount)
-    if not amounts:
+        amounts.append(amount)
+    if not amounts or any(amount is None for amount in amounts):
         return None
     return round(sum(amounts), 6)
 
@@ -5304,11 +6199,10 @@ def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str)
 
 
 def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
-    item_amounts = [ess_money_value(item.get(key)) for item in items]
-    real_amounts = [amount for amount in item_amounts if amount is not None]
-    if not real_amounts:
+    item_amounts = [ess_money_value(item.get(key)) for item in items if key in item and not is_missing(item.get(key))]
+    if not item_amounts or any(amount is None for amount in item_amounts):
         return None
-    return round(sum(real_amounts), 2)
+    return round(sum(item_amounts), 2)
 
 
 def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
