@@ -4003,11 +4003,14 @@ def rental_property_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     if not has_meaningful_value(raw):
         return rental_property_values_with_declines(flat_values, flat_declines)
     raw_declines = rental_property_decline_values(raw)
+    raw_has_context = any(rental_property_answer_context_value(key, value) for key, value in raw.items())
     merged = dict(flat_values)
     for key, value in raw.items():
         if has_meaningful_rental_property_override(key, value):
             merged[key] = value
         elif key not in merged and has_explicit_rental_property_evidence_gap(key, value):
+            merged[key] = value
+        elif key not in merged and rental_property_preserved_absence_value(key, value, raw_has_context):
             merged[key] = value
     return rental_property_values_with_declines(merged, {**flat_declines, **raw_declines})
 
@@ -4084,10 +4087,23 @@ def has_meaningful_rental_property_override(key: str, value: Any) -> bool:
 
 def rental_property_answer_values(record: Dict[str, Any]) -> Dict[str, Any]:
     values: Dict[str, Any] = {}
+    has_context = any(rental_property_answer_context_value(key, value) for key, value in record.items())
     for key, value in record.items():
-        if has_meaningful_rental_property_flat_value(key, value) or has_explicit_rental_property_evidence_gap(key, value):
+        if (
+            has_meaningful_rental_property_flat_value(key, value)
+            or has_explicit_rental_property_evidence_gap(key, value)
+            or rental_property_preserved_absence_value(key, value, has_context)
+        ):
             values[key] = value
     return values
+
+
+def rental_property_answer_context_value(key: str, value: Any) -> bool:
+    return has_meaningful_rental_property_flat_value(key, value) or has_explicit_rental_property_evidence_gap(key, value)
+
+
+def rental_property_preserved_absence_value(key: str, value: Any, has_context: bool) -> bool:
+    return has_context and key in RENTAL_PROPERTY_EXPENSE_FIELDS and rental_property_field_absence_value(key, value)
 
 
 def has_explicit_rental_property_evidence_gap(key: str, value: Any) -> bool:
@@ -4419,6 +4435,8 @@ def rental_property_records_missing(value: Any) -> bool:
     if rental_property_declines_workflow(value):
         return True
     lowered = text(value).strip().lower()
+    if rental_property_no_loan_records_answer(lowered):
+        return False
     if rental_property_record_context(lowered) and lowered.startswith(("no ", "without ", "missing ")):
         return True
     if rental_property_record_context(lowered) and any(
@@ -4430,6 +4448,12 @@ def rental_property_records_missing(value: Any) -> bool:
 
 def rental_property_record_context(lowered: str) -> bool:
     return any(term in lowered for term in ("record", "records", "statement", "invoice", "invoices", "agent", "loan", "interest"))
+
+
+def rental_property_no_loan_records_answer(lowered: str) -> bool:
+    no_loan = bool(re.search(r"\bno\W+(?:loan|mortgage|borrowing|borrowings)\b", lowered))
+    records_held = any(term in lowered for term in ("agent statement", "records held", "statement held", "invoice held"))
+    return no_loan and records_held
 
 
 def rental_property_declines_workflow(value: Any) -> bool:
@@ -4698,6 +4722,8 @@ def rental_property_amount_field_text(
         return "unknown"
     if rental_property_amount_conflict(raw, items, key):
         return "unknown"
+    if rental_property_field_absence_value(key, raw.get(key)):
+        return display_value(raw.get(key))
     direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return money_text(direct) if money else rental_property_number_text(direct)
@@ -4810,6 +4836,8 @@ def rental_property_supplied_field_needs_evidence(record: Dict[str, Any], key: s
 def rental_property_usable_amount_value(value: Any, key: str) -> Optional[float]:
     if rental_property_amount_needs_evidence(value, key):
         return None
+    if rental_property_zero_amount_absence_value(value, key):
+        return 0.0
     return rental_property_amount_value(value)
 
 
@@ -4870,9 +4898,15 @@ def rental_property_item_net_loss_reconciliation_value(item: Dict[str, Any]) -> 
 
 
 def rental_property_reconciliation_amount_value(value: Any, key: str) -> Optional[float]:
+    if rental_property_zero_amount_absence_value(value, key):
+        return 0.0
     if key == "net_loss":
         return rental_property_net_loss_amount_value(value)
     return rental_property_usable_amount_value(value, key)
+
+
+def rental_property_zero_amount_absence_value(value: Any, key: str) -> bool:
+    return key in RENTAL_PROPERTY_EXPENSE_FIELDS and rental_property_field_absence_value(key, value)
 
 
 def rental_property_net_loss_amount_value(value: Any) -> Optional[float]:
@@ -4908,6 +4942,8 @@ def rental_property_items_text(raw: Dict[str, Any], items: List[Dict[str, Any]])
 def rental_property_item_amount_text(item: Dict[str, Any], key: str, money: bool = True) -> str:
     value = item.get(key)
     if rental_property_amount_missing_document_value(value):
+        return display_value(value)
+    if rental_property_field_absence_value(key, value):
         return display_value(value)
     amount = rental_property_usable_amount_value(value, key)
     return money_text(amount) if money else rental_property_number_text(amount)
