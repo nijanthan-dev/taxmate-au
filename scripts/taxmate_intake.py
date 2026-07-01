@@ -1937,6 +1937,8 @@ def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
             f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
             f"capital gain {money_text(investment_money_value(item.get('capital_gain')))}; "
             f"foreign income {money_text(investment_money_value(item.get('foreign_income')))}; "
+            f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
+            f"non-assessable payment {money_text(investment_money_value(item.get('non_assessable_payment')))}; "
             f"foreign components {display_value(item.get('foreign_components'))}"
         ),
         "Individual beneficiary trust distributions are routed for accountant review only; TaxMate does not prepare a trust return.",

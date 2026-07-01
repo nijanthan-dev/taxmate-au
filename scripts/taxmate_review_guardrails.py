@@ -100,7 +100,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #69 investment income",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, zero-only withholding/franking/auxiliary components, unknown or malformed amounts, uncertain or negative-string franking confirmations, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, relevant aggregate-vs-item total conflicts, and supplied aggregates with any unknown relevant item total in Evidence or Accountant review while preserving aggregate-only base rows, zero withholding, zero franking credits, false foreign components, zero aggregate reconciliation for empty investment categories, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
+        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, zero-only withholding/franking/auxiliary components, unknown or malformed amounts, uncertain or negative-string franking confirmations, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, relevant aggregate-vs-item total conflicts, and supplied aggregates with any unknown relevant item total in Evidence or Accountant review while preserving aggregate-only base rows, zero withholding, zero franking credits, false foreign components, zero aggregate reconciliation for empty investment categories, source provenance, flat/nested item aliases, direct dividend/distribution amount aliases, and every accepted investment amount field in rendered rows.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -537,6 +537,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "foreign components {display_value(item.get('foreign_components'))}",
                 "TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}",
                 "franking credit {money_text(investment_money_value(item.get('franking_credit')))}",
+                "foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}",
+                "non-assessable payment {money_text(investment_money_value(item.get('non_assessable_payment')))}",
                 "Trust distribution routing for individual beneficiary",
                 "TaxMate does not prepare a trust return",
                 "Investment totals need corrected reconciliation",

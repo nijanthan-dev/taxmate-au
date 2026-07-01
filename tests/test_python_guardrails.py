@@ -1214,6 +1214,40 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertEqual("Evidence", by_number["DIV-1"]["status"])
                 self.assertIn("Dividend statement item 1: confirm franking confirmation", evidence_text)
 
+    def test_investment_income_trust_rows_render_all_accepted_amount_fields(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "trust_distribution_items": [
+                        {
+                            "trust": "Family Trust",
+                            "beneficiary_type": "individual",
+                            "distribution_amount": 1200,
+                            "franked_distribution": 300,
+                            "franking_credit": 128.57,
+                            "capital_gain": 40,
+                            "foreign_income": 50,
+                            "foreign_tax_offset": 0,
+                            "non_assessable_payment": 25,
+                            "foreign_components": False,
+                            "statement": "statement held",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["TRUST-DIST-1"]["status"])
+        self.assertIn("distribution 1200.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("franked distribution 300.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("franking credit 128.57", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("capital gain 40.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("foreign income 50.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("foreign tax offset 0.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("non-assessable payment 25.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("foreign components false", by_number["TRUST-DIST-1"]["answer"])
+
     def test_investment_income_direct_amount_aliases_render_in_rows(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
