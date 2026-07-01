@@ -4260,7 +4260,7 @@ def rental_property_items_income_partially_incomplete(items: List[Dict[str, Any]
     if not items:
         return False
     complete = [not rental_property_item_income_needs_evidence(item) for item in items]
-    return any(complete) and not all(complete)
+    return not all(complete)
 
 
 def rental_property_records_evidence(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
@@ -4737,6 +4737,10 @@ def rental_property_amount_field_text(
         return "unknown"
     if rental_property_amount_conflict(raw, items, key):
         return "unknown"
+    if rental_property_supplied_field_needs_evidence(raw, key):
+        return rental_property_supplied_amount_text(raw.get(key))
+    if rental_property_item_supplied_amount_needs_evidence(items, key):
+        return "unknown"
     if rental_property_field_absence_value(key, raw.get(key)):
         return display_value(raw.get(key))
     direct = rental_property_usable_amount_value(raw.get(key), key)
@@ -4799,6 +4803,12 @@ def rental_property_display_net_amount(raw: Dict[str, Any], items: List[Dict[str
     return round(income - sum(known_expenses), 2)
 
 
+def rental_property_supplied_amount_text(value: Any) -> str:
+    if contains_unknown(value) or rental_property_amount_missing_document_value(value):
+        return display_value(value)
+    return "unknown"
+
+
 def rental_property_private_use_expense_apportionment_blocks_net(
     raw: Dict[str, Any],
     items: List[Dict[str, Any]],
@@ -4814,6 +4824,10 @@ def rental_property_display_amount_value(raw: Dict[str, Any], items: List[Dict[s
         return None
     if rental_property_amount_conflict(raw, items, key):
         return None
+    if rental_property_supplied_field_needs_evidence(raw, key):
+        return None
+    if rental_property_item_supplied_amount_needs_evidence(items, key):
+        return None
     direct = rental_property_usable_amount_value(raw.get(key), key)
     if direct is not None:
         return direct
@@ -4826,9 +4840,13 @@ def rental_property_supplied_amount_needs_evidence(raw: Dict[str, Any], items: L
     return (
         (key == "income" and rental_property_items_income_partially_incomplete(items))
         or rental_property_supplied_field_needs_evidence(raw, key)
-        or any(rental_property_supplied_field_needs_evidence(item, key) for item in items)
+        or rental_property_item_supplied_amount_needs_evidence(items, key)
         or rental_property_amount_conflict(raw, items, key)
     )
+
+
+def rental_property_item_supplied_amount_needs_evidence(items: List[Dict[str, Any]], key: str) -> bool:
+    return any(rental_property_supplied_field_needs_evidence(item, key) for item in items)
 
 
 def rental_property_item_amounts_need_evidence(items: List[Dict[str, Any]]) -> bool:

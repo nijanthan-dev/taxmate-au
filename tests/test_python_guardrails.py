@@ -3619,6 +3619,115 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("interest -10.00", row["answer"])
         self.assertIn("worksheet net unknown", row["answer"])
 
+    def test_rental_property_top_level_income_does_not_clear_missing_item_incomes(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_income": 10000,
+                "rental_property_ownership": "individual",
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "interest": 2000,
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "records": "agent statement held",
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("rental income evidence", row["tab_text"])
+        self.assertIn("income unknown", row["answer"])
+        self.assertIn("Unit 1: owner individual, income unknown, interest 2000.00", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertNotIn("worksheet net 8000.00", row["answer"])
+
+    def test_rental_property_invalid_top_level_amounts_are_not_replaced_by_item_totals(self) -> None:
+        cases = [
+            ("income", "unknown", "Property Example rental; owner individual; income unknown"),
+            ("interest", "unknown", "income 5000.00; interest unknown"),
+            ("repairs", "about $100", "interest unknown; repairs unknown"),
+        ]
+        for key, value, expected_summary in cases:
+            with self.subTest(key=key):
+                raw = {
+                    "address": "Example rental",
+                    "ownership": "individual",
+                    "income": 5000,
+                    "interest": "no interest",
+                    "repairs": "no repairs",
+                    "capital_works": "no capital works",
+                    "depreciation": "no depreciation",
+                    "other_expenses": "no other expenses",
+                    "records": "agent statement held",
+                    "private_use": False,
+                    key: value,
+                    "items": [
+                        {
+                            "address": "Unit 1",
+                            "ownership": "individual",
+                            "income": 5000,
+                            "interest": 1000,
+                            "repairs": 100,
+                            "capital_works": "no capital works",
+                            "depreciation": "no depreciation",
+                            "other_expenses": "no other expenses",
+                            "records": "agent statement held",
+                            "private_use": False,
+                        }
+                    ],
+                }
+                payload = taxmate_intake.answers_to_pack_payload({"rental_property": raw})
+                row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("numeric rental amount evidence", row["tab_text"])
+                self.assertIn(expected_summary, row["answer"])
+                self.assertIn("worksheet net unknown", row["answer"])
+
+    def test_rental_property_invalid_item_amounts_are_not_replaced_by_top_level_totals(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "rental_property_income": 5000,
+                "rental_property_interest": 1000,
+                "rental_property_repairs": "no repairs",
+                "rental_property_capital_works": "no capital works",
+                "rental_property_depreciation": "no depreciation",
+                "rental_property_other_expenses": "no other expenses",
+                "rental_property_ownership": "individual",
+                "rental_property_records": "agent statement held",
+                "rental_property_private_use": False,
+                "rental_property_items": [
+                    {
+                        "address": "Unit 1",
+                        "ownership": "individual",
+                        "income": 5000,
+                        "interest": "unknown",
+                        "repairs": "no repairs",
+                        "capital_works": "no capital works",
+                        "depreciation": "no depreciation",
+                        "other_expenses": "no other expenses",
+                        "records": "agent statement held",
+                    }
+                ],
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "RENTAL-PROPERTY")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric rental amount evidence", row["tab_text"])
+        self.assertIn("interest unknown", row["answer"])
+        self.assertIn("Unit 1: owner individual, income 5000.00, interest unknown", row["answer"])
+        self.assertIn("worksheet net unknown", row["answer"])
+        self.assertNotIn("worksheet net 4000.00", row["answer"])
+
     def test_rental_property_top_level_item_amount_conflicts_need_reconciliation(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -4592,6 +4701,7 @@ class IndividualIntakeTests(unittest.TestCase):
                 "rental_property_items": [
                     {
                         "address": "Unit 1",
+                        "income": 5000,
                         "interest": 7000,
                         "repairs": "no repairs",
                         "capital_works": "no capital works",
@@ -4602,6 +4712,7 @@ class IndividualIntakeTests(unittest.TestCase):
                     },
                     {
                         "address": "Unit 2",
+                        "income": 5000,
                         "interest": 6000,
                         "repairs": "no repairs",
                         "capital_works": "no capital works",
