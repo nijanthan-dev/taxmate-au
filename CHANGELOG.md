@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.9.1...v0.10.0) (2026-07-01)
+
+
+### Features
+
+* add investment distributions ([a7fea00](https://github.com/nijanthan-dev/taxmate-australia/commit/a7fea00096ac695f203aaf3d8005a0b2cd5a4393)), closes [#69](https://github.com/nijanthan-dev/taxmate-australia/issues/69)
+
 ## [0.9.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.9.0...v0.9.1) (2026-07-01)
 
 
