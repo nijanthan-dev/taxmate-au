@@ -36,6 +36,8 @@ Before requesting another Codex review after review feedback:
 
 Run `./scripts/taxmate review-guardrails` before opening or updating a PR. The script is the canonical pattern inventory and executable guardrail surface. Do not duplicate PR pattern bullets in docs.
 
+The local pre-commit config, repo hook, and CI run this guardrail. Public-doc leakage checks are deterministic Python checks in `scripts/taxmate_review_guardrails.py`: update `PUBLIC_OUTPUT_DOCS`, `DEVELOPER_ONLY_PUBLIC_DOC_TERMS`, and `DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS` when Codex review finds a new developer-only command that must not appear in README or public setup docs.
+
 List the inventory from the script:
 
 ```bash
@@ -146,6 +148,35 @@ Coverage checks:
 scripts/check-publication-ready.sh
 ```
 
+### README screenshot refresh
+
+Screenshot refresh commands are developer-only. Keep the global README focused on install, usage, previews, boundaries, and user-facing examples.
+
+Refresh the README preview assets from synthetic sample data:
+
+```bash
+./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
+./scripts/taxmate intake individual \
+  --answers /tmp/taxmate-answers.json \
+  --output /tmp/taxmate-guide.html
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
+  --disable-component-update --no-first-run --no-default-browser-check \
+  --user-data-dir=/tmp/taxmate-chrome-profile --window-size=1040,720 \
+  --screenshot=assets/readme/taxmate-guide-john-doe.png \
+  file:///tmp/taxmate-guide.html
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
+  --disable-component-update --no-first-run --no-default-browser-check \
+  --user-data-dir=/tmp/taxmate-chrome-profile-long --window-size=1120,10000 \
+  --screenshot=/tmp/taxmate-guide-full.png \
+  file:///tmp/taxmate-guide.html
+python3 scripts/png_crop.py /tmp/taxmate-guide-full.png \
+  assets/readme/taxmate-guide-john-doe-worksheet.png 0 5350 1120 760
+```
+
+Any PR that changes user-facing output, output sections, screenshots/images, install/use docs, or individual-return handoff expectations must update README/docs in the same PR, or state why no docs update is needed.
+
 Do not commit private user tax records.
 
 ## Skill packaging
@@ -154,6 +185,26 @@ Do not commit private user tax records.
 - Classification source of truth: `config/skill-packaging.json`.
 - Runtime-only skills must include `metadata.internal: true`.
 - Public skills must not reference repository runtime paths, `TAXMATE_AUSTRALIA_ROOT`, plugin-qualified skill names, or repository data paths.
+
+## Local Plugin Testing
+
+This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` for advanced local Codex plugin testing. Local marketplace configuration is development-only.
+
+From the repo root:
+
+```bash
+codex plugin marketplace add .
+codex plugin add taxmate-australia@taxmate-local-marketplace
+```
+
+Verify available plugins:
+
+```bash
+codex plugin marketplace list
+codex plugin list
+```
+
+Do not claim official plugin discovery unless a published listing has been verified.
 
 ## CI
 

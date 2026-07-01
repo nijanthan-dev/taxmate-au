@@ -12,8 +12,7 @@ Pick the smallest path that matches what you need:
 | Need | Install | What you get |
 | --- | --- | --- |
 | Quick use in Codex, Claude Code, Cowork, or OpenAgentSkill CLI | Portable skills | Topic guidance, source-backed review prompts, and `Accountant review` flags. No checkout required. |
-| HTML guide, workbook/taxpack output, source refresh, finance review, calculators, or validation | Full runtime checkout | Bash + Python runtime, source pipeline, guide generation, and audit tooling. |
-| Development, CI, or local plugin testing | Full runtime checkout + dev checks | Same runtime plus publication checks and local plugin metadata validation. |
+| HTML guide, workbook/taxpack output, source refresh, finance review, or calculators | Full runtime checkout | Bash + Python runtime, source pipeline, guide generation, and audit tooling. |
 
 Fast portable install:
 
@@ -53,30 +52,7 @@ Example guide from synthetic sample data. Shows the overview, prep boundary, man
 
 The lower handoff preview shows the evidence queue, accountant-review queue, row-level provenance, and the source/provenance appendix. The generated HTML also includes ABN prep, BAS worksheet, and missing-facts sections above this section.
 
-Screenshot refresh commands:
-
-```bash
-./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
-./scripts/taxmate intake individual \
-  --answers /tmp/taxmate-answers.json \
-  --output /tmp/taxmate-guide.html
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
-  --disable-component-update --no-first-run --no-default-browser-check \
-  --user-data-dir=/tmp/taxmate-chrome-profile --window-size=1040,720 \
-  --screenshot=assets/readme/taxmate-guide-john-doe.png \
-  file:///tmp/taxmate-guide.html
-/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
-  --disable-component-update --no-first-run --no-default-browser-check \
-  --user-data-dir=/tmp/taxmate-chrome-profile-long --window-size=1120,10000 \
-  --screenshot=/tmp/taxmate-guide-full.png \
-  file:///tmp/taxmate-guide.html
-python3 scripts/png_crop.py /tmp/taxmate-guide-full.png \
-  assets/readme/taxmate-guide-john-doe-worksheet.png 0 5350 1120 760
-```
-
-The sample data is synthetic. Any PR that changes user-facing output, output sections, screenshots/images, install/use docs, or individual-return handoff expectations must update README/docs in the same PR, or state why no docs update is needed.
+The sample data is synthetic. Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## What It Does
 
@@ -88,7 +64,7 @@ The sample data is synthetic. Any PR that changes user-facing output, output sec
 
 ## Full Runtime Quickstart
 
-Use this path when you need generated guides, workbook/taxpack outputs, source refresh, finance review, calculators, validation, or local plugin testing.
+Use this path when you need generated guides, workbook/taxpack outputs, source refresh, finance review, or calculators.
 
 Prerequisites:
 
@@ -102,13 +78,6 @@ Clone and bootstrap:
 git clone https://github.com/nijanthan-dev/taxmate-australia.git
 cd taxmate-australia
 bash scripts/bootstrap-dev-env.sh
-```
-
-Validate the checkout:
-
-```bash
-./scripts/taxmate validate
-./scripts/taxmate skills generate --check
 ```
 
 Full setup details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
@@ -150,7 +119,6 @@ Use the work-from-home skill for the 2025-26 income year and verify current rate
 Run full-runtime commands from a checkout:
 
 ```bash
-./scripts/taxmate skills generate
 ./scripts/taxmate refresh --query "payg"
 ./scripts/taxmate intake individual --help
 ./scripts/taxmate finance --help
@@ -192,17 +160,7 @@ Source artifacts are tracked in `data/ato_knowledge_base/source_coverage.json`, 
 
 ## Development
 
-Core checks:
-
-```bash
-PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
-./scripts/taxmate validate
-./scripts/taxmate skills generate --check
-./scripts/taxmate skills audit --check
-scripts/check-publication-ready.sh
-```
-
-Contributor flow and release checks: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Contributor flow, release checks, screenshot maintenance, and repository guardrails: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Troubleshooting
 

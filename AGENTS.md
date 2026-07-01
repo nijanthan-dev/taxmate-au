@@ -41,6 +41,7 @@
 - Generated-artifact checks must enumerate tracked `skills/<topic>/SKILL.md` and `skills/<topic>/references/*`, not only hard-coded expected files.
 - Do not commit private user tax records.
 - Do not commit built binaries from `bin/`.
+- Keep README and public install docs focused on install, use, previews, boundaries, and user-facing examples; put screenshot refresh commands, Chrome flags, crop coordinates, and other developer maintenance recipes in `docs/DEVELOPMENT.md` or `AGENTS.md`.
 - Before PR/merge, run `python3 -m py_compile scripts/*.py`, `./scripts/taxmate validate`, `./scripts/taxmate skills generate --check`, `./scripts/taxmate skills audit --check`, `scripts/check-publication-ready.sh`, and run a secret scan.
 - For PR fix -> merge -> Release Please -> release/tag -> cleanup work, use `$taxmate-release-closeout` when available.
 - Before merge, require latest-head Codex review, green CI, `mergeStateStatus` `CLEAN`, and no unresolved review threads.
