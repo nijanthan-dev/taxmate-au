@@ -199,6 +199,11 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         "def effective_tab_kind(",
         "def review_text(",
         "def queue_item_text(",
+        "def render_review_queue(items: List[str])",
+        '<ul class="review-list">',
+        "def tab_title(item: GuideItem, row_index: int)",
+        "return \"Evidence queue\"",
+        "return \"Missing facts queue\"",
         "fallback_tab_text(item.number, effective_status_kind(item))",
         "def row_anchor(item: GuideItem, row_index: int)",
         "render_queue(\"Missing facts queue\", data.missing_facts, 400)",
@@ -230,6 +235,7 @@ def check_taxpack_output_layer_text(text: str) -> List[Finding]:
         '"generated_date":',
         " or \"\"",
         " or ''",
+        "review_queue = \"; \".join",
     ]
     hits = [token for token in forbidden if token in text]
     if hits:
