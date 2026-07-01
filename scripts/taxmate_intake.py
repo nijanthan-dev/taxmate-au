@@ -1830,7 +1830,7 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
         rows.append(investment_distribution_row(idx, item, dividend_conflict))
     for idx, item in enumerate(trust_items, start=1):
         rows.append(investment_trust_row(idx, item))
-    if interest_items or dividend_items or distribution_items:
+    if investment_has_reconciliation_target(answers, interest_items, dividend_items, distribution_items):
         rows.append(
             investment_reconciliation_row(
                 answers,
@@ -1898,7 +1898,7 @@ def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) ->
 
 
 def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(
+    amount_evidence = distribution_amounts_need_evidence(item) or investment_amounts_need_evidence(
         item,
         INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS,
         INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS,
@@ -2010,6 +2010,8 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
             )
             if group_label == "Dividend statement" and dividend_amounts_need_evidence(item):
                 amounts = True
+            if group_label == "Managed fund/ETF annual tax statement" and distribution_amounts_need_evidence(item):
+                amounts = True
             franking = group_label == "Dividend statement" and investment_franking_uncertain(item)
             if missing or amounts or franking:
                 rows.append(
@@ -2078,6 +2080,19 @@ def investment_has_kind(raw: Dict[str, Any], key: str) -> bool:
 
 def investment_has_dividend_distribution_items(raw: Dict[str, Any]) -> bool:
     return any(investment_has_kind(raw, key) for key in ("dividend_items", "distribution_items"))
+
+
+def investment_has_reconciliation_target(
+    answers: Dict[str, Any],
+    interest_items: List[Dict[str, Any]],
+    dividend_items: List[Dict[str, Any]],
+    distribution_items: List[Dict[str, Any]],
+) -> bool:
+    return (
+        bool(interest_items) and investment_amount_present(answers.get("interest_income"))
+    ) or (
+        bool(dividend_items or distribution_items) and investment_amount_present(answers.get("dividend_income"))
+    )
 
 
 def investment_required_amount_groups(label: str) -> tuple[tuple[str, ...], ...]:
@@ -2213,13 +2228,27 @@ def dividend_direct_component_conflict(item: Dict[str, Any]) -> bool:
     return direct is not None and component_total is not None and investment_total_conflict(direct, component_total)
 
 
+def distribution_amounts_need_evidence(item: Dict[str, Any]) -> bool:
+    return distribution_direct_taxable_conflict(item)
+
+
 def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:
     direct = investment_direct_amount_value(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS)
+    taxable = investment_money_value(item.get("taxable_amount"))
     if direct is not None:
+        if investment_amount_present(item.get("taxable_amount")):
+            if taxable is None or investment_total_conflict(direct, taxable):
+                return None
         return direct
     if investment_has_direct_amount(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS):
         return None
-    return investment_money_value(item.get("taxable_amount"))
+    return taxable
+
+
+def distribution_direct_taxable_conflict(item: Dict[str, Any]) -> bool:
+    direct = investment_direct_amount_value(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS)
+    taxable = investment_money_value(item.get("taxable_amount"))
+    return direct is not None and taxable is not None and investment_total_conflict(direct, taxable)
 
 
 def dividend_distribution_total(dividend_items: List[Dict[str, Any]], distribution_items: List[Dict[str, Any]]) -> Optional[float]:
@@ -2256,6 +2285,10 @@ def investment_has_direct_amount(item: Dict[str, Any], keys: tuple[str, ...]) ->
 
 def investment_direct_amount_value(item: Dict[str, Any], keys: tuple[str, ...]) -> Optional[float]:
     return investment_money_value(first_present(item, keys))
+
+
+def investment_amount_present(value: Any) -> bool:
+    return not isinstance(value, bool) and not is_missing(value)
 
 
 def investment_total(values: Any) -> Optional[float]:

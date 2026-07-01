@@ -1163,6 +1163,22 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
         self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
 
+    def test_investment_income_without_aggregate_skips_fake_reconciliation_row(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_items": [{"payer": "Bank", "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertIn("Bank interest statement item 1: confirm amount/component values", evidence_text)
+        self.assertNotIn("corrected reconciliation", evidence_text)
+
     def test_investment_income_zero_only_components_do_not_clear_amount_evidence(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -1471,6 +1487,59 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("unfranked unknown", by_number["DIV-1"]["answer"])
         self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
         self.assertIn("Dividend statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_distribution_direct_taxable_conflicts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "dividend_income": 535,
+                "investment_income": {
+                    "distribution_items": [
+                        {
+                            "fund": "Example ETF",
+                            "distribution_amount": 535,
+                            "taxable_amount": 500,
+                            "statement": "statement held",
+                            "foreign_components": False,
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["DIST-1"]["status"])
+        self.assertIn("distribution unknown", by_number["DIST-1"]["answer"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_unknown_distribution_taxable_amount_keeps_total_unknown(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "dividend_income": 535,
+                "investment_income": {
+                    "distribution_items": [
+                        {
+                            "fund": "Example ETF",
+                            "distribution_amount": 535,
+                            "taxable_amount": "unknown",
+                            "statement": "statement held",
+                            "foreign_components": False,
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["DIST-1"]["status"])
+        self.assertIn("distribution unknown", by_number["DIST-1"]["answer"])
+        self.assertIn("taxable amount unknown", by_number["DIST-1"]["answer"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
         self.assertIn("corrected reconciliation", evidence_text)
 
     def test_investment_income_unknown_item_totals_keep_reconciliation_evidence(self) -> None:
