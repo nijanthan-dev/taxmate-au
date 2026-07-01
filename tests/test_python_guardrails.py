@@ -1148,6 +1148,24 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
         self.assertIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_scalar_flat_fields_are_review_first(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_interest_items": "Example Bank interest $120, statement held",
+                "investment_dividend_items": "Example Ltd dividend $430, statement held",
+                "investment_distribution_items": "Example ETF distribution $535, statement held",
+                "trust_distribution_items": "Family Trust distribution statement not received",
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        for number in ["investment_interest_items", "investment_dividend_items", "investment_distribution_items"]:
+            with self.subTest(number=number):
+                self.assertEqual("Accountant review", by_number[number]["status"])
+                self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], by_number[number]["source_urls"])
+        self.assertEqual("Evidence", by_number["trust_distribution_items"]["status"])
+        self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], by_number["trust_distribution_items"]["source_urls"])
+
     def test_investment_income_flat_items_fill_empty_nested_placeholders(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

@@ -1176,6 +1176,11 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             continue
         if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
+            source_urls = (
+                INVESTMENT_SOURCES
+                if spec.key in REVIEWABLE_INVESTMENT_FIELDS
+                else ATO_INDIVIDUAL_SOURCE
+            )
             rows.append(
                 guide_row(
                     spec.key,
@@ -1184,7 +1189,7 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                     display_value(value),
                     "Long-checklist intake answer for manual copy guidance.",
                     status,
-                    ATO_INDIVIDUAL_SOURCE,
+                    source_urls,
                     tab_text=f"{spec.prompt}: {display_value(value)}",
                 )
             )
@@ -1319,6 +1324,10 @@ def base_item_status(key: str, value: Any) -> str:
         if key == "rental_property_records" and rental_property_records_missing(value):
             return "Evidence"
         if nested_key in RENTAL_PROPERTY_AMOUNT_FIELDS and rental_property_amount_malformed(value, nested_key):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+    if key in REVIEWABLE_INVESTMENT_FIELDS:
+        if investment_statement_missing(value):
             return "Evidence"
         return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ABN_FIELDS or key in REVIEWABLE_BAS_FIELDS or key == "gst_registered":

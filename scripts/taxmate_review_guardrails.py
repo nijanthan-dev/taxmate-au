@@ -100,7 +100,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #69 investment income",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, aggregate-vs-item total conflicts, and supplied aggregates with unknown item totals in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
+        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, aggregate-vs-item total conflicts, and supplied aggregates with unknown item totals in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -490,6 +490,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "investment = investment_answers(answers)",
                 "items.extend(investment_rows(investment, answers))",
                 "rows.extend(investment_evidence_rows(investment_answers(answers), answers))",
+                "source_urls = (",
+                "if spec.key in REVIEWABLE_INVESTMENT_FIELDS",
                 "def investment_answers(",
                 "def investment_rows(",
                 "def investment_reconciliation_needs_evidence(",
@@ -518,6 +520,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "cash dividend {money_text(dividend_item_total(item))}",
                 "distribution {money_text(distribution_item_total(item))}",
                 "return item_total is None or investment_total_conflict(aggregate_value, item_total)",
+                "if key in REVIEWABLE_INVESTMENT_FIELDS:",
+                "if investment_statement_missing(value):",
                 "foreign components {display_value(item.get('foreign_components'))}",
                 "TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}",
                 "franking credit {money_text(investment_money_value(item.get('franking_credit')))}",
