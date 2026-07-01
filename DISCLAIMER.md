@@ -14,7 +14,7 @@ TaxMate Australia can be wrong, incomplete, stale, or unsuitable for a user's fa
 
 TaxMate Australia does not lodge tax returns, BAS, FBT returns, TPAR, STP reports, or other official forms. Any workbook, PDF, checklist, calculation, or form-like output is a draft preparation artifact only.
 
-TaxMate Australia may create custom ATO-aligned manual guide PDFs to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. These PDFs are not official ATO PDFs, do not fill official ATO forms, and must not be treated as a return that can be filed, uploaded, mailed, or otherwise submitted to the ATO.
+TaxMate Australia may create custom print-first HTML handoffs to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. These handoffs are not official ATO PDFs, do not fill official ATO forms, and must not be treated as a return that can be filed, uploaded, mailed, or otherwise submitted to the ATO.
 TaxMate Australia may identify claim candidates, GST candidates, or record gaps, but it must not be treated as confirming entitlement. Ambiguous, material, mixed-use, pre-revenue, home-business, FBT, CGT, GST/BAS, PSI, non-commercial-loss, and business-versus-hobby items should remain `Accountant review` unless the facts and current official guidance clearly resolve them.
 
 Do not publish private tax records, TFNs, Medicare numbers, bank details, identity documents, client files, or other sensitive personal information in issues, pull requests, examples, tests, or repository content.

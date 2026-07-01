@@ -1,6 +1,6 @@
 ---
 name: individual-return
-description: Guide V1 Australian individual tax return intake, including PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI deep, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and HTML handoff. Use when the user wants an individual return prep pack or a broad individual tax checklist.
+description: Guide V1 Australian individual tax return intake, including PAYG, ESS, ETP, lump sum in arrears, super income, foreign income, PSI deep, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance. Use when the user wants an individual return prep pack or a broad individual tax checklist; use the full runtime for HTML handoff generation.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 4
@@ -27,7 +27,7 @@ metadata:
       - "rental income"
       - "net rental loss"
       - "tax intake"
-      - "HTML tax pack"
+      - "manual copy tax pack"
 ---
 
 # Individual Return
@@ -89,4 +89,4 @@ Do not fully handle company, trust, partnership, full supplementary, complete CG
 
 ## Output Contract
 
-The final handoff is HTML only. It must include prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.
+When full runtime execution is available, the final handoff is HTML only. It must include prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep, BAS worksheet, missing facts, evidence queue, accountant-review queue, and source/provenance appendix.

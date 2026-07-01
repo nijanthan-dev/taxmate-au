@@ -1,6 +1,6 @@
 # Full Runtime Setup
 
-Use this runtime path for guide generation, workbook/taxpack outputs, live ATO source refresh, source coverage governance, calculator workflows, finance review, validation, and local plugin testing.
+Use this runtime path for the print-first HTML handoff, workbook/taxpack outputs, live ATO source refresh, source coverage governance, calculator workflows, finance review, validation, and local plugin testing.
 
 If you only need quick agent prompts without a checkout, use [INSTALLATION.md](INSTALLATION.md) instead.
 
@@ -43,13 +43,9 @@ Render the self-prepared guide HTML users can save as PDF:
   --output /tmp/taxmate-guide.html
 ```
 
-The guide is a custom preparation aid. Users manually copy reviewed values into myTax, a paper ATO form, or provide it to an accountant.
+The guide is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, a paper ATO form, or provide it to an accountant after resolving missing facts, evidence gaps, and `Accountant review` queues.
 
-The same commands also work by calling the Python module directly:
-
-```bash
-./scripts/taxmate.py refresh --help
-```
+The individual-return handoff includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, and source/provenance appendix.
 
 Full validation:
 

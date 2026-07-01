@@ -621,7 +621,7 @@ HTML_TEMPLATE = """<!doctype html>
 </style>
 </head>
 <body>
-<div class="toolbar"><strong>Self-prepared guide PDF</strong><span>Preview controls are not part of the PDF.</span><button data-mode="all">Show all tabs</button><button data-mode="hide">Hide tabs</button><button data-mode="review">Review only</button><button data-mode="evidence">Evidence only</button></div>
+<div class="toolbar"><strong>Self-prepared HTML guide</strong><span>Preview controls are not printed.</span><button data-mode="all">Show all tabs</button><button data-mode="hide">Hide tabs</button><button data-mode="review">Review only</button><button data-mode="evidence">Evidence only</button></div>
 <main class="book">
 <section class="spread">
 <article class="page">
@@ -642,7 +642,7 @@ HTML_TEMPLATE = """<!doctype html>
 <div class="tab yellow evidence" data-target="summary-note"><b>Evidence needed</b><p>Points directly to the interview summary note.</p></div>
 </aside>
 </section>
-<section class="spread">
+<section class="spread" id="taxmate-guide-worksheet">
 <article class="page long">
 <div class="watermark">MANUAL COPY</div>
 <div class="header"><h1>Tax items and review flags</h1><div class="meta">Income year {income_year}<br>Self-prepared draft<br>Not an ATO form</div></div>

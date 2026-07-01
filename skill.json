@@ -1,7 +1,7 @@
 {
   "name": "TaxMate Australia",
   "slug": "taxmate-australia",
-  "description": "Australian tax prep skill pack and plugin linked to official ATO sources, using a bash and Python runtime for conservative record review, GST/BAS, CGT, evidence gaps, accountant handoff, ATO-aligned manual guide PDFs, and treatment flags.",
+  "description": "Australian tax prep skill pack and plugin linked to official ATO sources, using a bash and Python runtime for conservative record review, GST/BAS, CGT, evidence gaps, accountant handoff, print-first HTML guide handoffs, and treatment flags.",
   "tagline": "Australian tax prep with ATO source links",
   "category": "business",
   "tags": [
@@ -52,7 +52,7 @@
   "suited_tasks": [
     "Review Australian tax records conservatively",
     "Identify evidence gaps and Accountant review items",
-    "Draft accountant-facing workbook, taxpack, and ATO-aligned manual guide PDF outputs",
+    "Draft accountant-facing workbook, taxpack, and print-first HTML guide handoffs",
     "Refresh and cite official ATO source pages"
   ],
   "do_not_use_for": [

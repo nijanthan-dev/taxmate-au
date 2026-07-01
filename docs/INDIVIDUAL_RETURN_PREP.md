@@ -35,7 +35,7 @@ From a full checkout:
   --output /tmp/taxmate-guide.html
 ```
 
-Open the HTML in a browser and print or save as PDF. The guide keeps source URLs, checked-at dates, missing facts, evidence rows, and accountant-review queues visible.
+Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.
 
 ## Review Rules
 

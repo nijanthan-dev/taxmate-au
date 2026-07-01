@@ -279,9 +279,9 @@ def add_skill_and_documentation_checks(
     )
     add(
         "python_runtime_documented",
-        "scripts/taxmate.py" in full_runtime_text
+        "python runtime under the hood" in full_runtime_text
         and "./scripts/taxmate" in full_runtime_text
-        and "taxmate.py refresh" in full_runtime_text,
+        and "./scripts/taxmate refresh --help" in full_runtime_text,
         "",
     )
 
@@ -2292,7 +2292,7 @@ def taxpack_guide_html_contract() -> bool:
         return False
 
     required = [
-        "Self-prepared guide PDF",
+        "Self-prepared HTML guide",
         "Prepared by user",
         "Not an ATO form",
         "Not fileable",

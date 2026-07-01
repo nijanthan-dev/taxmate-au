@@ -1,21 +1,22 @@
 ---
 name: taxpack
-description: Prepare accountant handoff packs and ATO-aligned manual guide PDFs from reviewed TaxMate Australia data. Use for summary PDFs, checklists, source bundles, and custom guide PDFs that help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
+description: Prepare accountant handoff packs, checklists, source bundles, and manual-copy guidance from reviewed TaxMate Australia data. Use for portable taxpack guidance that helps users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff; use the full runtime for print-first HTML handoff generation.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 3
   promptSignals:
     phrases:
       - "tax pack"
-      - "ATO guide PDF"
+      - "ATO guide"
       - "accountant pack"
       - "handoff pack"
-      - "tax summary PDF"
+      - "tax summary"
+      - "manual copy guide"
 ---
 
 # TaxMate Australia Taxpack
 
-Use this skill for final handoff packaging only. It creates draft preparation artifacts and custom ATO-aligned manual guide PDFs, not official ATO PDFs, official lodgment forms, professional advice, tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, or investment advice. It consumes reviewed data from the user, installed topic skills, and workbook outputs.
+Use this skill for final handoff packaging only. It creates draft preparation guidance, checklist/source-bundle content, and manual-copy instructions, not rendered files, official ATO PDFs, official lodgment forms, professional advice, tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, or investment advice. It consumes reviewed data from the user, installed topic skills, and workbook outputs.
 
 Read `references/rules.md` before creating handoff packs.
 
@@ -39,6 +40,6 @@ Read `references/rules.md` before creating handoff packs.
 - For guide rows, keep review side tabs and review queue entries visible even when `tab_text` and rationale fields are blank.
 - Before treating guide output fixes as review-ready, cover parsed JSON rows, file-backed guide data, and direct renderer rows in tests and validation.
 - Falsey-value regressions must cover top-level guide metadata, row fields, source URL lists, checked-at provenance, fallback tab text, anchors, and direct `GuideItem` construction.
-- For guide PDFs, reference ATO labels and income-year wording, but keep the output clearly custom, manual, and non-lodgment.
+- For manual-copy guidance, reference ATO labels and income-year wording, but keep the output clearly custom, manual, and non-lodgment. Use the full runtime for print-first HTML handoff generation.
 - Tell users to copy reviewed answers into myTax, paper ATO forms, or give the pack to an accountant.
 - Refuse any request to lodge, submit, file, transmit, or finalise the pack with the ATO.

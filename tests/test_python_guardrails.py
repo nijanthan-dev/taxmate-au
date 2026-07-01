@@ -5,8 +5,10 @@ import io
 import json
 import re
 import shutil
+import struct
 import subprocess
 import sys
+import zlib
 import tempfile
 import unittest
 from datetime import date
@@ -19,6 +21,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import atodata  # noqa: E402
+import png_crop  # noqa: E402
 import skillgen  # noqa: E402
 import taxmate  # noqa: E402
 import taxmate_calc  # noqa: E402
@@ -65,6 +68,55 @@ def local_marketplace_docs(marketplace_command: str) -> str:
 
 def date_weekday(value: str) -> int:
     return date.fromisoformat(value).weekday()
+
+
+class PngCropTests(unittest.TestCase):
+    def test_crop_rgba_png(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source.png"
+            output = Path(tmp) / "crop.png"
+            pixels = bytes(
+                [
+                    255,
+                    0,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    255,
+                    0,
+                    0,
+                    255,
+                    255,
+                    255,
+                    255,
+                    0,
+                    255,
+                    0,
+                    255,
+                    255,
+                    255,
+                    255,
+                    0,
+                    255,
+                    255,
+                ]
+            )
+            raw_rows = b"\x00" + pixels[:12] + b"\x00" + pixels[12:]
+            ihdr = struct.pack(">IIBBBBB", 3, 2, 8, 6, 0, 0, 0)
+            source.write_bytes(
+                png_crop.PNG_SIGNATURE
+                + png_crop.write_chunk(b"IHDR", ihdr)
+                + png_crop.write_chunk(b"IDAT", zlib.compress(raw_rows))
+                + png_crop.write_chunk(b"IEND", b"")
+            )
+
+            png_crop.crop_png(source, output, 1, 0, 2, 1)
+
+            chunks = dict(png_crop.read_chunks(output.read_bytes()))
+            self.assertEqual(struct.unpack(">II", chunks[b"IHDR"][:8]), (2, 1))
+            self.assertEqual(zlib.decompress(chunks[b"IDAT"]), b"\x00" + pixels[4:12])
 
 
 class ReviewGuardrailTests(unittest.TestCase):
@@ -287,6 +339,394 @@ class ReviewGuardrailTests(unittest.TestCase):
                 for finding in findings
             )
         )
+
+    def test_output_docs_contract_requires_runtime_handoff_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            (root / "README.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text("", encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text("", encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text("", encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text("", encoding="utf-8")
+            (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any(finding.check == taxmate_review_guardrails.OUTPUT_DOCS_CONTRACT for finding in findings))
+
+
+    def test_output_docs_contract_checks_install_docs_individually(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            taxpack = root / "skills" / "taxpack"
+            individual = root / "skills" / "individual-return"
+            root_skill = root / "skills" / "taxmate-australia"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            taxpack.mkdir(parents=True)
+            individual.mkdir(parents=True)
+            root_skill.mkdir(parents=True)
+            readme = (
+                "Portable skills produce source-backed guidance\n"
+                "full runtime produces a print-first HTML handoff\n"
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
+                "AI extraction confirmation table\n"
+                "individual return field guide\n"
+                "ABN prep section and BAS worksheet\n"
+                "missing facts queue, evidence queue, and accountant-review queue\n"
+                "source/provenance appendix\n"
+                "Screenshot refresh commands\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "--answers /tmp/taxmate-answers.json\n"
+                "The sample data is synthetic\n"
+                "Any PR that changes user-facing output\n"
+                "must update README/docs in the same PR, or state why no docs update is needed\n"
+            )
+            good_install = (
+                "Portable skills produce source-backed guidance\n"
+                "do not render the full runtime handoff\n"
+                "full runtime handoff is a custom preparation aid\n"
+                "not an ATO form\nnot lodgment software\nnot final tax advice\nnot fileable\n"
+                "manually copy reviewed values\n"
+            )
+            good_full_install = (
+                "print-first HTML handoff\ncustom preparation aid\nnot an ATO form\n"
+                "not lodgment software\nnot final tax advice\nnot fileable\n"
+                "manually copy reviewed values\nmissing facts\nevidence gaps\nAccountant review\n"
+                "source/provenance appendix\n"
+            )
+            good_prep = (
+                "prep-only\nmanual-copy handoff\ndoes not lodge\nRuntime Path\nOpen the HTML\n"
+                "prep-only boundary\nmanual-copy warning\nAI extraction confirmation table\nsource/provenance appendix\n"
+            )
+            (root / "README.md").write_text(readme, encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text("Portable skills produce source-backed guidance\n", encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(good_full_install, encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(good_prep, encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html\n",
+                encoding="utf-8",
+            )
+            (root / "DISCLAIMER.md").write_text(
+                "custom print-first HTML handoffs not official ATO PDFs do not fill official ATO forms must not be treated as a return\n",
+                encoding="utf-8",
+            )
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+            (taxpack / "SKILL.md").write_text(
+                "manual-copy guidance not rendered files full runtime for print-first HTML handoff generation\n",
+                encoding="utf-8",
+            )
+            (individual / "SKILL.md").write_text(
+                "manual-copy handoff guidance full runtime for HTML handoff generation when a full runtime is available\n",
+                encoding="utf-8",
+            )
+            (root_skill / "SKILL.md").write_text(
+                "manual-copy handoff guidance full runtime for HTML handoff generation\n",
+                encoding="utf-8",
+            )
+            for name in ["taxmate-guide-john-doe.png", "taxmate-guide-john-doe-worksheet.png"]:
+                (assets / name).write_bytes(b"png")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any("docs/INSTALLATION.md missing" in finding.detail for finding in findings))
+        self.assertFalse(any("docs/FULL_PLUGIN_INSTALL.md missing" in finding.detail for finding in findings))
+        self.assertFalse(any("docs/INDIVIDUAL_RETURN_PREP.md missing" in finding.detail for finding in findings))
+
+    def test_output_docs_contract_rejects_stale_renderer_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            readme = (
+                "Portable skills produce source-backed guidance\n"
+                "full runtime produces a print-first HTML handoff\n"
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
+                "AI extraction confirmation table\n"
+                "individual return field guide\n"
+                "ABN prep section and BAS worksheet\n"
+                "missing facts queue, evidence queue, and accountant-review queue\n"
+                "source/provenance appendix\n"
+                "Screenshot refresh commands\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "--answers /tmp/taxmate-answers.json\n"
+                "The sample data is synthetic\n"
+                "Any PR that changes user-facing output\n"
+                "must update README/docs in the same PR, or state why no docs update is needed\n"
+                "from PIL import Image\n"
+            )
+            docs_text = (
+                "Portable skills produce source-backed guidance\n"
+                "print-first HTML handoff\n"
+                "print-first HTML guide\n"
+                "not an ATO form\n"
+                "not lodgment software\n"
+                "not final tax advice\n"
+                "not fileable\n"
+                "manually copy reviewed values\n"
+                "AI extraction confirmation table\n"
+                "missing facts queue\n"
+                "evidence queue\n"
+                "accountant-review queue\n"
+                "source/provenance appendix\n"
+                "manual-copy guidance\n"
+            )
+            (root / "README.md").write_text(readme, encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html\n"
+                "./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html\n",
+                encoding="utf-8",
+            )
+            (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+            for name in ["taxmate-guide-john-doe.png", "taxmate-guide-john-doe-worksheet.png"]:
+                (assets / name).write_bytes(b"png")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any("stale output docs" in finding.detail for finding in findings))
+
+    def test_output_docs_contract_rejects_stale_packaged_taxpack_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            taxpack = root / "skills" / "taxpack"
+            taxpack_agents = taxpack / "agents"
+            taxpack_refs = taxpack / "references"
+            wrapper = root / "wrappers" / "taxmate-australia-taxpack"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            taxpack_agents.mkdir(parents=True)
+            taxpack_refs.mkdir(parents=True)
+            wrapper.mkdir(parents=True)
+            readme = (
+                "Portable skills produce source-backed guidance\n"
+                "full runtime produces a print-first HTML handoff\n"
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
+                "AI extraction confirmation table\n"
+                "individual return field guide\n"
+                "ABN prep section and BAS worksheet\n"
+                "missing facts queue, evidence queue, and accountant-review queue\n"
+                "source/provenance appendix\n"
+                "Screenshot refresh commands\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "--answers /tmp/taxmate-answers.json\n"
+                "The sample data is synthetic\n"
+                "Any PR that changes user-facing output\n"
+                "must update README/docs in the same PR, or state why no docs update is needed\n"
+            )
+            docs_text = (
+                "Portable skills produce source-backed guidance\n"
+                "print-first HTML handoff\n"
+                "print-first HTML guide\n"
+                "not an ATO form\n"
+                "not lodgment software\n"
+                "not final tax advice\n"
+                "not fileable\n"
+                "manually copy reviewed values\n"
+                "AI extraction confirmation table\n"
+                "missing facts queue\n"
+                "evidence queue\n"
+                "accountant-review queue\n"
+                "source/provenance appendix\n"
+                "manual-copy guidance\n"
+            )
+            (root / "README.md").write_text(readme, encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html\n",
+                encoding="utf-8",
+            )
+            (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+            (taxpack / "SKILL.md").write_text("description: ATO-aligned guide PDFs\n", encoding="utf-8")
+            (taxpack_agents / "openai.yaml").write_text("short_description: ATO-aligned guide PDFs\n", encoding="utf-8")
+            (taxpack_refs / "rules.md").write_text("ATO-aligned guide PDFs must be custom\n", encoding="utf-8")
+            (wrapper / "SKILL.md").write_text("future PDF/form drafts\n", encoding="utf-8")
+            (root / "scripts").mkdir()
+            (root / "scripts" / "taxmate_taxpack.py").write_text("Self-prepared HTML guide\n", encoding="utf-8")
+            for name in ["taxmate-guide-john-doe.png", "taxmate-guide-john-doe-worksheet.png"]:
+                (assets / name).write_bytes(b"png")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any("ATO-aligned guide PDFs" in finding.detail for finding in findings))
+
+
+    def test_output_docs_contract_rejects_portable_runtime_html_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            taxpack = root / "skills" / "taxpack"
+            root_skill = root / "skills" / "taxmate-australia"
+            individual = root / "skills" / "individual-return"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            taxpack.mkdir(parents=True)
+            root_skill.mkdir(parents=True)
+            individual.mkdir(parents=True)
+            readme = (
+                "Portable skills produce source-backed guidance\n"
+                "full runtime produces a print-first HTML handoff\n"
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
+                "AI extraction confirmation table\n"
+                "individual return field guide\n"
+                "ABN prep section and BAS worksheet\n"
+                "missing facts queue, evidence queue, and accountant-review queue\n"
+                "source/provenance appendix\n"
+                "Screenshot refresh commands\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "--answers /tmp/taxmate-answers.json\n"
+                "The sample data is synthetic\n"
+                "Any PR that changes user-facing output\n"
+                "must update README/docs in the same PR, or state why no docs update is needed\n"
+            )
+            docs_text = (
+                "Portable skills produce source-backed guidance\n"
+                "print-first HTML handoff\n"
+                "print-first HTML guide\n"
+                "not an ATO form\n"
+                "not lodgment software\n"
+                "not final tax advice\n"
+                "not fileable\n"
+                "manually copy reviewed values\n"
+                "AI extraction confirmation table\n"
+                "missing facts queue\n"
+                "evidence queue\n"
+                "accountant-review queue\n"
+                "source/provenance appendix\n"
+                "manual-copy guidance\n"
+            )
+            (root / "README.md").write_text(readme, encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html\n",
+                encoding="utf-8",
+            )
+            (root / "DISCLAIMER.md").write_text("custom print-first HTML handoffs\n", encoding="utf-8")
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+            (taxpack / "SKILL.md").write_text("manual-copy guidance\n", encoding="utf-8")
+            (root_skill / "SKILL.md").write_text(
+                "- `individual-return`: V1 scope, spouse, dependants, and HTML handoff.\n",
+                encoding="utf-8",
+            )
+            (individual / "SKILL.md").write_text(
+                "description: Guide individual returns and HTML handoff. Use when broad checklist needed.\n"
+                "HTML tax pack\n"
+                "The final handoff is HTML only. It must include sections.\n",
+                encoding="utf-8",
+            )
+            for name in ["taxmate-guide-john-doe.png", "taxmate-guide-john-doe-worksheet.png"]:
+                (assets / name).write_bytes(b"png")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any("HTML tax pack" in finding.detail for finding in findings))
+
+    def test_output_docs_contract_scans_public_disclaimer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            docs = root / "docs"
+            assets = root / "assets" / "readme"
+            plugin = root / ".codex-plugin"
+            taxpack = root / "skills" / "taxpack"
+            docs.mkdir(parents=True)
+            assets.mkdir(parents=True)
+            plugin.mkdir(parents=True)
+            taxpack.mkdir(parents=True)
+            readme = (
+                "Portable skills produce source-backed guidance\n"
+                "full runtime produces a print-first HTML handoff\n"
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable\n"
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff\n"
+                "AI extraction confirmation table\n"
+                "individual return field guide\n"
+                "ABN prep section and BAS worksheet\n"
+                "missing facts queue, evidence queue, and accountant-review queue\n"
+                "source/provenance appendix\n"
+                "Screenshot refresh commands\n"
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "--answers /tmp/taxmate-answers.json\n"
+                "The sample data is synthetic\n"
+                "Any PR that changes user-facing output\n"
+                "must update README/docs in the same PR, or state why no docs update is needed\n"
+            )
+            docs_text = (
+                "Portable skills produce source-backed guidance\n"
+                "print-first HTML handoff\n"
+                "print-first HTML guide\n"
+                "not an ATO form\n"
+                "not lodgment software\n"
+                "not final tax advice\n"
+                "not fileable\n"
+                "manually copy reviewed values\n"
+                "AI extraction confirmation table\n"
+                "missing facts queue\n"
+                "evidence queue\n"
+                "accountant-review queue\n"
+                "source/provenance appendix\n"
+                "manual-copy guidance\n"
+            )
+            (root / "README.md").write_text(readme, encoding="utf-8")
+            (docs / "INSTALLATION.md").write_text(docs_text, encoding="utf-8")
+            (docs / "FULL_PLUGIN_INSTALL.md").write_text(docs_text, encoding="utf-8")
+            (docs / "INDIVIDUAL_RETURN_PREP.md").write_text(docs_text, encoding="utf-8")
+            (docs / "DEVELOPMENT.md").write_text(
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json\n"
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html\n",
+                encoding="utf-8",
+            )
+            (root / "DISCLAIMER.md").write_text("custom ATO-aligned manual guide PDFs\n", encoding="utf-8")
+            (root / "skill.json").write_text("{}", encoding="utf-8")
+            (plugin / "plugin.json").write_text("{}", encoding="utf-8")
+            (taxpack / "SKILL.md").write_text("manual-copy guidance\n", encoding="utf-8")
+            for name in ["taxmate-guide-john-doe.png", "taxmate-guide-john-doe-worksheet.png"]:
+                (assets / name).write_bytes(b"png")
+
+            findings = taxmate_review_guardrails.check_output_docs_contract(root)
+
+        self.assertTrue(any("ATO-aligned manual guide PDFs" in finding.detail for finding in findings))
 
 
 class CalculatorTests(unittest.TestCase):
@@ -7533,7 +7973,7 @@ class TaxpackGuideTests(unittest.TestCase):
 
         body = taxmate_taxpack.render_html(data)
 
-        self.assertIn("Self-prepared guide PDF", body)
+        self.assertIn("Self-prepared HTML guide", body)
         self.assertIn("Prepared by user", body)
         self.assertIn("Not an ATO form", body)
         self.assertIn("Not fileable", body)
