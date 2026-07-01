@@ -951,6 +951,24 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertEqual("Evidence", ess_amount["status"])
 
+    def test_ess_partial_unknown_item_amounts_do_not_render_partial_totals(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "ess": {
+                    "statement": "ESS statement held",
+                    "items": [
+                        {"employer": "Example Co", "taxed_upfront_discount": 100},
+                        {"employer": "Example Co", "taxed_upfront_discount": "unknown"},
+                    ],
+                },
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "ESS")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("taxed-upfront discount unknown", row["answer"])
+        self.assertIn("numeric amount evidence", row["tab_text"])
+
     def test_boolean_ess_amount_base_rows_are_skipped(self) -> None:
         answers = taxmate_intake.sample_answers()
         answers["ess_taxed_upfront_discount"] = False
@@ -1144,6 +1162,37 @@ class IndividualIntakeTests(unittest.TestCase):
         evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
 
         self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_partial_unknown_item_totals_keep_reconciliation_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "dividend_income": 965,
+                "investment_income": {
+                    "interest_items": [
+                        {"payer": "Bank A", "amount": 100, "statement": "statement held"},
+                        {"payer": "Bank B", "statement": "statement held"},
+                    ],
+                    "dividend_items": [
+                        {"company": "Example Ltd", "amount": 430, "statement": "statement held"},
+                        {"company": "Other Ltd", "statement": "statement held"},
+                    ],
+                    "distribution_items": [
+                        {"fund": "Example ETF", "distribution_amount": 535, "statement": "statement held"},
+                        {"fund": "Other ETF", "statement": "statement held"},
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-2"]["status"])
+        self.assertEqual("Evidence", by_number["DIV-2"]["status"])
+        self.assertEqual("Evidence", by_number["DIST-2"]["status"])
         self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
         self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
         self.assertIn("corrected reconciliation", evidence_text)
@@ -1731,6 +1780,37 @@ class IndividualIntakeTests(unittest.TestCase):
         row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
 
         self.assertEqual("Evidence", row["status"])
+        self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
+
+    def test_foreign_income_partial_unknown_item_amounts_do_not_render_partial_totals(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "foreign_income": {
+                    "statement": "statement held",
+                    "residency_status": "Australian resident",
+                    "items": [
+                        {
+                            "statement": "statement held",
+                            "country": "US",
+                            "amount": 100,
+                            "exchange_rate": 0.66,
+                            "residency_status": "Australian resident",
+                        },
+                        {
+                            "statement": "statement held",
+                            "country": "NZ",
+                            "amount": "unknown",
+                            "exchange_rate": 0.50,
+                            "residency_status": "Australian resident",
+                        },
+                    ],
+                }
+            }
+        )
+        row = next(item for item in payload["items"] if item["number"] == "FOREIGN-INCOME")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("amount unknown", row["answer"])
         self.assertIn("numeric amount or exchange-rate evidence", row["tab_text"])
 
     def test_foreign_income_invalid_aggregate_exchange_rate_with_items_stays_evidence(self) -> None:

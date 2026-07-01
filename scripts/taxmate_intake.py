@@ -2133,7 +2133,7 @@ def investment_franking_uncertain(item: Dict[str, Any]) -> bool:
 
 
 def interest_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
-    return investment_total(investment_money_value(item.get("amount")) for item in items)
+    return investment_itemized_total(investment_money_value(item.get("amount")) for item in items)
 
 
 def dividend_item_total(item: Dict[str, Any]) -> Optional[float]:
@@ -2151,7 +2151,7 @@ def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:
 
 
 def dividend_distribution_total(dividend_items: List[Dict[str, Any]], distribution_items: List[Dict[str, Any]]) -> Optional[float]:
-    return investment_total(
+    return investment_itemized_total(
         [dividend_item_total(item) for item in dividend_items]
         + [distribution_item_total(item) for item in distribution_items]
     )
@@ -2181,6 +2181,13 @@ def first_present(item: Dict[str, Any], keys: tuple[str, ...]) -> Any:
 def investment_total(values: Any) -> Optional[float]:
     amounts = [value for value in values if value is not None]
     if not amounts:
+        return None
+    return round(sum(amounts), 2)
+
+
+def investment_itemized_total(values: Any) -> Optional[float]:
+    amounts = list(values)
+    if not amounts or any(value is None for value in amounts):
         return None
     return round(sum(amounts), 2)
 
@@ -3340,14 +3347,13 @@ def foreign_income_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]]
 
 
 def foreign_income_item_amount_total(items: List[Dict[str, Any]], key: str, alias: str = "") -> Optional[float]:
-    amounts = []
+    amounts: List[Optional[float]] = []
     for item in items:
         amount = foreign_income_money_value(item.get(key))
         if amount is None and alias:
             amount = foreign_income_money_value(item.get(alias))
-        if amount is not None:
-            amounts.append(amount)
-    if not amounts:
+        amounts.append(amount)
+    if not amounts or any(amount is None for amount in amounts):
         return None
     return round(sum(amounts), 6)
 
@@ -5994,11 +6000,10 @@ def ess_amount_value(raw: Dict[str, Any], items: List[Dict[str, Any]], key: str)
 
 
 def ess_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
-    item_amounts = [ess_money_value(item.get(key)) for item in items]
-    real_amounts = [amount for amount in item_amounts if amount is not None]
-    if not real_amounts:
+    item_amounts = [ess_money_value(item.get(key)) for item in items if key in item and not is_missing(item.get(key))]
+    if not item_amounts or any(amount is None for amount in item_amounts):
         return None
-    return round(sum(real_amounts), 2)
+    return round(sum(item_amounts), 2)
 
 
 def ess_amount_conflict(raw: Dict[str, Any], items: List[Dict[str, Any]]) -> bool:
