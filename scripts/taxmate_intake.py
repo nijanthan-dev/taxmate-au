@@ -1739,7 +1739,7 @@ def investment_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     }
     for key, source_keys in flat_sources.items():
         value = first_investment_items(answers, source_keys)
-        if key not in merged and investment_item_values(value):
+        if not investment_item_values(merged.get(key)) and investment_item_values(value):
             merged[key] = value
     return merged
 
@@ -1750,8 +1750,8 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
     trust_items = investment_item_values(raw.get("trust_distribution_items"))
-    interest_conflict = investment_total_conflict(answers.get("interest_income"), interest_item_total(interest_items))
-    dividend_conflict = investment_total_conflict(
+    interest_conflict = investment_reconciliation_needs_evidence(answers.get("interest_income"), interest_item_total(interest_items))
+    dividend_conflict = investment_reconciliation_needs_evidence(
         answers.get("dividend_income"),
         dividend_distribution_total(dividend_items, distribution_items),
     )
@@ -1920,11 +1920,11 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
                         INVESTMENT_SOURCES,
                     )
                 )
-    interest_conflict = investment_total_conflict(
+    interest_conflict = investment_reconciliation_needs_evidence(
         answers.get("interest_income"),
         interest_item_total(investment_item_values(raw.get("interest_items"))),
     )
-    dividend_conflict = investment_total_conflict(
+    dividend_conflict = investment_reconciliation_needs_evidence(
         answers.get("dividend_income"),
         dividend_distribution_total(
             investment_item_values(raw.get("dividend_items")),
@@ -2069,6 +2069,16 @@ def investment_total_conflict(aggregate_value: Any, item_total: Optional[float])
     if aggregate is None or item_total is None:
         return False
     return round(abs(aggregate - item_total), 2) >= 0.01
+
+
+def investment_reconciliation_needs_evidence(aggregate_value: Any, item_total: Optional[float]) -> bool:
+    return investment_aggregate_needs_evidence(aggregate_value) or investment_total_conflict(aggregate_value, item_total)
+
+
+def investment_aggregate_needs_evidence(value: Any) -> bool:
+    if is_missing(value) or isinstance(value, bool):
+        return False
+    return investment_amount_needs_evidence(value)
 
 
 def investment_review_terms(item: Dict[str, Any], *, include_trust: bool) -> List[str]:

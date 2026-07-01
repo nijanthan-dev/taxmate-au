@@ -1032,6 +1032,47 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Managed fund/ETF annual tax statement item 1: confirm statement", evidence_text)
         self.assertIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_malformed_aggregate_totals_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": "about 100",
+                "dividend_income": "about 200",
+                "investment_income": {
+                    "interest_items": [{"payer": "Bank", "amount": 100, "statement": "statement held"}],
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "franked_amount": 200,
+                            "unfranked_amount": 0,
+                            "franking_credit": 0,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_flat_items_fill_empty_nested_placeholders(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "investment_income": {"interest_items": []},
+                "investment_interest_items": [{"payer": "Bank", "amount": 100, "tfn_withheld": 0, "statement": "statement held"}],
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("INT-1", by_number)
+        self.assertIn("INVEST-RECON", by_number)
+        self.assertNotIn("investment_interest_items", by_number)
+
     def test_investment_income_rows_render_in_html_with_provenance(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
         data = taxmate_taxpack.load_guide_payload(payload)
