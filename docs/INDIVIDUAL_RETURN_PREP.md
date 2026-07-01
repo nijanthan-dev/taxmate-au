@@ -21,6 +21,8 @@ Use `individual-return` first for a broad checklist. Route specialist sections t
 
 Ask a full intake, not a short interview. Keep unknown, ambiguous, mixed-use, GST/BAS, CGT, PSI, foreign, ESS, ETP/lump sum, rental, company, trust, partnership, and entity-return items in Evidence or `Accountant review` unless official sources clearly resolve the prep step.
 
+For PAYG salary and wages prep, collect each income statement by payer, employer or payer ABN, occupation, gross salary/wages, tax withheld, allowances, reportable fringe benefits, reportable employer super contributions, lump sum A/B/D/E labels, statement evidence, and finalised/tax-ready status. Reconcile item totals to supplied aggregate PAYG gross and withholding. Keep missing or unfinalised statements, unknown payer details, malformed amounts, ambiguous allowances/RFBA/RESC/lump sum labels, no-PAYG answers plus facts, and mismatched totals in Evidence or `Accountant review`.
+
 For investment income prep, collect itemized bank interest by payer/account, dividends with franked/unfranked amounts, franking credits and withholding, managed fund/ETF/AMIT distribution statement components, and trust distribution statement facts for individual beneficiaries. Reconcile item totals to supplied aggregate interest/dividend totals. Keep missing statements, AMIT/cost-base adjustments, foreign components, trust distributions, franking uncertainty, and mismatched totals in Evidence or `Accountant review`.
 
 For rental property prep, collect property identity, ownership, income, loan interest, repairs, capital works, depreciation, other expenses, private-use or holiday-home days, available-for-rent days, records, and net rental loss facts. Treat repairs-versus-capital ambiguity, private use, depreciation, capital works, and net rental loss as review-first; TaxMate prepares a worksheet only.
@@ -37,13 +39,14 @@ From a full checkout:
   --output /tmp/taxmate-guide.html
 ```
 
-Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, itemized investment income rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.
+Open the HTML in a browser and print or save as PDF. The guide keeps the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, PAYG income statement rows, itemized investment income rows, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, source URLs, checked-at dates, and source/provenance appendix visible.
 
 ## Review Rules
 
 - Explicit no-income, no-crypto, no-PSI, or no-payment answers skip only when no other facts exist.
 - No-answer plus facts stays Evidence and must remain visible in answer text and review queues.
 - Valid falsey values such as `0` and `false` stay visible.
+- `0` withholding, `0` allowances, `0` RFBA, `0` RESC, and false finalised/tax-ready flags stay visible in PAYG rows.
 - `0` franking credits, `0` withholding, and `false` foreign components stay visible in investment rows.
 - AI-extracted values are not used unless the user confirms them.
 - Output layers stay output-only; runtime intake and topic skills own tax-prep logic.
