@@ -1124,6 +1124,96 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
         self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
 
+    def test_investment_income_zero_only_components_do_not_clear_amount_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_items": [
+                        {
+                            "payer": "Example Bank",
+                            "tfn_withheld": 0,
+                            "statement": "statement held",
+                        }
+                    ],
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "franked_amount": 0,
+                            "unfranked_amount": 0,
+                            "franking_credit": 0,
+                            "tfn_withheld": 0,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                    "distribution_items": [
+                        {
+                            "fund": "Example ETF",
+                            "foreign_income": 0,
+                            "foreign_tax_offset": 0,
+                            "franking_credit": 0,
+                            "statement": "statement held",
+                        }
+                    ],
+                    "trust_distribution_items": [
+                        {
+                            "trust": "Family Trust",
+                            "franked_distribution": 0,
+                            "foreign_income": 0,
+                            "franking_credit": 0,
+                            "non_assessable_payment": 0,
+                            "statement": "statement held",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertIn("interest unknown", by_number["INT-1"]["answer"])
+        self.assertIn("TFN withholding 0.00", by_number["INT-1"]["answer"])
+        self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+        self.assertIn("cash dividend 0.00", by_number["DIV-1"]["answer"])
+        self.assertIn("franked 0.00", by_number["DIV-1"]["answer"])
+        self.assertIn("unfranked 0.00", by_number["DIV-1"]["answer"])
+        self.assertIn("franking credit 0.00", by_number["DIV-1"]["answer"])
+        self.assertEqual("Evidence", by_number["DIST-1"]["status"])
+        self.assertIn("distribution unknown", by_number["DIST-1"]["answer"])
+        self.assertIn("foreign income 0.00", by_number["DIST-1"]["answer"])
+        self.assertIn("franking credit 0.00", by_number["DIST-1"]["answer"])
+        self.assertEqual("Evidence", by_number["TRUST-DIST-1"]["status"])
+        self.assertIn("distribution unknown", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("foreign income 0.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("Bank interest statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Dividend statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
+
+    def test_investment_income_string_false_franking_confirmation_stays_evidence(self) -> None:
+        for value in ["no", "false", "0", "not confirmed", "not held", "not available", "none"]:
+            with self.subTest(value=value):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "investment_income": {
+                            "dividend_items": [
+                                {
+                                    "company": "Example Ltd",
+                                    "amount": 430,
+                                    "statement": "statement held",
+                                    "franking_confirmed": value,
+                                }
+                            ],
+                        },
+                    }
+                )
+                by_number = {row["number"]: row for row in payload["items"]}
+                evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+                self.assertIn("Dividend statement item 1: confirm franking confirmation", evidence_text)
+
     def test_investment_income_direct_amount_aliases_render_in_rows(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

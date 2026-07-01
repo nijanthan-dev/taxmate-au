@@ -242,18 +242,26 @@ INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS = (
         "taxable_amount",
         "capital_gain",
         "foreign_income",
-        "franking_credit",
     ),
 )
 INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS = (
     (
         "distribution_amount",
         "franked_distribution",
-        "franking_credit",
         "capital_gain",
         "foreign_income",
         "non_assessable_payment",
     ),
+)
+INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS = (
+    "franked_amount",
+    "unfranked_amount",
+    "franked_distribution",
+    "capital_gain",
+    "foreign_income",
+    "franking_credit",
+    "foreign_tax_offset",
+    "non_assessable_payment",
 )
 INVESTMENT_STATEMENT_MISSING_PHRASES = (
     "do not have",
@@ -2077,13 +2085,18 @@ def investment_amounts_need_evidence(
 
 
 def investment_required_amount_missing(item: Dict[str, Any], required_groups: tuple[tuple[str, ...], ...]) -> bool:
-    return not any(any(investment_amount_is_supplied(item.get(key)) for key in group) for group in required_groups)
+    return not any(any(investment_amount_is_supplied(item.get(key), key) for key in group) for group in required_groups)
 
 
-def investment_amount_is_supplied(value: Any) -> bool:
+def investment_amount_is_supplied(value: Any, key: str = "") -> bool:
     if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
         return False
-    return not investment_amount_malformed(value)
+    amount = investment_money_value(value)
+    if amount is None:
+        return False
+    if key in INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS and amount == 0:
+        return False
+    return True
 
 
 def investment_amount_needs_evidence(value: Any) -> bool:
@@ -2128,7 +2141,11 @@ def investment_franking_uncertain(item: Dict[str, Any]) -> bool:
         return False
     if value is False:
         return True
+    if is_missing(value) or contains_unknown(value):
+        return True
     lowered = text(value).strip().lower()
+    if lowered in {"no", "n", "false", "0", "not confirmed", "not held", "not available", "none"}:
+        return True
     return any(phrase in lowered for phrase in INVESTMENT_FRANKING_UNCERTAIN_PHRASES)
 
 
