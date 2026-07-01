@@ -1059,6 +1059,53 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
         self.assertIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_common_missing_statement_wording_stays_evidence(self) -> None:
+        for statement in ["statement not received", "not provided", "I don't have the dividend statement"]:
+            with self.subTest(statement=statement):
+                payload = taxmate_intake.answers_to_pack_payload(
+                    {
+                        "investment_income": {
+                            "dividend_items": [
+                                {
+                                    "company": "Example Ltd",
+                                    "franked_amount": 100,
+                                    "unfranked_amount": 0,
+                                    "franking_credit": 0,
+                                    "statement": statement,
+                                    "franking_confirmed": True,
+                                }
+                            ],
+                        },
+                    }
+                )
+                by_number = {row["number"]: row for row in payload["items"]}
+                evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+                self.assertIn("Dividend statement item 1: confirm statement", evidence_text)
+
+    def test_investment_income_missing_core_amounts_stay_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_items": [{"payer": "Bank", "statement": "statement held"}],
+                    "dividend_items": [{"company": "Example Ltd", "statement": "statement held"}],
+                    "distribution_items": [{"fund": "Example ETF", "statement": "statement held"}],
+                    "trust_distribution_items": [{"trust": "Family Trust", "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        for number in ["INT-1", "DIV-1", "DIST-1", "TRUST-DIST-1"]:
+            with self.subTest(number=number):
+                self.assertEqual("Evidence", by_number[number]["status"])
+        self.assertIn("Bank interest statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Dividend statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
+
     def test_investment_income_flat_items_fill_empty_nested_placeholders(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

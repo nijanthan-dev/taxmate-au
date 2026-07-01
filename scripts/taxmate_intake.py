@@ -230,12 +230,45 @@ INVESTMENT_TRUST_AMOUNT_FIELDS = (
     "foreign_tax_offset",
     "non_assessable_payment",
 )
+INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS = (("amount",),)
+INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS = (
+    ("amount", "dividend_amount", "cash_amount"),
+    ("franked_amount", "unfranked_amount"),
+)
+INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS = (
+    (
+        "amount",
+        "distribution_amount",
+        "taxable_amount",
+        "capital_gain",
+        "foreign_income",
+        "franking_credit",
+    ),
+)
+INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS = (
+    (
+        "distribution_amount",
+        "franked_distribution",
+        "franking_credit",
+        "capital_gain",
+        "foreign_income",
+        "non_assessable_payment",
+    ),
+)
 INVESTMENT_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "dont have",
     "missing statement",
     "statement missing",
     "statement not held",
     "statement not available",
+    "statement not provided",
+    "statement not received",
     "no statement",
+    "not provided",
+    "not received",
+    "not supplied",
     "not confirmed",
 )
 INVESTMENT_FRANKING_UNCERTAIN_PHRASES = (
@@ -1778,7 +1811,11 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
 
 
 def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(item, INVESTMENT_INTEREST_AMOUNT_FIELDS)
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_INTEREST_AMOUNT_FIELDS,
+        INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS,
+    )
     statement_evidence = investment_statement_missing(item.get("statement"))
     status = "Evidence" if statement_evidence or amount_evidence or conflict else "Accountant review"
     return guide_row(
@@ -1798,7 +1835,11 @@ def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) ->
 
 
 def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(item, INVESTMENT_DIVIDEND_AMOUNT_FIELDS)
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_DIVIDEND_AMOUNT_FIELDS,
+        INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS,
+    )
     statement_evidence = investment_statement_missing(item.get("statement"))
     franking_evidence = investment_franking_uncertain(item)
     reviews = investment_review_terms(item, include_trust=False)
@@ -1821,7 +1862,11 @@ def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) ->
 
 
 def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(item, INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS)
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS,
+        INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS,
+    )
     statement_evidence = investment_statement_missing(item.get("statement"))
     reviews = investment_review_terms(item, include_trust=False)
     status = "Evidence" if statement_evidence or amount_evidence or conflict else "Accountant review"
@@ -1846,7 +1891,11 @@ def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool
 
 
 def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(item, INVESTMENT_TRUST_AMOUNT_FIELDS)
+    amount_evidence = investment_amounts_need_evidence(
+        item,
+        INVESTMENT_TRUST_AMOUNT_FIELDS,
+        INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS,
+    )
     statement_evidence = investment_statement_missing(item.get("statement"))
     status = "Evidence" if statement_evidence or amount_evidence else "Accountant review"
     return guide_row(
@@ -1906,7 +1955,11 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
     for group_label, area, raw_items, amount_fields in groups:
         for idx, item in enumerate(investment_item_values(raw_items), start=1):
             missing = investment_statement_missing(item.get("statement"))
-            amounts = investment_amounts_need_evidence(item, amount_fields)
+            amounts = investment_amounts_need_evidence(
+                item,
+                amount_fields,
+                investment_required_amount_groups(group_label),
+            )
             franking = group_label == "Dividend statement" and investment_franking_uncertain(item)
             if missing or amounts or franking:
                 rows.append(
@@ -1975,8 +2028,34 @@ def investment_has_dividend_distribution_items(raw: Dict[str, Any]) -> bool:
     return any(investment_has_kind(raw, key) for key in ("dividend_items", "distribution_items"))
 
 
-def investment_amounts_need_evidence(item: Dict[str, Any], fields: tuple[str, ...]) -> bool:
-    return any(investment_amount_needs_evidence(item.get(key)) for key in fields)
+def investment_required_amount_groups(label: str) -> tuple[tuple[str, ...], ...]:
+    if label == "Bank interest statement":
+        return INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS
+    if label == "Dividend statement":
+        return INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS
+    if label == "Managed fund/ETF annual tax statement":
+        return INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS
+    return INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS
+
+
+def investment_amounts_need_evidence(
+    item: Dict[str, Any],
+    fields: tuple[str, ...],
+    required_groups: tuple[tuple[str, ...], ...],
+) -> bool:
+    return investment_required_amount_missing(item, required_groups) or any(
+        investment_amount_needs_evidence(item.get(key)) for key in fields
+    )
+
+
+def investment_required_amount_missing(item: Dict[str, Any], required_groups: tuple[tuple[str, ...], ...]) -> bool:
+    return not any(any(investment_amount_is_supplied(item.get(key)) for key in group) for group in required_groups)
+
+
+def investment_amount_is_supplied(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    return not investment_amount_malformed(value)
 
 
 def investment_amount_needs_evidence(value: Any) -> bool:
