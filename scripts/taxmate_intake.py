@@ -212,8 +212,17 @@ ESS_AMOUNT_FIELDS = (
     "tfn_amount_withheld",
 )
 INVESTMENT_INTEREST_AMOUNT_FIELDS = ("amount", "tfn_withheld")
-INVESTMENT_DIVIDEND_AMOUNT_FIELDS = ("franked_amount", "unfranked_amount", "franking_credit", "tfn_withheld")
+INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS = ("amount", "dividend_amount", "cash_amount")
+INVESTMENT_DIVIDEND_AMOUNT_FIELDS = (
+    *INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS,
+    "franked_amount",
+    "unfranked_amount",
+    "franking_credit",
+    "tfn_withheld",
+)
+INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS = ("amount", "distribution_amount")
 INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS = (
+    *INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS,
     "taxable_amount",
     "capital_gain",
     "foreign_income",
@@ -232,13 +241,12 @@ INVESTMENT_TRUST_AMOUNT_FIELDS = (
 )
 INVESTMENT_INTEREST_REQUIRED_AMOUNT_GROUPS = (("amount",),)
 INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS = (
-    ("amount", "dividend_amount", "cash_amount"),
+    INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS,
     ("franked_amount", "unfranked_amount"),
 )
 INVESTMENT_DISTRIBUTION_REQUIRED_AMOUNT_GROUPS = (
     (
-        "amount",
-        "distribution_amount",
+        *INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS,
         "taxable_amount",
         "capital_gain",
         "foreign_income",
@@ -2156,16 +2164,20 @@ def interest_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
 
 
 def dividend_item_total(item: Dict[str, Any]) -> Optional[float]:
-    direct = investment_money_value(first_present(item, ("amount", "dividend_amount", "cash_amount")))
+    direct = investment_direct_amount_value(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS)
     if direct is not None:
         return direct
+    if investment_has_direct_amount(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS):
+        return None
     return investment_total([investment_money_value(item.get("franked_amount")), investment_money_value(item.get("unfranked_amount"))])
 
 
 def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:
-    direct = investment_money_value(first_present(item, ("amount", "distribution_amount")))
+    direct = investment_direct_amount_value(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS)
     if direct is not None:
         return direct
+    if investment_has_direct_amount(item, INVESTMENT_DISTRIBUTION_DIRECT_AMOUNT_FIELDS):
+        return None
     return investment_money_value(item.get("taxable_amount"))
 
 
@@ -2195,6 +2207,14 @@ def first_present(item: Dict[str, Any], keys: tuple[str, ...]) -> Any:
         if key in item and not is_missing(item.get(key)):
             return item.get(key)
     return None
+
+
+def investment_has_direct_amount(item: Dict[str, Any], keys: tuple[str, ...]) -> bool:
+    return any(key in item and not is_missing(item.get(key)) for key in keys)
+
+
+def investment_direct_amount_value(item: Dict[str, Any], keys: tuple[str, ...]) -> Optional[float]:
+    return investment_money_value(first_present(item, keys))
 
 
 def investment_total(values: Any) -> Optional[float]:
