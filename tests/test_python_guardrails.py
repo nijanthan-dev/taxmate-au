@@ -7264,6 +7264,8 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Source/provenance appendix", body)
         self.assertNotIn("lodgment-ready", body)
         self.assertNotIn("Prepared by " + "TaxMate", body)
+        self.assertIn("<b>Evidence queue</b>", body)
+        self.assertNotIn("<b>Row Private health statement Evidence</b>", body)
 
     def test_extended_review_rows_appear_in_tabs_and_queue(self) -> None:
         answers = taxmate_intake.sample_answers()
@@ -8305,8 +8307,9 @@ class TaxpackGuideTests(unittest.TestCase):
                     self.assertEqual("review", item.tab_kind)
                     self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
                     self.assertIn("class=\"tab red review\"", body)
+                    self.assertIn('<ul class="review-list">', body)
                     self.assertIn(
-                        "<b>Accountant review queue:</b> Conflicting status fields require accountant review.",
+                        "<li>Conflicting status fields require accountant review.</li>",
                         body,
                     )
                     for downgraded_badge in downgraded_badges:
@@ -8337,7 +8340,7 @@ class TaxpackGuideTests(unittest.TestCase):
                 )
                 self.assertEqual("review", item.status_kind)
                 self.assertEqual("review", item.tab_kind)
-                self.assertIn("<b>Accountant review queue:</b> One field still requires accountant review.", body)
+                self.assertIn("<li>One field still requires accountant review.</li>", body)
 
         review_like_labels = [
             "Accountant review required",
@@ -8372,7 +8375,7 @@ class TaxpackGuideTests(unittest.TestCase):
                 self.assertEqual("review", item.status_kind)
                 self.assertEqual("review", item.tab_kind)
                 self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
-                self.assertIn("<b>Accountant review queue:</b> Review-like label requires accountant review.", body)
+                self.assertIn("<li>Review-like label requires accountant review.</li>", body)
 
         blank_review = taxmate_taxpack.guide_item(
             {
@@ -8394,7 +8397,7 @@ class TaxpackGuideTests(unittest.TestCase):
             )
         )
         self.assertEqual("Row 13: Accountant review.", blank_review.tab_text)
-        self.assertIn("<b>Accountant review queue:</b> Row 13: Accountant review.", body)
+        self.assertIn("<li>Row 13: Accountant review.</li>", body)
         self.assertIn("<p>Row 13: Accountant review.</p>", body)
 
         blank_queue = taxmate_taxpack.GuideItem(
@@ -8445,7 +8448,7 @@ class TaxpackGuideTests(unittest.TestCase):
                 items=[direct_blank],
             )
         )
-        self.assertIn("<b>Accountant review queue:</b> Row 14: Accountant review.", body)
+        self.assertIn("<li>Row 14: Accountant review.</li>", body)
         self.assertIn("<p>Row 14: Accountant review.</p>", body)
 
         direct_conflict = taxmate_taxpack.GuideItem(
@@ -8472,7 +8475,7 @@ class TaxpackGuideTests(unittest.TestCase):
         )
         self.assertIn("<span class=\"status review-badge\">Accountant review</span>", body)
         self.assertIn("class=\"tab red review\"", body)
-        self.assertIn("<b>Accountant review queue:</b> Row 15: Accountant review.", body)
+        self.assertIn("<li>Row 15: Accountant review.</li>", body)
 
     def test_extended_review_rows_appear_in_tabs_and_review_queue(self) -> None:
         missing_review = taxmate_taxpack.guide_item(
@@ -8513,10 +8516,9 @@ class TaxpackGuideTests(unittest.TestCase):
         self.assertIn('data-anchor="row-501-EVID-1"', body)
         self.assertIn("Missing WFH pattern requires accountant review.", body)
         self.assertIn("Evidence gap requires accountant review.", body)
-        self.assertIn(
-            "<b>Accountant review queue:</b> Missing WFH pattern requires accountant review.; Evidence gap requires accountant review.",
-            body,
-        )
+        self.assertIn("<li>Missing WFH pattern requires accountant review.</li>", body)
+        self.assertIn("<li>Evidence gap requires accountant review.</li>", body)
+        self.assertNotIn("Missing WFH pattern requires accountant review.; Evidence gap", body)
 
     def test_guide_canonicalizes_color_status_aliases(self) -> None:
         aliases = {

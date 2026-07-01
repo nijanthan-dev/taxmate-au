@@ -2442,7 +2442,8 @@ def taxpack_guide_html_contract() -> bool:
                 and conflicting.tab_kind == "review"
                 and '<span class="status review-badge">Accountant review</span>' in conflicting_body
                 and 'class="tab red review"' in conflicting_body
-                and "<b>Accountant review queue:</b> Conflicting status fields require accountant review." in conflicting_body
+                and '<ul class="review-list">' in conflicting_body
+                and "<li>Conflicting status fields require accountant review.</li>" in conflicting_body
                 and not any(badge in conflicting_body for badge in downgraded_badges)
             ):
                 conflicting_ok = False
@@ -2471,7 +2472,7 @@ def taxpack_guide_html_contract() -> bool:
         if not (
             conflicting.status_kind == "review"
             and conflicting.tab_kind == "review"
-            and "<b>Accountant review queue:</b> One field still requires accountant review." in conflicting_body
+            and "<li>One field still requires accountant review.</li>" in conflicting_body
             and not any(badge in conflicting_body for badge in downgraded_badges)
         ):
             conflicting_ok = False
@@ -2508,7 +2509,7 @@ def taxpack_guide_html_contract() -> bool:
             conflicting.status_kind == "review"
             and conflicting.tab_kind == "review"
             and '<span class="status review-badge">Accountant review</span>' in conflicting_body
-            and "<b>Accountant review queue:</b> Review-like label requires accountant review." in conflicting_body
+            and "<li>Review-like label requires accountant review.</li>" in conflicting_body
             and not any(badge in conflicting_body for badge in downgraded_badges)
         ):
             conflicting_ok = False
@@ -2533,7 +2534,7 @@ def taxpack_guide_html_contract() -> bool:
     )
     blank_review_ok = (
         blank_review.tab_text == "Row R2: Accountant review."
-        and "<b>Accountant review queue:</b> Row R2: Accountant review." in blank_review_body
+        and "<li>Row R2: Accountant review.</li>" in blank_review_body
         and "<p>Row R2: Accountant review.</p>" in blank_review_body
     )
     direct_blank = taxmate_taxpack.GuideItem(
@@ -2559,7 +2560,7 @@ def taxpack_guide_html_contract() -> bool:
         )
     )
     direct_blank_ok = (
-        "<b>Accountant review queue:</b> Row R3: Accountant review." in direct_blank_body
+        "<li>Row R3: Accountant review.</li>" in direct_blank_body
         and "<p>Row R3: Accountant review.</p>" in direct_blank_body
     )
     direct_conflict = taxmate_taxpack.GuideItem(
@@ -2587,7 +2588,7 @@ def taxpack_guide_html_contract() -> bool:
     direct_conflict_ok = (
         '<span class="status review-badge">Accountant review</span>' in direct_conflict_body
         and 'class="tab red review"' in direct_conflict_body
-        and "<b>Accountant review queue:</b> Row R4: Accountant review." in direct_conflict_body
+        and "<li>Row R4: Accountant review.</li>" in direct_conflict_body
     )
     extended_review_body = taxmate_taxpack.render_html(
         taxmate_taxpack.GuideData(
@@ -2670,11 +2671,11 @@ def taxpack_guide_html_contract() -> bool:
         and 'data-target="row-401-MISS-1"' in extended_review_body
         and 'data-anchor="row-501-EVID-1"' in extended_review_body
         and 'data-target="row-501-EVID-1"' in extended_review_body
-        and (
-            "<b>Accountant review queue:</b> ABN review queue text.; BAS review queue text.; "
-            "Missing review queue text.; Evidence review queue text."
-        )
-        in extended_review_body
+        and "<li>ABN review queue text.</li>" in extended_review_body
+        and "<li>BAS review queue text.</li>" in extended_review_body
+        and "<li>Missing review queue text.</li>" in extended_review_body
+        and "<li>Evidence review queue text.</li>" in extended_review_body
+        and "ABN review queue text.; BAS review queue text." not in extended_review_body
     )
     falsey = taxmate_taxpack.guide_item(
         {
