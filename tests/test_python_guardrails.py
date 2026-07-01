@@ -1000,12 +1000,51 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("franking credit 128.57", by_number["DIV-1"]["answer"])
         self.assertEqual("Accountant review", by_number["DIST-1"]["status"])
         self.assertIn("foreign components false", by_number["DIST-1"]["answer"])
+        self.assertIn("AMIT true", by_number["DIST-1"]["answer"])
         self.assertIn("cost-base adjustment", by_number["DIST-1"]["tab_text"])
+        self.assertIn("cost-base adjustment statement shows annual tax statement cost-base adjustment", by_number["DIST-1"]["answer"])
         self.assertEqual("Evidence", by_number["TRUST-DIST-1"]["status"])
         self.assertIn("TaxMate does not prepare a trust return", by_number["TRUST-DIST-1"]["why_included"])
         self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
         self.assertIn("Investment item totals reconcile", by_number["INVEST-RECON"]["tab_text"])
         self.assertIn(taxmate_intake.INVESTMENT_SOURCES[0], by_number["DIV-1"]["source_urls"])
+
+    def test_investment_income_distribution_review_flags_render_explicit_values(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "distribution_items": [
+                        {
+                            "fund": "Example AMIT",
+                            "taxable_amount": 100,
+                            "statement": "statement held",
+                            "amit": True,
+                            "cost_base_adjustment": True,
+                            "foreign_components": False,
+                        },
+                        {
+                            "fund": "Example ETF",
+                            "taxable_amount": 50,
+                            "statement": "statement held",
+                            "amit": False,
+                            "cost_base_adjustment": False,
+                            "foreign_components": False,
+                        },
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["DIST-1"]["status"])
+        self.assertIn("AMIT true", by_number["DIST-1"]["answer"])
+        self.assertIn("cost-base adjustment true", by_number["DIST-1"]["answer"])
+        self.assertIn("cost-base adjustment", by_number["DIST-1"]["tab_text"])
+        self.assertIn("foreign components false", by_number["DIST-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["DIST-2"]["status"])
+        self.assertNotIn("AMIT false", by_number["DIST-2"]["answer"])
+        self.assertNotIn("cost-base adjustment false", by_number["DIST-2"]["answer"])
+        self.assertIn("foreign components false", by_number["DIST-2"]["answer"])
 
     def test_investment_income_mismatched_totals_and_missing_statements_feed_evidence_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

@@ -1919,6 +1919,7 @@ def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool
             f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
             f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}; "
             f"foreign components {display_value(item.get('foreign_components'))}"
+            f"{investment_review_flag_sentence(item)}"
         ),
         "Managed fund, ETF, and AMIT distributions need annual statement labels, component review, and cost-base follow-up where flagged.",
         status,
@@ -2288,6 +2289,29 @@ def investment_review_terms(item: Dict[str, Any], *, include_trust: bool) -> Lis
     return terms
 
 
+def investment_review_flag_sentence(item: Dict[str, Any]) -> str:
+    parts: List[str] = []
+    amit = investment_review_flag_value(item.get("amit"))
+    if amit:
+        parts.append(f"AMIT {amit}")
+    amit_status = investment_review_flag_value(item.get("amit_status"))
+    if amit_status:
+        parts.append(f"AMIT status {amit_status}")
+    cost_base = investment_review_flag_value(item.get("cost_base_adjustment"))
+    if cost_base:
+        parts.append(f"cost-base adjustment {cost_base}")
+    return f"; {'; '.join(parts)}" if parts else ""
+
+
+def investment_review_flag_value(value: Any) -> str:
+    if is_missing(value) or contains_unknown(value) or value is False:
+        return ""
+    amount = investment_money_value(value)
+    if amount == 0:
+        return ""
+    return display_value(value)
+
+
 def investment_has_foreign_components(item: Dict[str, Any]) -> bool:
     if item.get("foreign_components") is True:
         return True
@@ -2299,7 +2323,9 @@ def investment_has_foreign_components(item: Dict[str, Any]) -> bool:
 
 
 def investment_review_amount_or_text(value: Any) -> bool:
-    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+    if value is True:
+        return True
+    if value is False or is_missing(value) or contains_unknown(value):
         return False
     amount = investment_money_value(value)
     return amount is None or amount != 0
