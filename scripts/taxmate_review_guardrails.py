@@ -100,7 +100,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #69 investment income",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, and aggregate-vs-item total conflicts in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, source provenance, and flat/nested item aliases.",
+        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, unknown or malformed amounts, uncertain franking, AMIT/cost-base adjustments, foreign components, trust distributions, aggregate-vs-item total conflicts, and supplied aggregates with unknown item totals in Evidence or Accountant review while preserving zero withholding, zero franking credits, false foreign components, source provenance, flat/nested item aliases, and direct dividend/distribution amount aliases.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -515,6 +515,9 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def investment_total_conflict(",
                 "def dividend_distribution_total(",
                 "def first_present(",
+                "cash dividend {money_text(dividend_item_total(item))}",
+                "distribution {money_text(distribution_item_total(item))}",
+                "return item_total is None or investment_total_conflict(aggregate_value, item_total)",
                 "foreign components {display_value(item.get('foreign_components'))}",
                 "TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}",
                 "franking credit {money_text(investment_money_value(item.get('franking_credit')))}",

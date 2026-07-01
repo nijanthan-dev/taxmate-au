@@ -1849,7 +1849,8 @@ def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) ->
         "11 Dividends",
         "Dividend and franking statement item",
         (
-            f"Security {investment_label_text(item)}; franked {money_text(investment_money_value(item.get('franked_amount')))}; "
+            f"Security {investment_label_text(item)}; cash dividend {money_text(dividend_item_total(item))}; "
+            f"franked {money_text(investment_money_value(item.get('franked_amount')))}; "
             f"unfranked {money_text(investment_money_value(item.get('unfranked_amount')))}; "
             f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
             f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}"
@@ -1875,7 +1876,8 @@ def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool
         "13 Partnerships and trusts",
         "Managed fund/ETF/AMIT distribution statement item",
         (
-            f"Fund {investment_display_text(item, 'fund')}; taxable amount {money_text(investment_money_value(item.get('taxable_amount')))}; "
+            f"Fund {investment_display_text(item, 'fund')}; distribution {money_text(distribution_item_total(item))}; "
+            f"taxable amount {money_text(investment_money_value(item.get('taxable_amount')))}; "
             f"capital gain {money_text(investment_money_value(item.get('capital_gain')))}; "
             f"foreign income {money_text(investment_money_value(item.get('foreign_income')))}; "
             f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
@@ -2151,7 +2153,12 @@ def investment_total_conflict(aggregate_value: Any, item_total: Optional[float])
 
 
 def investment_reconciliation_needs_evidence(aggregate_value: Any, item_total: Optional[float]) -> bool:
-    return investment_aggregate_needs_evidence(aggregate_value) or investment_total_conflict(aggregate_value, item_total)
+    if investment_aggregate_needs_evidence(aggregate_value):
+        return True
+    aggregate = investment_money_value(aggregate_value)
+    if aggregate is None:
+        return False
+    return item_total is None or investment_total_conflict(aggregate_value, item_total)
 
 
 def investment_aggregate_needs_evidence(value: Any) -> bool:

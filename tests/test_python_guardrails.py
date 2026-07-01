@@ -1106,6 +1106,48 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("Managed fund/ETF annual tax statement item 1: confirm amount/component values", evidence_text)
         self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
 
+    def test_investment_income_direct_amount_aliases_render_in_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "dividend_income": 965,
+                "investment_income": {
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "amount": 430,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                    "distribution_items": [{"fund": "Example ETF", "distribution_amount": 535, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", by_number["DIV-1"]["status"])
+        self.assertIn("cash dividend 430.00", by_number["DIV-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["DIST-1"]["status"])
+        self.assertIn("distribution 535.00", by_number["DIST-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
+
+    def test_investment_income_unknown_item_totals_keep_reconciliation_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "investment_income": {
+                    "interest_items": [{"payer": "Bank", "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+        self.assertIn("corrected reconciliation", evidence_text)
+
     def test_investment_income_flat_items_fill_empty_nested_placeholders(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
