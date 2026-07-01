@@ -45,6 +45,10 @@ Individual-return intake is a coordinator. It should collect facts, preserve evi
 
 WFH calendar helpers may automatically exclude only supported income-year state-wide public holidays. Regional, capital-city-only, sector-only, and partial-day public holidays need user facts before they affect hours; otherwise keep the affected WFH period as Evidence or `Accountant review`.
 
+PAYG salary and wages handling is prep-only. Collect primary and secondary income statement rows with payer name, employer or payer ABN, occupation, gross salary/wages, tax withheld, allowances, reportable fringe benefits, reportable employer super contributions, lump sum A/B/D/E labels, statement evidence, and finalised/tax-ready status. Reconcile item totals to any supplied aggregate PAYG gross and withholding.
+
+Explicit no-PAYG answers without facts should skip the workflow. No-PAYG plus facts, missing or unfinalised income statements, unknown payer names or ABNs, unknown or malformed gross/withholding/allowance/RFBA/RESC/lump sum values, direct alias conflicts, ambiguous lump sum labels, and aggregate-vs-item mismatches stay Evidence or `Accountant review`. Preserve valid falsey values such as `0` withheld, `0` allowances, `0` RFBA, `0` RESC, and `false` finalised flags.
+
 ESS handling is prep-only. Collect statement evidence, employer or scheme labels, taxed-upfront discount, deferred discount, foreign-source discount, TFN amount withheld, and itemized statement rows. Missing statements, malformed or conflicting amount fields, deferred taxing-point uncertainty, and foreign-source splits stay Evidence or `Accountant review`.
 
 ETP, lump sum in arrears, super lump sum, and super income stream handling is prep-only. Collect official statements, payer or fund labels, payment type, payment dates, taxable and tax-free components, prior-year allocation where relevant, and withholding. Explicit no-payment answers without facts should skip the workflow; no-payment answers plus amounts, unknown statements, malformed amounts, and incomplete prior-year allocation stay Evidence or `Accountant review`.

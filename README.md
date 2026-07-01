@@ -37,6 +37,7 @@ The current individual-return handoff includes:
 - prep-only boundary and manual-copy warning;
 - intake summary and AI extraction confirmation table;
 - individual return field guide;
+- primary and secondary PAYG income statement rows with payer, ABN, occupation, gross, withholding, allowances, RFBA, RESC, lump sum labels, statement evidence, and aggregate reconciliation;
 - itemized investment income rows for bank interest, dividends/franking, managed fund/ETF/AMIT distributions, and trust distribution routing;
 - ABN prep section and BAS worksheet;
 - missing facts queue, evidence queue, and accountant-review queue;
@@ -46,7 +47,7 @@ The current individual-return handoff includes:
 
 ![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
 
-Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, investment income prep rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, PAYG income statement rows, investment income prep rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
 
 ![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
@@ -72,14 +73,14 @@ Screenshot refresh commands:
   --screenshot=/tmp/taxmate-guide-full.png \
   file:///tmp/taxmate-guide.html
 python3 scripts/png_crop.py /tmp/taxmate-guide-full.png \
-  assets/readme/taxmate-guide-john-doe-worksheet.png 0 6900 1120 760
+  assets/readme/taxmate-guide-john-doe-worksheet.png 0 5350 1120 760
 ```
 
 The sample data is synthetic. Any PR that changes user-facing output, output sections, screenshots/images, install/use docs, or individual-return handoff expectations must update README/docs in the same PR, or state why no docs update is needed.
 
 ## What It Does
 
-- Reviews Australian tax prep records for employees, ESS, ETP/lump sum, foreign income, ABN/sole-trader work, itemized investment income and distributions, rental property, crypto, superannuation, and private health.
+- Reviews Australian tax prep records for employees, multi-employer PAYG income statements, ESS, ETP/lump sum, foreign income, ABN/sole-trader work, itemized investment income and distributions, rental property, crypto, superannuation, and private health.
 - Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
 - Builds accountant-facing workbook and taxpack outputs from reviewed data.
@@ -120,6 +121,10 @@ Ask for a specific portable skill when the topic is clear:
 
 ```text
 Use the individual-return skill to build a V1 individual return checklist with ABN and BAS review queues.
+```
+
+```text
+Use the individual-return skill to prepare primary and secondary PAYG income statement rows with payer ABN, gross, withholding, RFBA, RESC, allowances, lump sum labels, evidence, and reconciliation.
 ```
 
 ```text

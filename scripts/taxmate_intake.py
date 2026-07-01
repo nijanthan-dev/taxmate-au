@@ -45,6 +45,23 @@ REVIEWABLE_COMPLEX_PAYMENT_FIELDS = (
     "super_income_stream_taxable_amount",
     "super_income_tax_withheld",
 )
+REVIEWABLE_PAYG_FIELDS = (
+    "payg_gross",
+    "payg_withheld",
+    "main_occupation",
+    "payg_income_statements",
+    "payg_statements",
+    "payg_employer_name",
+    "payg_employer_abn",
+    "payg_occupation",
+    "payg_allowances",
+    "payg_rfba",
+    "payg_resc",
+    "payg_lump_sum_a",
+    "payg_lump_sum_b",
+    "payg_lump_sum_d",
+    "payg_lump_sum_e",
+)
 REVIEWABLE_FOREIGN_INCOME_FIELDS = (
     "foreign_income_statement",
     "foreign_income_country",
@@ -277,6 +294,10 @@ INVESTMENT_ITEM_ALIASES = {
     "distribution_items": ("distribution_items", "investment_distribution_items", "managed_fund_distribution_items"),
     "trust_distribution_items": ("trust_distribution_items",),
 }
+INVESTMENT_AGGREGATE_ALIASES = {
+    "interest_income": ("interest_income", "gross_interest"),
+    "dividend_income": ("dividend_income", "investment_distribution_income"),
+}
 INVESTMENT_STATEMENT_MISSING_PHRASES = (
     "do not have",
     "don't have",
@@ -375,6 +396,188 @@ COMPLEX_PAYMENT_DECLINE_PHRASES_BY_GROUP = {
 }
 PAYMENT_DECLINE_SIGNAL_KEY = "_decline_signals"
 ESS_DECLINE_SIGNAL_KEY = "_decline_signals"
+PAYG_AMOUNT_FIELDS = (
+    "gross",
+    "withheld",
+    "allowances",
+    "rfba",
+    "resc",
+    "lump_sum_a",
+    "lump_sum_b",
+    "lump_sum_d",
+    "lump_sum_e",
+)
+PAYG_FLAT_AMOUNT_FIELDS = (
+    "payg_gross",
+    "payg_withheld",
+    "payg_allowances",
+    "payg_rfba",
+    "payg_resc",
+    "payg_lump_sum_a",
+    "payg_lump_sum_b",
+    "payg_lump_sum_d",
+    "payg_lump_sum_e",
+)
+PAYG_REQUIRED_AMOUNT_FIELDS = ("gross", "withheld")
+PAYG_SUPPLEMENTAL_FIELDS = (
+    "payer",
+    "abn",
+    "occupation",
+    "allowances",
+    "rfba",
+    "resc",
+    "lump_sum_a",
+    "lump_sum_b",
+    "lump_sum_d",
+    "lump_sum_e",
+)
+PAYG_SOURCE_KEY_FACTS = (
+    "payg_income_statements",
+    "payg_statements",
+    "income_statements",
+    "payg_items",
+    "employers",
+    "statement",
+    "income_statement",
+    "payment_summary",
+    "statement_evidence",
+    "finalised",
+    "payer",
+    "payer_name",
+    "employer",
+    "employer_name",
+    "abn",
+    "employer_abn",
+    "payer_abn",
+    "occupation",
+    "main_occupation",
+    "job_title",
+    "gross",
+    "salary_wages",
+    "gross_salary_wages",
+    "gross_wages",
+    "withheld",
+    "tax_withheld",
+    "payg_withheld",
+    "amount_withheld",
+    "allowance",
+    "allowances",
+    "total_allowances",
+    "rfba",
+    "reportable_fringe_benefits",
+    "reportable_fringe_benefits_amount",
+    "resc",
+    "reportable_employer_super",
+    "reportable_employer_super_contributions",
+    "lump_sum",
+    "lump_sums",
+    "lump_sum_a",
+    "lump_sum_a_amount",
+    "lump_sum_b",
+    "lump_sum_b_amount",
+    "lump_sum_d",
+    "lump_sum_d_amount",
+    "lump_sum_e",
+    "lump_sum_e_amount",
+    "finalized",
+    "tax_ready",
+    "income_statement_finalised",
+)
+PAYG_BOOLEAN_FIELDS = ("statement", "finalised")
+PAYG_FIELD_ALIASES = {
+    "payer": ("payer", "employer", "employer_name", "payer_name"),
+    "abn": ("abn", "employer_abn", "payer_abn"),
+    "occupation": ("occupation", "main_occupation", "job_title"),
+    "gross": ("gross", "gross_salary_wages", "salary_wages", "gross_wages", "payg_gross"),
+    "withheld": ("withheld", "tax_withheld", "payg_withheld", "amount_withheld"),
+    "allowances": ("allowances", "allowance", "total_allowances"),
+    "rfba": ("rfba", "reportable_fringe_benefits", "reportable_fringe_benefits_amount"),
+    "resc": ("resc", "reportable_employer_super", "reportable_employer_super_contributions"),
+    "lump_sum_a": ("lump_sum_a", "lump_sum_a_amount"),
+    "lump_sum_b": ("lump_sum_b", "lump_sum_b_amount"),
+    "lump_sum_d": ("lump_sum_d", "lump_sum_d_amount"),
+    "lump_sum_e": ("lump_sum_e", "lump_sum_e_amount"),
+    "statement": ("statement", "income_statement", "payment_summary", "statement_evidence"),
+    "finalised": ("finalised", "finalized", "tax_ready", "income_statement_finalised"),
+}
+PAYG_ALIAS_TO_FIELD = {
+    alias: canonical
+    for canonical, aliases in PAYG_FIELD_ALIASES.items()
+    for alias in aliases
+}
+PAYG_FLAT_FIELD_KEYS = {
+    "payg_employer_name": "payer",
+    "payg_employer_abn": "abn",
+    "main_occupation": "occupation",
+    "payg_occupation": "occupation",
+    "payg_gross": "gross",
+    "payg_withheld": "withheld",
+    "payg_allowances": "allowances",
+    "payg_rfba": "rfba",
+    "payg_resc": "resc",
+    "payg_lump_sum_a": "lump_sum_a",
+    "payg_lump_sum_b": "lump_sum_b",
+    "payg_lump_sum_d": "lump_sum_d",
+    "payg_lump_sum_e": "lump_sum_e",
+}
+PAYG_NESTED_BASE_FIELD_KEYS = {
+    "payer": "payg_employer_name",
+    "abn": "payg_employer_abn",
+    "occupation": "payg_occupation",
+    "gross": "payg_gross",
+    "withheld": "payg_withheld",
+    "allowances": "payg_allowances",
+    "rfba": "payg_rfba",
+    "resc": "payg_resc",
+    "lump_sum_a": "payg_lump_sum_a",
+    "lump_sum_b": "payg_lump_sum_b",
+    "lump_sum_d": "payg_lump_sum_d",
+    "lump_sum_e": "payg_lump_sum_e",
+}
+PAYG_ITEM_ALIASES = (
+    "payg_income_statements",
+    "payg_statements",
+    "income_statements",
+    "payg_items",
+    "employers",
+)
+PAYG_NESTED_KEYS = ("payg", "payg_income", "salary_wages")
+PAYG_DECLINE_SIGNAL_KEY = "_decline_signals"
+PAYG_DECLINE_PHRASES = (
+    "no payg",
+    "no salary",
+    "no salary or wages",
+    "no wages",
+    "not applicable",
+    "not applicable to me",
+    "n/a",
+    "na",
+)
+PAYG_STATEMENT_MISSING_PHRASES = (
+    "do not have",
+    "don't have",
+    "dont have",
+    "no payg statement",
+    "no payg statements",
+    "no payment summary",
+    "missing statement",
+    "statement missing",
+    "income statement missing",
+    "income statement not held",
+    "income statement not available",
+    "income statement not provided",
+    "income statement not received",
+    "payment summary not held",
+    "payment summary not available",
+    "payment summary not provided",
+    "payment summary not received",
+    "not held",
+    "not available",
+    "not provided",
+    "not received",
+    "not supplied",
+    "not confirmed",
+)
 FOREIGN_INCOME_AMOUNT_FIELDS = ("amount", "foreign_tax_paid", "tax_paid", "exchange_rate")
 FOREIGN_INCOME_FLAT_AMOUNT_FIELDS = (
     "foreign_income_amount",
@@ -735,6 +938,12 @@ LIMITED_PUBLIC_HOLIDAYS_BY_STATE = {
     "WA": {"2025-09-29"},
 }
 ATO_INDIVIDUAL_SOURCE = "https://www.ato.gov.au/forms-and-instructions/individual-tax-return-instructions-2026"
+ATO_PAYG_EMPLOYMENT_INCOME_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income"
+PAYG_SOURCES = [
+    ATO_PAYG_EMPLOYMENT_INCOME_SOURCE,
+    "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/payg-withholding/payg-payment-summaries",
+    "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/payg-withholding",
+]
 ATO_WFH_FIXED_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/fixed-rate-method"
 ATO_WFH_ACTUAL_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/working-from-home-expenses/actual-cost-method"
 ATO_ASSET_SOURCE = "https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/deductions-you-can-claim/work-related-deductions/tools-computers-and-items-you-use-for-work/depreciating-assets-you-use-for-work"
@@ -828,6 +1037,17 @@ def question_specs() -> List[QuestionSpec]:
         QuestionSpec("payg_gross", "PAYG", "Salary or wages gross income", "1 Salary or wages", False),
         QuestionSpec("payg_withheld", "PAYG", "Salary or wages tax withheld", "1 Salary or wages", False),
         QuestionSpec("main_occupation", "PAYG", "Main salary and wage occupation", "1 Salary or wages", False),
+        QuestionSpec("payg_income_statements", "PAYG", "PAYG income statement items", "1 Salary or wages", False),
+        QuestionSpec("payg_employer_name", "PAYG", "PAYG employer or payer name", "1 Salary or wages", False),
+        QuestionSpec("payg_employer_abn", "PAYG", "PAYG employer or payer ABN", "1 Salary or wages", False),
+        QuestionSpec("payg_occupation", "PAYG", "PAYG occupation", "1 Salary or wages", False),
+        QuestionSpec("payg_allowances", "PAYG", "PAYG allowances", "1 Salary or wages", False),
+        QuestionSpec("payg_rfba", "PAYG", "Reportable fringe benefits amount", "IT1 Reportable fringe benefits", False),
+        QuestionSpec("payg_resc", "PAYG", "Reportable employer super contributions", "IT2 Reportable employer super contributions", False),
+        QuestionSpec("payg_lump_sum_a", "PAYG", "PAYG lump sum A", "1 Salary or wages", False),
+        QuestionSpec("payg_lump_sum_b", "PAYG", "PAYG lump sum B", "1 Salary or wages", False),
+        QuestionSpec("payg_lump_sum_d", "PAYG", "PAYG lump sum D", "1 Salary or wages", False),
+        QuestionSpec("payg_lump_sum_e", "PAYG", "PAYG lump sum E", "1 Salary or wages", False),
         QuestionSpec("interest_income", "Income", "Gross interest", "10 Gross interest", False),
         QuestionSpec("dividend_income", "Income", "Dividends or ETF distributions", "11 Dividends", False),
         QuestionSpec("investment_interest_items", "Investment income", "Bank interest items", "10 Gross interest", False),
@@ -930,6 +1150,33 @@ def sample_answers() -> Dict[str, Any]:
         "payg_gross": 120000,
         "payg_withheld": 31000,
         "main_occupation": "Software engineer",
+        "payg_income_statements": [
+            {
+                "payer": "Example Tech Pty Ltd",
+                "abn": "12 345 678 901",
+                "occupation": "Software engineer",
+                "gross": 110000,
+                "withheld": 29000,
+                "allowances": 0,
+                "rfba": 0,
+                "resc": 9500,
+                "lump_sum_a": 0,
+                "statement": "income statement held",
+                "finalised": True,
+            },
+            {
+                "payer": "Example Secondary Pty Ltd",
+                "abn": "98 765 432 109",
+                "occupation": "Casual tutor",
+                "gross": 10000,
+                "withheld": 2000,
+                "allowances": 0,
+                "rfba": 0,
+                "resc": 950,
+                "statement": "income statement held",
+                "finalised": True,
+            },
+        ],
         "interest_income": 120,
         "dividend_income": 835,
         "investment_income": {
@@ -1154,6 +1401,7 @@ def has_meaningful_value(value: Any) -> bool:
 
 def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     investment = investment_answers(answers)
+    payg = payg_answers(answers)
     items = base_items(answers)
     extracted_values = extraction_rows(answers.get("extracted_values", []))
     abn_items = abn_rows(answers)
@@ -1167,6 +1415,7 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
     items.extend(psi_rows(psi_answers(answers)))
     items.extend(crypto_rows(crypto_answers(answers)))
     items.extend(rental_property_rows(rental_property_answers(answers)))
+    items.extend(payg_rows(payg, answers))
     items.extend(investment_rows(investment, answers))
     items.extend(ess_rows(ess_answers(answers)))
     items.extend(uncommon_income_rows(answers.get("uncommon_income", [])))
@@ -1185,8 +1434,14 @@ def answers_to_pack_payload(answers: Dict[str, Any]) -> Dict[str, Any]:
 def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     investment = investment_answers(answers)
+    payg = payg_answers(answers)
+    has_payg_items = bool(payg_item_values(payg.get("items")))
     for spec in question_specs():
-        value = answers.get(spec.key)
+        value = investment_base_item_value(spec.key, answers, investment)
+        if spec.key in ("payg_gross", "payg_withheld", "main_occupation") and has_payg_items:
+            continue
+        if spec.key in REVIEWABLE_PAYG_FIELDS and has_payg_items:
+            continue
         if spec.key == "interest_income" and investment_has_kind(investment, "interest_items"):
             continue
         if spec.key == "dividend_income" and investment_has_dividend_distribution_items(investment):
@@ -1198,11 +1453,12 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
             continue
         if should_render_base_item(spec, value):
             status = base_item_status(spec.key, value)
-            source_urls = (
-                INVESTMENT_SOURCES
-                if spec.key in REVIEWABLE_INVESTMENT_FIELDS
-                else ATO_INDIVIDUAL_SOURCE
-            )
+            if spec.key in INVESTMENT_AGGREGATE_ALIASES and (
+                investment_aggregate_needs_evidence(value) or investment_aggregate_alias_conflict(investment, spec.key)
+            ):
+                status = "Evidence"
+            if spec.key in REVIEWABLE_PAYG_FIELDS and payg_aggregate_evidence_gaps(payg):
+                status = "Evidence"
             rows.append(
                 guide_row(
                     spec.key,
@@ -1211,14 +1467,34 @@ def base_items(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
                     display_value(value),
                     "Long-checklist intake answer for manual copy guidance.",
                     status,
-                    source_urls,
+                    base_item_sources(spec.key),
                     tab_text=f"{spec.prompt}: {display_value(value)}",
                 )
             )
     return rows
 
 
+def investment_base_item_value(key: str, answers: Dict[str, Any], investment: Dict[str, Any]) -> Any:
+    if key in INVESTMENT_AGGREGATE_ALIASES:
+        value = investment_aggregate_value(investment, key)
+        if not is_missing(value):
+            return value
+    return answers.get(key)
+
+
+def base_item_sources(key: str) -> Any:
+    if key in REVIEWABLE_INVESTMENT_FIELDS:
+        return INVESTMENT_SOURCES
+    if key in REVIEWABLE_PAYG_FIELDS:
+        return PAYG_SOURCES
+    return ATO_INDIVIDUAL_SOURCE
+
+
 def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
+    if spec.key in PAYG_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if spec.key in REVIEWABLE_PAYG_FIELDS and payg_flat_value_is_absent(spec.key, value):
+        return False
     if spec.key in ESS_FLAT_AMOUNT_FIELDS and isinstance(value, bool):
         return False
     if spec.key in REVIEWABLE_ESS_FIELDS and (
@@ -1267,6 +1543,17 @@ def should_render_base_item(spec: QuestionSpec, value: Any) -> bool:
     return spec.required or has_meaningful_value(value)
 
 
+def payg_flat_value_is_absent(key: str, value: Any) -> bool:
+    nested_key = payg_flat_field_key(key)
+    if nested_key in PAYG_ITEM_ALIASES and isinstance(value, (dict, list)):
+        return not payg_item_values(value)
+    return payg_source_declines_workflow(nested_key, value) or payg_field_absence_value(nested_key, value)
+
+
+def payg_flat_field_key(key: str) -> str:
+    return PAYG_FLAT_FIELD_KEYS.get(key, key)
+
+
 def complex_payment_flat_value_is_absent(key: str, value: Any) -> bool:
     group = COMPLEX_PAYMENT_FLAT_FIELD_GROUPS.get(key)
     nested_key = complex_payment_flat_field_key(key)
@@ -1308,6 +1595,15 @@ def rental_property_flat_field_key(key: str) -> str:
 
 
 def base_item_status(key: str, value: Any) -> str:
+    if key in REVIEWABLE_PAYG_FIELDS:
+        nested_key = payg_flat_field_key(key)
+        if nested_key == "statement" and payg_statement_missing(value):
+            return "Evidence"
+        if nested_key == "finalised" and payg_finalised_missing(value):
+            return "Evidence"
+        if nested_key in PAYG_AMOUNT_FIELDS and payg_amount_malformed(value):
+            return "Evidence"
+        return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
     if key in REVIEWABLE_ESS_FIELDS:
         if key == "ess_statement" and ess_statement_missing(value):
             return "Evidence"
@@ -1523,6 +1819,7 @@ def evidence_rows(answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     if isinstance(wfh, dict) and contains_unknown(wfh.get("records")):
         rows.append(evidence_row("WFH records", "D5 WFH", "Diary, timesheet, roster, or similar records"))
     rows.extend(investment_evidence_rows(investment_answers(answers), answers))
+    rows.extend(payg_evidence_rows(payg_answers(answers), answers))
     return rows
 
 
@@ -1795,11 +2092,57 @@ def investment_flat_field_key(key: str) -> str:
 def investment_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
     raw = answers.get("investment_income")
     merged: Dict[str, Any] = dict(raw) if isinstance(raw, dict) else {}
+    aggregate_conflicts: List[str] = list(merged.get("_aggregate_conflicts") or [])
+    item_conflicts: List[str] = list(merged.get("_item_conflicts") or [])
+    for target, aliases in INVESTMENT_AGGREGATE_ALIASES.items():
+        if investment_aggregate_record_conflict(merged, aliases) or investment_aggregate_record_conflict(answers, aliases):
+            aggregate_conflicts.append(target)
+        nested_value = first_present(merged, aliases)
+        answer_value = first_present(answers, aliases)
+        if not is_missing(nested_value) and not is_missing(answer_value) and investment_aggregate_values_conflict(nested_value, answer_value):
+            aggregate_conflicts.append(target)
+        value = nested_value
+        if is_missing(value):
+            value = answer_value
+        if not is_missing(value) and is_missing(merged.get(target)):
+            merged[target] = value
+    if aggregate_conflicts:
+        merged["_aggregate_conflicts"] = sorted(set(aggregate_conflicts))
     for key, source_keys in INVESTMENT_ITEM_ALIASES.items():
-        value = first_investment_items(merged, source_keys) or first_investment_items(answers, source_keys)
+        nested_value = first_investment_items(merged, source_keys)
+        answer_value = first_investment_items(answers, source_keys)
+        if investment_item_alias_record_conflict(merged, source_keys) or investment_item_alias_record_conflict(answers, source_keys):
+            item_conflicts.append(key)
+        if investment_item_values(nested_value) and investment_item_values(answer_value) and investment_items_conflict(nested_value, answer_value):
+            item_conflicts.append(key)
+        value = nested_value if investment_item_values(nested_value) else answer_value
         if not investment_item_values(merged.get(key)) and investment_item_values(value):
             merged[key] = value
+    if item_conflicts:
+        merged["_item_conflicts"] = sorted(set(item_conflicts))
     return merged
+
+
+def investment_aggregate_alias_values(record: Dict[str, Any], aliases: tuple[str, ...]) -> List[Any]:
+    return [record.get(alias) for alias in aliases if not is_missing(record.get(alias))]
+
+
+def investment_aggregate_record_conflict(record: Dict[str, Any], aliases: tuple[str, ...]) -> bool:
+    values = investment_aggregate_alias_values(record, aliases)
+    if len(values) < 2:
+        return False
+    first = values[0]
+    return any(investment_aggregate_values_conflict(first, value) for value in values[1:])
+
+
+def investment_aggregate_values_conflict(left: Any, right: Any) -> bool:
+    if is_missing(left) or is_missing(right):
+        return False
+    left_amount = investment_money_value(left)
+    right_amount = investment_money_value(right)
+    if left_amount is None or right_amount is None:
+        return True
+    return round(abs(left_amount - right_amount), 2) >= 0.01
 
 
 def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1808,20 +2151,21 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
     trust_items = investment_item_values(raw.get("trust_distribution_items"))
+    item_conflicts = investment_item_conflict_keys(raw)
     has_interest_items = bool(interest_items)
     has_dividend_distribution_items = bool(dividend_items or distribution_items)
     interest_total = interest_category_total(interest_items)
     dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
-    interest_conflict = investment_reconciliation_conflict(
-        answers.get("interest_income"),
+    interest_conflict = investment_aggregate_alias_conflict(raw, "interest_income") or investment_reconciliation_conflict(
+        investment_aggregate_value(raw, "interest_income"),
         interest_total,
         has_interest_items,
-    )
-    dividend_conflict = investment_reconciliation_conflict(
-        answers.get("dividend_income"),
+    ) or "interest_items" in item_conflicts
+    dividend_conflict = investment_aggregate_alias_conflict(raw, "dividend_income") or investment_reconciliation_conflict(
+        investment_aggregate_value(raw, "dividend_income"),
         dividend_total,
         has_dividend_distribution_items,
-    )
+    ) or bool(item_conflicts.intersection({"dividend_items", "distribution_items"}))
     for idx, item in enumerate(interest_items, start=1):
         rows.append(investment_interest_row(idx, item, interest_conflict))
     for idx, item in enumerate(dividend_items, start=1):
@@ -1830,10 +2174,10 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
         rows.append(investment_distribution_row(idx, item, dividend_conflict))
     for idx, item in enumerate(trust_items, start=1):
         rows.append(investment_trust_row(idx, item))
-    if investment_has_reconciliation_target(answers, interest_items, dividend_items, distribution_items):
+    if investment_has_reconciliation_target(raw, interest_items, dividend_items, distribution_items):
         rows.append(
             investment_reconciliation_row(
-                answers,
+                raw,
                 interest_items,
                 dividend_items,
                 distribution_items,
@@ -1842,6 +2186,13 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
             )
         )
     return rows
+
+
+def investment_item_conflict_keys(raw: Dict[str, Any]) -> set[str]:
+    conflicts = raw.get("_item_conflicts")
+    if not isinstance(conflicts, list):
+        return set()
+    return {conflict for conflict in conflicts if isinstance(conflict, str)}
 
 
 def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
@@ -1960,7 +2311,7 @@ def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def investment_reconciliation_row(
-    answers: Dict[str, Any],
+    raw: Dict[str, Any],
     interest_items: List[Dict[str, Any]],
     dividend_items: List[Dict[str, Any]],
     distribution_items: List[Dict[str, Any]],
@@ -1973,12 +2324,18 @@ def investment_reconciliation_row(
     answers_text: List[str] = []
     if interest_items:
         answers_text.append(
-            f"Interest items {money_text(interest_total)} vs aggregate {money_text(investment_money_value(answers.get('interest_income')))}"
+            f"Interest items {money_text(interest_total)} vs aggregate {money_text(investment_money_value(investment_aggregate_value(raw, 'interest_income')))}"
         )
     if dividend_items or distribution_items:
         answers_text.append(
-            f"dividend/distribution items {money_text(dividend_total)} vs aggregate {money_text(investment_money_value(answers.get('dividend_income')))}"
+            f"dividend/distribution items {money_text(dividend_total)} vs aggregate {money_text(investment_money_value(investment_aggregate_value(raw, 'dividend_income')))}"
         )
+    aggregate_conflicts = raw.get("_aggregate_conflicts")
+    if isinstance(aggregate_conflicts, list) and aggregate_conflicts:
+        answers_text.append(f"aggregate conflicts {', '.join(sorted(aggregate_conflicts))}")
+    item_conflicts = sorted(investment_item_conflict_keys(raw))
+    if item_conflicts:
+        answers_text.append(f"item alias conflicts {', '.join(item_conflicts)}")
     return guide_row(
         "INVEST-RECON",
         "10/11/13 Investment income",
@@ -2028,29 +2385,41 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
     interest_items = investment_item_values(raw.get("interest_items"))
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
-    interest_conflict = investment_reconciliation_conflict(
-        answers.get("interest_income"),
+    item_conflicts = investment_item_conflict_keys(raw)
+    interest_conflict = investment_aggregate_alias_conflict(raw, "interest_income") or investment_reconciliation_conflict(
+        investment_aggregate_value(raw, "interest_income"),
         interest_category_total(interest_items),
         bool(interest_items),
-    )
-    dividend_conflict = investment_reconciliation_conflict(
-        answers.get("dividend_income"),
+    ) or "interest_items" in item_conflicts
+    dividend_conflict = investment_aggregate_alias_conflict(raw, "dividend_income") or investment_reconciliation_conflict(
+        investment_aggregate_value(raw, "dividend_income"),
         dividend_distribution_category_total(dividend_items, distribution_items),
         bool(dividend_items or distribution_items),
-    )
+    ) or bool(item_conflicts.intersection({"dividend_items", "distribution_items"}))
     if interest_conflict or dividend_conflict:
         rows.append(
             guide_row(
                 f"INV-EVID-{len(rows) + 1}",
                 "10/11/13 Investment income",
                 "Investment reconciliation evidence required",
-                investment_reconciliation_tab_text(interest_conflict, dividend_conflict),
+                investment_reconciliation_evidence_text(interest_conflict, dividend_conflict, item_conflicts),
                 "Supplied aggregate totals and itemized investment rows conflict.",
                 "Evidence",
                 INVESTMENT_SOURCES,
             )
         )
     return rows
+
+
+def investment_reconciliation_evidence_text(
+    interest_conflict: bool,
+    dividend_conflict: bool,
+    item_conflicts: set[str],
+) -> str:
+    text = investment_reconciliation_tab_text(interest_conflict, dividend_conflict)
+    if item_conflicts:
+        text = f"{text}; item alias conflicts {', '.join(sorted(item_conflicts))}"
+    return text
 
 
 def investment_item_values(raw_items: Any) -> List[Dict[str, Any]]:
@@ -2069,6 +2438,20 @@ def first_investment_items(answers: Dict[str, Any], keys: tuple[str, ...]) -> An
     return None
 
 
+def investment_item_alias_record_conflict(record: Dict[str, Any], keys: tuple[str, ...]) -> bool:
+    values = [record.get(key) for key in keys if investment_item_values(record.get(key))]
+    if len(values) < 2:
+        return False
+    first = values[0]
+    return any(investment_items_conflict(first, value) for value in values[1:])
+
+
+def investment_items_conflict(left: Any, right: Any) -> bool:
+    left_items = investment_item_values(left)
+    right_items = investment_item_values(right)
+    return bool(left_items and right_items and left_items != right_items)
+
+
 def investment_item_has_facts(item: Dict[str, Any]) -> bool:
     ignored_false_only = {"foreign_components", "amit"}
     return any(has_meaningful_value(value) for key, value in item.items() if key not in ignored_false_only or value is not False)
@@ -2083,16 +2466,16 @@ def investment_has_dividend_distribution_items(raw: Dict[str, Any]) -> bool:
 
 
 def investment_has_reconciliation_target(
-    answers: Dict[str, Any],
+    raw: Dict[str, Any],
     interest_items: List[Dict[str, Any]],
     dividend_items: List[Dict[str, Any]],
     distribution_items: List[Dict[str, Any]],
 ) -> bool:
     return (
-        bool(interest_items) and investment_amount_present(answers.get("interest_income"))
+        bool(interest_items) and investment_amount_present(investment_aggregate_value(raw, "interest_income"))
     ) or (
-        bool(dividend_items or distribution_items) and investment_amount_present(answers.get("dividend_income"))
-    )
+        bool(dividend_items or distribution_items) and investment_amount_present(investment_aggregate_value(raw, "dividend_income"))
+    ) or bool(investment_item_conflict_keys(raw))
 
 
 def investment_required_amount_groups(label: str) -> tuple[tuple[str, ...], ...]:
@@ -2291,6 +2674,15 @@ def investment_direct_amount_value(item: Dict[str, Any], keys: tuple[str, ...]) 
 
 def investment_amount_present(value: Any) -> bool:
     return not isinstance(value, bool) and not is_missing(value)
+
+
+def investment_aggregate_value(raw: Dict[str, Any], key: str) -> Any:
+    return raw.get(key)
+
+
+def investment_aggregate_alias_conflict(raw: Dict[str, Any], key: str) -> bool:
+    conflicts = raw.get("_aggregate_conflicts")
+    return isinstance(conflicts, list) and key in conflicts
 
 
 def investment_direct_amount_unresolved(item: Dict[str, Any], keys: tuple[str, ...]) -> bool:
@@ -2502,6 +2894,1025 @@ def asset_claim_basis(cost: Optional[float], work_use: Optional[float], preferen
     if work_use != 100:
         return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; mixed-use immediate/depreciation method needs review"
     return f"Cost {money_text(cost)}; work use {percent_text(work_use)}; work-use amount {money_text(work_amount)}; immediate deduction candidate if evidence supports"
+
+
+def payg_answers(answers: Dict[str, Any]) -> Dict[str, Any]:
+    nested = first_payg_nested(answers)
+    merged: Dict[str, Any] = dict(nested) if isinstance(nested, dict) else {}
+    merged = payg_drop_absence_fields(merged)
+    normalized_answer_fields = normalize_payg_fields(answers)
+    flat = {
+        "payer": answers.get("payg_employer_name"),
+        "abn": answers.get("payg_employer_abn"),
+        "occupation": first_present(answers, ("payg_occupation", "main_occupation")),
+        "gross": answers.get("payg_gross"),
+        "withheld": answers.get("payg_withheld"),
+        "allowances": answers.get("payg_allowances"),
+        "rfba": answers.get("payg_rfba"),
+        "resc": answers.get("payg_resc"),
+        "lump_sum_a": answers.get("payg_lump_sum_a"),
+        "lump_sum_b": answers.get("payg_lump_sum_b"),
+        "lump_sum_d": answers.get("payg_lump_sum_d"),
+        "lump_sum_e": answers.get("payg_lump_sum_e"),
+    }
+    flat = payg_merge_flat_values(normalized_answer_fields, flat)
+    item_values = first_payg_items(answers)
+    raw_items = merged.get("items")
+    nested_scalar_statement_gap = payg_scalar_statement_gap_value(merged)
+    nested_items = payg_item_values(raw_items)
+    top_level_items = payg_item_values(item_values)
+    nested_alias_raw_items = first_payg_items(merged)
+    nested_alias_items = payg_item_values(nested_alias_raw_items)
+    has_item_context = bool(nested_items or top_level_items or nested_alias_items)
+    flat_values = {
+        key: value
+        for key, value in flat.items()
+        if key == "_alias_conflicts"
+        or has_meaningful_payg_flat_value(key, value)
+        or (has_item_context and has_unknown_payg_flat_value(key, value))
+    }
+    flat_declines = payg_decline_values(flat)
+    scalar_statement_gap = payg_scalar_statement_gap_value(answers)
+    if nested_items:
+        if nested_alias_items and payg_items_conflict(raw_items, nested_alias_raw_items):
+            merged["_alias_conflicts"] = sorted(set(list(merged.get("_alias_conflicts") or []) + ["items"]))
+        if top_level_items and payg_items_conflict(raw_items, item_values):
+            merged["_alias_conflicts"] = sorted(set(list(merged.get("_alias_conflicts") or []) + ["items"]))
+    elif nested_alias_items:
+        raw_items = first_payg_items(merged)
+        if top_level_items and payg_items_conflict(raw_items, item_values):
+            merged["_alias_conflicts"] = sorted(set(list(merged.get("_alias_conflicts") or []) + ["items"]))
+    elif top_level_items:
+        raw_items = item_values
+    else:
+        raw_items = first_payg_items(merged)
+    normalized_items = payg_item_values(raw_items)
+    normalized_fields = normalize_payg_fields(merged)
+    raw_declines = payg_decline_values(merged)
+    answer_declines = payg_decline_values(answers)
+    for key, value in normalized_fields.items():
+        if key == "_alias_conflicts":
+            merged[key] = value
+        elif key not in merged:
+            merged[key] = value
+    if is_missing(scalar_statement_gap):
+        scalar_statement_gap = nested_scalar_statement_gap
+    if not is_missing(scalar_statement_gap) and "statement" not in merged:
+        merged["statement"] = scalar_statement_gap
+    if normalized_items:
+        merged = {key: value for key, value in merged.items() if key not in PAYG_ITEM_ALIASES}
+        merged["items"] = normalized_items
+    merged = payg_merge_flat_values(merged, flat_values)
+    merged = payg_values_with_declines(merged, {**answer_declines, **flat_declines, **raw_declines})
+    return merged
+
+
+def first_payg_nested(answers: Dict[str, Any]) -> Any:
+    merged: Dict[str, Any] = {}
+    for key in PAYG_NESTED_KEYS:
+        raw = answers.get(key)
+        if isinstance(raw, dict) and has_meaningful_value(raw):
+            merged = payg_merge_nested_values(merged, payg_drop_absence_fields(dict(raw)))
+    return merged
+
+
+def payg_merge_nested_values(merged: Dict[str, Any], values: Dict[str, Any]) -> Dict[str, Any]:
+    if not values:
+        return merged
+    result = dict(merged)
+    conflicts = list(result.get("_alias_conflicts") or [])
+    for key, value in values.items():
+        if key == "_alias_conflicts":
+            conflicts.extend(value if isinstance(value, list) else [value])
+            continue
+        if key in PAYG_ITEM_ALIASES and isinstance(value, (dict, list)):
+            if payg_item_values(result.get(key)) and payg_items_conflict(result.get(key), value):
+                conflicts.append("items")
+            elif not payg_item_values(result.get(key)):
+                result[key] = value
+            continue
+        existing = result.get(key)
+        canonical = payg_canonical_field_key(key)
+        if is_missing(existing):
+            result[key] = value
+        elif payg_values_conflict(canonical, existing, value):
+            conflicts.append(canonical)
+            if payg_prefer_merged_value(canonical, value, existing):
+                result[key] = value
+    if conflicts:
+        result["_alias_conflicts"] = sorted(set(conflicts))
+    return result
+
+
+def first_payg_items(record: Dict[str, Any]) -> Any:
+    for key in PAYG_ITEM_ALIASES:
+        value = record.get(key)
+        if payg_item_values(value):
+            return value
+    return None
+
+
+def payg_items_conflict(left: Any, right: Any) -> bool:
+    left_items = payg_item_values(left)
+    right_items = payg_item_values(right)
+    if not left_items or not right_items:
+        return False
+    return json.dumps(left_items, sort_keys=True, default=str) != json.dumps(right_items, sort_keys=True, default=str)
+
+
+def payg_merge_flat_values(merged: Dict[str, Any], flat_values: Dict[str, Any]) -> Dict[str, Any]:
+    if not flat_values:
+        return merged
+    result = dict(merged)
+    conflicts = list(result.get("_alias_conflicts") or [])
+    for key, value in flat_values.items():
+        if key == "_alias_conflicts":
+            conflicts.extend(value if isinstance(value, list) else [value])
+            continue
+        existing = result.get(key)
+        if is_missing(existing):
+            result[key] = value
+        elif payg_values_conflict(key, existing, value):
+            conflicts.append(key)
+            if payg_prefer_merged_value(key, value, existing):
+                result[key] = value
+    if conflicts:
+        result["_alias_conflicts"] = sorted(set(conflicts))
+    return result
+
+
+def payg_prefer_merged_value(key: str, candidate: Any, existing: Any) -> bool:
+    return payg_concrete_alias_value(candidate, key) and contains_unknown(existing)
+
+
+def payg_values_conflict(key: str, left: Any, right: Any) -> bool:
+    if key in PAYG_AMOUNT_FIELDS:
+        return payg_alias_amount_conflict([left, right])
+    if key == "statement":
+        return payg_statement_values_conflict(left, right)
+    if key == "finalised":
+        return payg_alias_bool_conflict([left, right])
+    return payg_alias_text_conflict([left, right])
+
+
+def payg_statement_values_conflict(left: Any, right: Any) -> bool:
+    if is_missing(left) or is_missing(right):
+        return False
+    left_missing = payg_statement_missing(left)
+    right_missing = payg_statement_missing(right)
+    if left_missing != right_missing:
+        return True
+    if left_missing and right_missing:
+        return False
+    left_bool = parse_payg_bool(left)
+    right_bool = parse_payg_bool(right)
+    return left_bool is not None and right_bool is not None and left_bool != right_bool
+
+
+def payg_scalar_statement_gap_value(answers: Dict[str, Any]) -> Any:
+    for key in PAYG_ITEM_ALIASES:
+        value = answers.get(key)
+        if isinstance(value, str) and payg_statement_missing(value):
+            return value
+    return None
+
+
+def payg_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    items = payg_item_values(raw.get("items"))
+    rows: List[Dict[str, Any]] = []
+    if not items:
+        return payg_nested_base_rows(raw, answers)
+    gross_conflict = payg_reconciliation_conflict(payg_aggregate_value(raw, "gross"), payg_item_amount_total(items, "gross"), bool(items))
+    withheld_conflict = payg_reconciliation_conflict(
+        payg_aggregate_value(raw, "withheld"),
+        payg_item_amount_total(items, "withheld"),
+        bool(items),
+    )
+    aggregate_alias_conflict = bool(raw.get("_alias_conflicts"))
+    for idx, item in enumerate(items, start=1):
+        rows.append(payg_statement_row(idx, item, gross_conflict or withheld_conflict or aggregate_alias_conflict))
+    supplemental_row = payg_supplemental_row(raw)
+    if supplemental_row:
+        rows.append(supplemental_row)
+    if items and payg_has_reconciliation_target(raw):
+        rows.append(payg_reconciliation_row(raw, items, gross_conflict, withheld_conflict))
+    return rows
+
+
+def payg_statement_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
+    statement_evidence = payg_statement_missing(item.get("statement"))
+    finalised_evidence = payg_finalised_missing(item.get("finalised"))
+    payer_evidence = payg_payer_detail_missing(item)
+    amount_evidence = payg_item_amounts_need_evidence(item)
+    lump_sum_evidence = payg_lump_sum_label_evidence(item)
+    decline_evidence = payg_decline_contradiction(item)
+    status = (
+        "Evidence"
+        if statement_evidence
+        or finalised_evidence
+        or payer_evidence
+        or amount_evidence
+        or lump_sum_evidence
+        or decline_evidence
+        or conflict
+        else "Accountant review"
+    )
+    answer = (
+        f"Payer {payg_display_text(item, 'payer')}; ABN {payg_display_text(item, 'abn')}; "
+        f"occupation {payg_display_text(item, 'occupation')}; gross {money_text(payg_amount_value(item.get('gross')))}; "
+        f"tax withheld {money_text(payg_amount_value(item.get('withheld')))}; "
+        f"allowances {money_text(payg_amount_value(item.get('allowances')))}; "
+        f"RFBA {money_text(payg_amount_value(item.get('rfba')))}; "
+        f"RESC {money_text(payg_amount_value(item.get('resc')))}; "
+        f"lump sum A {money_text(payg_amount_value(item.get('lump_sum_a')))}; "
+        f"lump sum B {money_text(payg_amount_value(item.get('lump_sum_b')))}; "
+        f"lump sum D {money_text(payg_amount_value(item.get('lump_sum_d')))}; "
+        f"lump sum E {money_text(payg_amount_value(item.get('lump_sum_e')))}; "
+        f"statement {payg_display_text(item, 'statement')}; finalised {payg_boolean_text(item.get('finalised'))}"
+    )
+    decline_text = payg_decline_signal_text(item)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    conflict_text = payg_alias_conflict_text(item)
+    if conflict_text:
+        answer = f"{answer}; alias conflicts {conflict_text}"
+    return guide_row(
+        f"PAYG-{index}",
+        "1 Salary or wages",
+        "PAYG income statement item",
+        answer,
+        "PAYG statement rows are prep-only. Confirm income statement evidence, payer identity, amounts, allowances, RFBA, RESC, and any lump sum labels before manual copy.",
+        status,
+        PAYG_SOURCES,
+        tab_text=payg_tab_text(statement_evidence, finalised_evidence, payer_evidence, amount_evidence, lump_sum_evidence, decline_evidence, conflict),
+    )
+
+
+def payg_nested_base_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for nested_key, row_key in PAYG_NESTED_BASE_FIELD_KEYS.items():
+        value = raw.get(nested_key)
+        flat_value = answers.get(row_key)
+        if nested_key == "occupation" and is_missing(flat_value):
+            flat_value = answers.get("main_occupation")
+        if payg_flat_row_covers_nested_fact(nested_key, flat_value, value):
+            continue
+        if not has_meaningful_payg_flat_value(nested_key, value) and not payg_amount_field_needs_evidence(nested_key, value):
+            continue
+        rows.append(
+            guide_row(
+                row_key,
+                "1 Salary or wages",
+                payg_nested_base_question(nested_key),
+                display_value(value),
+                "PAYG aggregate-only fact is prep-only and needs source evidence before manual copy.",
+                payg_nested_base_status(nested_key, value, raw),
+                PAYG_SOURCES,
+                tab_text=f"{payg_nested_base_question(nested_key)}: {display_value(value)}",
+            )
+        )
+    return rows
+
+
+def payg_flat_row_renders_fact(key: str, value: Any) -> bool:
+    return has_meaningful_payg_flat_value(key, value) or payg_amount_field_needs_evidence(key, value)
+
+
+def payg_flat_row_covers_nested_fact(key: str, flat_value: Any, nested_value: Any) -> bool:
+    if payg_source_declines_workflow(key, flat_value) or payg_field_absence_value(key, flat_value):
+        return False
+    if not payg_flat_row_renders_fact(key, flat_value):
+        return False
+    if flat_value == nested_value:
+        return True
+    if has_unknown_payg_flat_value(key, flat_value) or payg_amount_field_needs_evidence(key, flat_value):
+        return False
+    if has_meaningful_payg_flat_value(key, nested_value) or payg_amount_field_needs_evidence(key, nested_value):
+        return True
+    return not payg_values_conflict(key, flat_value, nested_value)
+
+
+def payg_nested_base_question(key: str) -> str:
+    labels = {
+        "payer": "PAYG employer or payer name",
+        "abn": "PAYG employer or payer ABN",
+        "occupation": "PAYG occupation",
+        "gross": "Salary or wages gross income",
+        "withheld": "Salary or wages tax withheld",
+        "allowances": "PAYG allowances",
+        "rfba": "Reportable fringe benefits amount",
+        "resc": "Reportable employer super contributions",
+        "lump_sum_a": "PAYG lump sum A",
+        "lump_sum_b": "PAYG lump sum B",
+        "lump_sum_d": "PAYG lump sum D",
+        "lump_sum_e": "PAYG lump sum E",
+    }
+    return labels.get(key, f"PAYG {key}")
+
+
+def payg_nested_base_status(key: str, value: Any, raw: Dict[str, Any]) -> str:
+    if payg_aggregate_evidence_gaps(raw):
+        return "Evidence"
+    if key in PAYG_AMOUNT_FIELDS and payg_amount_malformed(value):
+        return "Evidence"
+    return "Evidence" if is_missing(value) or contains_unknown(value) else "Accountant review"
+
+
+def payg_supplemental_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if not payg_has_supplemental_facts(raw):
+        return None
+    status = "Evidence" if payg_supplemental_needs_evidence(raw) else "Accountant review"
+    answer = (
+        f"Payer {payg_display_text(raw, 'payer')}; ABN {payg_display_text(raw, 'abn')}; "
+        f"occupation {payg_display_text(raw, 'occupation')}; allowances {money_text(payg_amount_value(raw.get('allowances')))}; "
+        f"RFBA {money_text(payg_amount_value(raw.get('rfba')))}; RESC {money_text(payg_amount_value(raw.get('resc')))}; "
+        f"lump sum A {money_text(payg_amount_value(raw.get('lump_sum_a')))}; "
+        f"lump sum B {money_text(payg_amount_value(raw.get('lump_sum_b')))}; "
+        f"lump sum D {money_text(payg_amount_value(raw.get('lump_sum_d')))}; "
+        f"lump sum E {money_text(payg_amount_value(raw.get('lump_sum_e')))}"
+    )
+    if "statement" in raw:
+        answer = f"{answer}; statement {payg_display_text(raw, 'statement')}"
+    if "finalised" in raw:
+        answer = f"{answer}; finalised {payg_boolean_text(raw.get('finalised'))}"
+    decline_text = payg_decline_signal_text(raw)
+    if decline_text:
+        answer = f"{answer}; decline signals {decline_text}"
+    conflict_text = payg_alias_conflict_text(raw)
+    if conflict_text:
+        answer = f"{answer}; aggregate alias conflicts {conflict_text}"
+    return guide_row(
+        "PAYG-SUPP",
+        "1 Salary or wages",
+        "PAYG aggregate supplied details",
+        answer,
+        "Flat PAYG details supplied beside itemized statements are preserved for accountant review instead of being assigned to a payer row.",
+        status,
+        PAYG_SOURCES,
+        tab_text=payg_supplemental_tab_text(raw),
+    )
+
+
+def payg_has_supplemental_facts(raw: Dict[str, Any]) -> bool:
+    if payg_aggregate_evidence_gaps(raw):
+        return True
+    return any(
+        has_meaningful_payg_flat_value(key, raw.get(key)) or payg_amount_field_needs_evidence(key, raw.get(key))
+        for key in PAYG_SUPPLEMENTAL_FIELDS
+    )
+
+
+def payg_supplemental_needs_evidence(raw: Dict[str, Any]) -> bool:
+    if payg_aggregate_evidence_gaps(raw):
+        return True
+    if raw.get("_alias_conflicts"):
+        return True
+    if any(payg_amount_needs_evidence(raw.get(key)) for key in PAYG_SUPPLEMENTAL_FIELDS if key in PAYG_AMOUNT_FIELDS):
+        return True
+    if any(key in raw and payg_required_text_missing(raw.get(key)) for key in ("payer", "abn", "occupation")):
+        return True
+    return payg_lump_sum_label_evidence(raw)
+
+
+def payg_supplemental_tab_text(raw: Dict[str, Any]) -> str:
+    gaps: List[str] = payg_aggregate_evidence_gaps(raw)
+    if raw.get("_alias_conflicts"):
+        payg_append_unique_gap(gaps, "aggregate alias conflict")
+    if any(payg_amount_needs_evidence(raw.get(key)) for key in PAYG_SUPPLEMENTAL_FIELDS if key in PAYG_AMOUNT_FIELDS):
+        payg_append_unique_gap(gaps, "numeric amount evidence")
+    if any(key in raw and payg_required_text_missing(raw.get(key)) for key in ("payer", "abn", "occupation")):
+        payg_append_unique_gap(gaps, "payer, ABN, or occupation evidence")
+    if payg_lump_sum_label_evidence(raw):
+        payg_append_unique_gap(gaps, "lump sum label evidence")
+    if gaps:
+        return f"PAYG aggregate supplied details need {', '.join(gaps)} before accountant review."
+    return "PAYG aggregate supplied details preserved for accountant review beside itemized statements."
+
+
+def payg_append_unique_gap(values: List[str], value: str) -> None:
+    if value not in values:
+        values.append(value)
+
+
+def payg_reconciliation_row(
+    raw: Dict[str, Any],
+    items: List[Dict[str, Any]],
+    gross_conflict: bool,
+    withheld_conflict: bool,
+) -> Dict[str, Any]:
+    aggregate_alias_conflict = bool(raw.get("_alias_conflicts"))
+    status = "Evidence" if gross_conflict or withheld_conflict or aggregate_alias_conflict else "Accountant review"
+    answer = (
+        f"Gross statement total {money_text(payg_item_amount_total(items, 'gross'))} vs aggregate {money_text(payg_amount_value(payg_aggregate_value(raw, 'gross')))}; "
+        f"withheld statement total {money_text(payg_item_amount_total(items, 'withheld'))} vs aggregate {money_text(payg_amount_value(payg_aggregate_value(raw, 'withheld')))}"
+    )
+    conflict_text = payg_alias_conflict_text(raw)
+    if conflict_text:
+        answer = f"{answer}; aggregate alias conflicts {conflict_text}"
+    return guide_row(
+        "PAYG-RECON",
+        "1 Salary or wages",
+        "PAYG income statement reconciliation",
+        answer,
+        "Itemized PAYG statement totals are reconciled to supplied aggregate salary/wages and withholding before manual copy.",
+        status,
+        PAYG_SOURCES,
+        tab_text=payg_reconciliation_tab_text(gross_conflict, withheld_conflict, aggregate_alias_conflict),
+    )
+
+
+def payg_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    items = payg_item_values(raw.get("items"))
+    aggregate_gaps = payg_aggregate_evidence_gaps(raw)
+    if aggregate_gaps:
+        rows.append(
+            guide_row(
+                f"PAYG-EVID-{len(rows) + 1}",
+                "1 Salary or wages",
+                "PAYG evidence required",
+                f"PAYG aggregate facts: confirm {', '.join(aggregate_gaps)}",
+                "PAYG aggregate rows remain not copy-ready until supplied salary/wages facts and statement evidence are reconciled.",
+                "Evidence",
+                PAYG_SOURCES,
+            )
+        )
+    for idx, item in enumerate(items, start=1):
+        statement = payg_statement_missing(item.get("statement"))
+        finalised = payg_finalised_missing(item.get("finalised"))
+        payer = payg_payer_detail_missing(item)
+        amounts = payg_item_amounts_need_evidence(item)
+        lump = payg_lump_sum_label_evidence(item)
+        decline = payg_decline_contradiction(item)
+        alias = bool(item.get("_alias_conflicts"))
+        if statement or finalised or payer or amounts or lump or decline:
+            rows.append(
+                guide_row(
+                    f"PAYG-EVID-{len(rows) + 1}",
+                    "1 Salary or wages",
+                    "PAYG evidence required",
+                    payg_evidence_text(idx, statement, finalised, payer, amounts, lump, decline, alias),
+                    "PAYG prep row remains not copy-ready until statement, payer, amount, finalisation, and label evidence are resolved.",
+                    "Evidence",
+                    PAYG_SOURCES,
+                )
+            )
+    if items and payg_supplemental_needs_evidence(raw):
+        rows.append(
+            guide_row(
+                f"PAYG-EVID-{len(rows) + 1}",
+                "1 Salary or wages",
+                "PAYG aggregate detail evidence required",
+                payg_supplemental_tab_text(raw),
+                "Flat PAYG details supplied with itemized statements remain not copy-ready until amount, payer, and alias evidence is resolved.",
+                "Evidence",
+                PAYG_SOURCES,
+            )
+        )
+    gross_conflict = payg_reconciliation_conflict(payg_aggregate_value(raw, "gross"), payg_item_amount_total(items, "gross"), bool(items))
+    withheld_conflict = payg_reconciliation_conflict(
+        payg_aggregate_value(raw, "withheld"),
+        payg_item_amount_total(items, "withheld"),
+        bool(items),
+    )
+    aggregate_alias_conflict = bool(raw.get("_alias_conflicts"))
+    if items and (gross_conflict or withheld_conflict or aggregate_alias_conflict):
+        rows.append(
+            guide_row(
+                f"PAYG-EVID-{len(rows) + 1}",
+                "1 Salary or wages",
+                "PAYG reconciliation evidence required",
+                payg_reconciliation_tab_text(gross_conflict, withheld_conflict, aggregate_alias_conflict),
+                "Supplied aggregate PAYG totals and itemized income statement rows conflict or include unresolved item amounts.",
+                "Evidence",
+                PAYG_SOURCES,
+            )
+        )
+    return rows
+
+
+def payg_item_values(raw_items: Any) -> List[Dict[str, Any]]:
+    if isinstance(raw_items, dict):
+        raw_items = [raw_items]
+    if not isinstance(raw_items, list):
+        return []
+    rows: List[Dict[str, Any]] = []
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            continue
+        item = normalize_payg_item(raw)
+        if payg_item_has_facts(item):
+            rows.append(item)
+    return rows
+
+
+def normalize_payg_item(raw: Dict[str, Any]) -> Dict[str, Any]:
+    item = normalize_payg_fields(payg_item_flat_aliases(raw))
+    declines = payg_decline_values(raw)
+    if declines:
+        item = payg_values_with_declines(item, declines)
+    return item
+
+
+def payg_item_flat_aliases(raw: Dict[str, Any]) -> Dict[str, Any]:
+    result = dict(raw)
+    conflicts = list(result.get("_alias_conflicts") or [])
+    for flat_key, canonical in PAYG_FLAT_FIELD_KEYS.items():
+        if flat_key not in raw or is_missing(raw.get(flat_key)):
+            continue
+        value = raw.get(flat_key)
+        existing = result.get(canonical)
+        if is_missing(existing):
+            result[canonical] = value
+        elif payg_values_conflict(canonical, existing, value):
+            conflicts.append(canonical)
+            if payg_prefer_merged_value(canonical, value, existing):
+                result[canonical] = value
+    if conflicts:
+        result["_alias_conflicts"] = sorted(set(conflicts))
+    return result
+
+
+def payg_drop_absence_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in raw.items()
+        if not payg_field_absence_value(payg_canonical_field_key(key), value)
+    }
+
+
+def payg_canonical_field_key(key: str) -> str:
+    return PAYG_FLAT_FIELD_KEYS.get(key, PAYG_ALIAS_TO_FIELD.get(key, key))
+
+
+def normalize_payg_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
+    item: Dict[str, Any] = {}
+    conflicts: List[str] = []
+    for canonical, aliases in PAYG_FIELD_ALIASES.items():
+        values = payg_alias_values(raw, aliases, canonical)
+        if not values:
+            continue
+        chosen = values[0][1]
+        if canonical in PAYG_AMOUNT_FIELDS:
+            if payg_alias_amount_conflict([value for _, value in values]):
+                conflicts.append(canonical)
+            chosen = first_payg_alias_value(values, canonical)
+        elif canonical in PAYG_BOOLEAN_FIELDS:
+            if canonical == "finalised" and payg_alias_bool_conflict([value for _, value in values]):
+                conflicts.append(canonical)
+            elif canonical == "statement" and payg_alias_text_conflict([value for _, value in values]):
+                conflicts.append(canonical)
+            chosen = first_payg_alias_value(values, canonical)
+            normalized = parse_payg_bool(chosen)
+            if normalized is not None:
+                chosen = normalized
+        else:
+            if payg_alias_text_conflict([value for _, value in values]):
+                conflicts.append(canonical)
+            chosen = first_payg_alias_value(values, canonical)
+        item[canonical] = chosen
+    if "lump_sum" in raw or "lump_sums" in raw:
+        item["lump_sum"] = first_present(raw, ("lump_sum", "lump_sums"))
+    if conflicts:
+        item["_alias_conflicts"] = conflicts
+    elif isinstance(raw.get("_alias_conflicts"), list):
+        item["_alias_conflicts"] = raw.get("_alias_conflicts")
+    return item
+
+
+def payg_alias_values(raw: Dict[str, Any], aliases: tuple[str, ...], canonical: str) -> List[tuple[str, Any]]:
+    return [
+        (alias, raw.get(alias))
+        for alias in aliases
+        if payg_alias_value_usable(raw, alias, canonical)
+    ]
+
+
+def payg_alias_value_usable(raw: Dict[str, Any], alias: str, canonical: str) -> bool:
+    if alias not in raw or is_missing(raw.get(alias)):
+        return False
+    if canonical in PAYG_AMOUNT_FIELDS and isinstance(raw.get(alias), (dict, list)):
+        return False
+    if canonical in PAYG_AMOUNT_FIELDS and payg_source_declines_workflow(canonical, raw.get(alias)):
+        return False
+    return not payg_field_absence_value(canonical, raw.get(alias))
+
+
+def first_payg_alias_value(values: List[tuple[str, Any]], canonical: str) -> Any:
+    for _, value in values:
+        if payg_concrete_alias_value(value, canonical):
+            return value
+    for _, value in values:
+        if contains_unknown(value):
+            return value
+    for _, value in values:
+        if has_meaningful_value(value) or value is False:
+            return value
+    return values[0][1] if values else None
+
+
+def payg_concrete_alias_value(value: Any, canonical: str) -> bool:
+    if is_missing(value) or contains_unknown(value):
+        return False
+    if canonical in PAYG_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    return has_meaningful_value(value) or value is False
+
+
+def payg_alias_bool_conflict(values: List[Any]) -> bool:
+    parsed = [parse_payg_bool(value) for value in values if not is_missing(value)]
+    if len(parsed) < 2:
+        return False
+    known = [value for value in parsed if value is not None]
+    return any(value is None for value in parsed) or len(set(known)) > 1
+
+
+def payg_item_has_facts(item: Dict[str, Any]) -> bool:
+    if any(payg_amount_needs_evidence(item.get(key)) for key in PAYG_AMOUNT_FIELDS):
+        return True
+    if item.get("_alias_conflicts"):
+        return True
+    return any(
+        has_meaningful_payg_item_value(key, value)
+        for key, value in item.items()
+    )
+
+
+def has_meaningful_payg_item_value(key: str, value: Any) -> bool:
+    if key == "_alias_conflicts":
+        return bool(value)
+    if key == "finalised" and value is False:
+        return True
+    if key in PAYG_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if payg_source_declines_workflow(key, value) or payg_field_absence_value(key, value):
+        return False
+    return has_meaningful_value(value) or contains_unknown(value)
+
+
+def has_meaningful_payg_flat_value(key: str, value: Any) -> bool:
+    if key in PAYG_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in PAYG_SOURCE_KEY_FACTS and (
+        payg_source_declines_workflow(key, value) or payg_field_absence_value(key, value)
+    ):
+        return False
+    if contains_unknown(value):
+        return False
+    return has_meaningful_value(value)
+
+
+def has_unknown_payg_flat_value(key: str, value: Any) -> bool:
+    if key in PAYG_AMOUNT_FIELDS and isinstance(value, bool):
+        return False
+    if key in PAYG_SOURCE_KEY_FACTS and (
+        payg_source_declines_workflow(key, value) or payg_field_absence_value(key, value)
+    ):
+        return False
+    return contains_unknown(value)
+
+
+def payg_decline_values(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key in PAYG_SOURCE_KEY_FACTS and payg_source_declines_workflow(key, value)
+    }
+
+
+def payg_values_with_declines(values: Dict[str, Any], declines: Dict[str, Any]) -> Dict[str, Any]:
+    if not declines or not payg_has_facts(values):
+        return values
+    merged = dict(values)
+    signals: List[str] = []
+    for key, value in declines.items():
+        signals.append(f"{key} {display_value(value)}")
+        canonical = PAYG_FLAT_FIELD_KEYS.get(key, PAYG_ALIAS_TO_FIELD.get(key, key))
+        if canonical in PAYG_AMOUNT_FIELDS:
+            continue
+        if canonical not in merged:
+            merged[canonical] = value
+    merged[PAYG_DECLINE_SIGNAL_KEY] = signals
+    return merged
+
+
+def payg_has_facts(record: Dict[str, Any]) -> bool:
+    if payg_item_values(record.get("items")):
+        return True
+    return any(
+        has_meaningful_payg_flat_value(key, value) or payg_amount_field_needs_evidence(key, value)
+        for key, value in record.items()
+        if key not in ("items", PAYG_DECLINE_SIGNAL_KEY)
+    )
+
+
+def payg_decline_contradiction(raw: Dict[str, Any]) -> bool:
+    return bool(raw.get(PAYG_DECLINE_SIGNAL_KEY))
+
+
+def payg_source_declines_workflow(key: str, value: Any) -> bool:
+    if payg_field_absence_value(key, value) or not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if key not in PAYG_ITEM_ALIASES and lowered in GENERIC_FIELD_ABSENCE_PHRASES:
+        return False
+    if payg_document_context(lowered):
+        return False
+    return lowered in PAYG_DECLINE_PHRASES or any(
+        phrase in lowered
+        for phrase in (
+            "do not have any payg",
+            "do not have payg",
+            "don't have any payg",
+            "don't have payg",
+            "dont have any payg",
+            "dont have payg",
+            "do not have salary or wages",
+            "don't have salary or wages",
+            "dont have salary or wages",
+        )
+    )
+
+
+def payg_field_absence_value(key: str, value: Any) -> bool:
+    if key in ("statement", "finalised") or not isinstance(value, str) or contains_unknown(value):
+        return False
+    lowered = value.strip().lower()
+    if lowered in PAYG_DECLINE_PHRASES and lowered not in GENERIC_FIELD_ABSENCE_PHRASES:
+        return False
+    return lowered in GENERIC_FIELD_ABSENCE_PHRASES
+
+
+def payg_document_context(lowered: str) -> bool:
+    return "statement" in lowered or "payment summary" in lowered
+
+
+def payg_statement_missing(statement: Any) -> bool:
+    if isinstance(statement, bool):
+        return not statement
+    if is_missing(statement) or contains_unknown(statement):
+        return True
+    lowered = text(statement).strip().lower()
+    return (
+        lowered in {"no", "n", "false", "none", "not held", "not available"}
+        or lowered in GENERIC_FIELD_ABSENCE_PHRASES
+        or any(phrase in lowered for phrase in PAYG_STATEMENT_MISSING_PHRASES)
+    )
+
+
+def payg_finalised_missing(value: Any) -> bool:
+    parsed = parse_payg_bool(value)
+    if parsed is True:
+        return False
+    if parsed is False:
+        return True
+    if is_missing(value) or contains_unknown(value):
+        return True
+    lowered = text(value).strip().lower()
+    if any(term in lowered for term in ("unfinalised", "not final", "not tax ready", "not ready")):
+        return True
+    return bool(lowered)
+
+
+def parse_payg_bool(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+    if not isinstance(value, str) or contains_unknown(value):
+        return None
+    lowered = value.strip().lower()
+    if lowered in {"yes", "y", "true", "1", "on", "checked", "final", "finalised", "finalized", "tax ready"}:
+        return True
+    if lowered in {"no", "n", "false", "0", "off", "unchecked", "unfinalised", "unfinalized", "not final", "not tax ready"}:
+        return False
+    return None
+
+
+def payg_payer_detail_missing(item: Dict[str, Any]) -> bool:
+    return payg_required_text_missing(item.get("payer")) or payg_required_text_missing(item.get("abn"))
+
+
+def payg_required_text_missing(value: Any) -> bool:
+    return is_missing(value) or contains_unknown(value) or payg_field_absence_value("", value)
+
+
+def payg_item_amounts_need_evidence(item: Dict[str, Any]) -> bool:
+    if item.get("_alias_conflicts"):
+        return True
+    if any(not payg_amount_is_supplied(item.get(key)) for key in PAYG_REQUIRED_AMOUNT_FIELDS):
+        return True
+    return any(payg_amount_needs_evidence(item.get(key)) for key in PAYG_AMOUNT_FIELDS)
+
+
+def payg_amount_is_supplied(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    return payg_amount_value(value) is not None
+
+
+def payg_amount_needs_evidence(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value):
+        return False
+    return contains_unknown(value) or payg_amount_malformed(value)
+
+
+def payg_amount_field_needs_evidence(key: str, value: Any) -> bool:
+    return key in PAYG_AMOUNT_FIELDS and payg_amount_needs_evidence(value)
+
+
+def payg_amount_malformed(value: Any) -> bool:
+    if isinstance(value, bool) or is_missing(value) or contains_unknown(value):
+        return False
+    try:
+        money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return True
+    return False
+
+
+def payg_amount_value(value: Any) -> Optional[float]:
+    try:
+        return money_value(value, unknown_as_missing=True)
+    except ValueError:
+        return None
+
+
+def payg_item_amount_total(items: List[Dict[str, Any]], key: str) -> Optional[float]:
+    amounts = [payg_amount_value(item.get(key)) for item in items]
+    if not amounts or any(amount is None for amount in amounts):
+        return None
+    return round(sum(amounts), 2)
+
+
+def payg_aggregate_value(raw: Dict[str, Any], key: str) -> Any:
+    return raw.get(key)
+
+
+def payg_aggregate_evidence_gaps(raw: Dict[str, Any]) -> List[str]:
+    gaps: List[str] = []
+    if payg_decline_contradiction(raw):
+        gaps.append("no-PAYG answer with PAYG facts")
+    if "statement" in raw and payg_statement_missing(raw.get("statement")):
+        gaps.append("income statement evidence")
+    if "finalised" in raw and payg_finalised_missing(raw.get("finalised")):
+        gaps.append("finalised/tax-ready status")
+    if payg_aggregate_payer_detail_gap(raw):
+        gaps.append("payer name or ABN")
+    if any(payg_amount_needs_evidence(raw.get(key)) for key in PAYG_AMOUNT_FIELDS):
+        gaps.append("numeric amount evidence")
+    if payg_lump_sum_label_evidence(raw):
+        gaps.append("lump sum label evidence")
+    if raw.get("_alias_conflicts"):
+        gaps.append("aggregate alias conflict")
+    return gaps
+
+
+def payg_aggregate_payer_detail_gap(raw: Dict[str, Any]) -> bool:
+    return any(key in raw for key in ("payer", "abn")) and payg_payer_detail_missing(raw)
+
+
+def payg_reconciliation_conflict(aggregate_value: Any, item_total: Optional[float], has_items: bool) -> bool:
+    if not has_items:
+        return False
+    if payg_amount_needs_evidence(aggregate_value):
+        return True
+    aggregate = payg_amount_value(aggregate_value)
+    if aggregate is None:
+        return False
+    return item_total is None or round(abs(aggregate - item_total), 2) >= 0.01
+
+
+def payg_has_reconciliation_target(raw: Dict[str, Any]) -> bool:
+    return not is_missing(payg_aggregate_value(raw, "gross")) or not is_missing(payg_aggregate_value(raw, "withheld"))
+
+
+def payg_alias_amount_conflict(values: List[Any]) -> bool:
+    amounts = [payg_amount_value(value) for value in values if not is_missing(value)]
+    if any(amount is None for amount in amounts):
+        return True
+    if len(amounts) < 2:
+        return False
+    first = amounts[0]
+    return any(round(abs(first - amount), 2) >= 0.01 for amount in amounts[1:])
+
+
+def payg_alias_text_conflict(values: List[Any]) -> bool:
+    texts = [display_value(value).strip().lower() for value in values if display_value(value)]
+    return len(set(texts)) > 1
+
+
+def payg_lump_sum_label_evidence(item: Dict[str, Any]) -> bool:
+    if payg_field_absence_value("lump_sum", item.get("lump_sum")):
+        return False
+    if has_meaningful_value(item.get("lump_sum")) or contains_unknown(item.get("lump_sum")):
+        return True
+    return any(payg_amount_needs_evidence(item.get(key)) for key in ("lump_sum_a", "lump_sum_b", "lump_sum_d", "lump_sum_e"))
+
+
+def payg_display_text(item: Dict[str, Any], key: str) -> str:
+    value = item.get(key)
+    if key in PAYG_BOOLEAN_FIELDS:
+        return payg_boolean_text(value)
+    if payg_field_absence_value(key, value):
+        return "unknown"
+    return display_value(value) or "unknown"
+
+
+def payg_boolean_text(value: Any) -> str:
+    parsed = parse_payg_bool(value)
+    if parsed is True:
+        return "true"
+    if parsed is False:
+        return "false"
+    return display_value(value) or "unknown"
+
+
+def payg_tab_text(
+    statement: bool,
+    finalised: bool,
+    payer: bool,
+    amounts: bool,
+    lump: bool,
+    decline: bool,
+    conflict: bool,
+) -> str:
+    gaps: List[str] = []
+    if decline:
+        gaps.append("no-PAYG answer with PAYG facts")
+    if statement:
+        gaps.append("income statement evidence")
+    if finalised:
+        gaps.append("finalised/tax-ready status")
+    if payer:
+        gaps.append("payer name or ABN")
+    if amounts:
+        gaps.append("numeric amount evidence")
+    if lump:
+        gaps.append("lump sum label evidence")
+    if conflict:
+        gaps.append("aggregate reconciliation")
+    if gaps:
+        return f"PAYG statement needs {', '.join(gaps)} before accountant review."
+    return "PAYG statement stays accountant review before manual copy."
+
+
+def payg_reconciliation_tab_text(gross_conflict: bool, withheld_conflict: bool, alias_conflict: bool = False) -> str:
+    gaps: List[str] = []
+    if gross_conflict:
+        gaps.append("gross salary/wages total")
+    if withheld_conflict:
+        gaps.append("tax withheld total")
+    if alias_conflict:
+        gaps.append("aggregate alias conflict")
+    if gaps:
+        return f"PAYG totals need corrected reconciliation for {', '.join(gaps)} before accountant review."
+    return "PAYG statement totals reconcile to supplied aggregates; still prep-only and review-first."
+
+
+def payg_evidence_text(
+    index: int,
+    statement: bool,
+    finalised: bool,
+    payer: bool,
+    amounts: bool,
+    lump: bool,
+    decline: bool,
+    alias: bool = False,
+) -> str:
+    gaps: List[str] = []
+    if decline:
+        gaps.append("no-PAYG answer with PAYG facts")
+    if alias:
+        gaps.append("alias conflicts")
+    if statement:
+        gaps.append("income statement")
+    if finalised:
+        gaps.append("finalised/tax-ready status")
+    if payer:
+        gaps.append("payer name or ABN")
+    if amounts:
+        gaps.append("amount values")
+    if lump:
+        gaps.append("lump sum labels")
+    return f"PAYG statement item {index}: confirm {', '.join(gaps)}"
+
+
+def payg_decline_signal_text(raw: Dict[str, Any]) -> str:
+    signals = raw.get(PAYG_DECLINE_SIGNAL_KEY)
+    if not isinstance(signals, list):
+        return ""
+    return ", ".join(display_value(signal) for signal in signals if display_value(signal))
+
+
+def payg_alias_conflict_text(raw: Dict[str, Any]) -> str:
+    conflicts = raw.get("_alias_conflicts")
+    if not isinstance(conflicts, list):
+        return ""
+    return ", ".join(display_value(conflict) for conflict in conflicts if display_value(conflict))
 
 
 def complex_payment_answers(answers: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:

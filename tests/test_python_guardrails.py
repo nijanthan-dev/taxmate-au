@@ -1737,6 +1737,102 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertEqual("Used", by_number["dividend_income"]["status"])
         self.assertNotIn("corrected reconciliation", evidence_text)
 
+    def test_investment_income_alias_only_aggregates_stay_base_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "gross_interest": 100,
+                "investment_distribution_income": 430,
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Used", by_number["interest_income"]["status"])
+        self.assertEqual("100", by_number["interest_income"]["answer"])
+        self.assertEqual("Used", by_number["dividend_income"]["status"])
+        self.assertEqual("430", by_number["dividend_income"]["answer"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertNotIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_nested_alias_only_aggregates_stay_base_rows(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "gross_interest": 100,
+                    "investment_distribution_income": 430,
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Used", by_number["interest_income"]["status"])
+        self.assertEqual("100", by_number["interest_income"]["answer"])
+        self.assertEqual("Used", by_number["dividend_income"]["status"])
+        self.assertEqual("430", by_number["dividend_income"]["answer"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertNotIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_malformed_alias_only_aggregate_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "gross_interest": "about 100",
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Evidence", by_number["interest_income"]["status"])
+        self.assertEqual("about 100", by_number["interest_income"]["answer"])
+
+    def test_investment_income_conflicting_aggregate_only_alias_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 999,
+                "investment_income": {
+                    "interest_income": 120,
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["interest_income"]["status"])
+        self.assertEqual("120", by_number["interest_income"]["answer"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_same_record_top_level_alias_conflict_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 120,
+                "gross_interest": 999,
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["interest_income"]["status"])
+        self.assertEqual("120", by_number["interest_income"]["answer"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_same_record_nested_alias_conflict_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_income": 120,
+                    "gross_interest": 999,
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["interest_income"]["status"])
+        self.assertEqual("120", by_number["interest_income"]["answer"])
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertIn("corrected reconciliation", evidence_text)
+
     def test_investment_income_scalar_flat_fields_are_review_first(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
@@ -1798,6 +1894,78 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertIn("INVEST-RECON", by_number)
         self.assertNotIn("interest_income", by_number)
         self.assertNotIn("dividend_income", by_number)
+
+    def test_investment_income_nested_direct_items_conflict_with_nested_item_alias(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_items": [{"payer": "Direct Bank", "amount": 100, "statement": "statement held"}],
+                    "bank_interest_items": [{"payer": "Alias Bank", "amount": 200, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertIn("Direct Bank", by_number["INT-1"]["answer"])
+        self.assertNotIn("Alias Bank", by_number["INT-1"]["answer"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("item alias conflicts interest_items", by_number["INVEST-RECON"]["answer"])
+        self.assertIn("item alias conflicts interest_items", evidence_text)
+
+    def test_investment_income_nested_aggregate_reconciles(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "interest_income": 120,
+                    "interest_items": [{"payer": "Bank", "amount": 100, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("aggregate 120.00", by_number["INVEST-RECON"]["answer"])
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_top_level_nested_aggregate_conflict_stays_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 999,
+                "investment_income": {
+                    "interest_income": 120,
+                    "interest_items": [{"payer": "Bank", "amount": 120, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("aggregate conflicts interest_income", by_number["INVEST-RECON"]["answer"])
+        self.assertIn("corrected reconciliation", evidence_text)
+
+    def test_investment_blank_nested_aggregate_uses_supplied_top_level_total(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 120,
+                "investment_income": {
+                    "interest_income": "",
+                    "interest_items": [{"payer": "Bank", "amount": 100, "statement": "statement held"}],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["INT-1"]["status"])
+        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
+        self.assertIn("aggregate 120.00", by_number["INVEST-RECON"]["answer"])
+        self.assertIn("corrected reconciliation", evidence_text)
 
     def test_investment_income_rows_render_in_html_with_provenance(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
@@ -7333,6 +7501,1161 @@ class IndividualIntakeTests(unittest.TestCase):
 
         self.assertIn("Monitor", asset["question"])
         self.assertIn("immediate deduction candidate", asset["answer"])
+
+    def test_payg_sample_renders_primary_secondary_statements(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["PAYG-1"]["status"])
+        self.assertEqual("Accountant review", rows["PAYG-2"]["status"])
+        self.assertEqual("Accountant review", rows["PAYG-RECON"]["status"])
+        self.assertIn("Example Tech Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertIn("ABN 12 345 678 901", rows["PAYG-1"]["answer"])
+        self.assertIn("tax withheld 29000.00", rows["PAYG-1"]["answer"])
+        self.assertIn("RFBA 0.00", rows["PAYG-1"]["answer"])
+        self.assertIn("RESC 9500.00", rows["PAYG-1"]["answer"])
+        self.assertNotIn("payg_gross", rows)
+
+    def test_payg_aggregate_only_stays_base_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("payg_gross", rows)
+        self.assertIn("payg_withheld", rows)
+        self.assertEqual("Accountant review", rows["payg_gross"]["status"])
+        self.assertNotIn("PAYG-1", rows)
+        self.assertNotIn("PAYG-RECON", rows)
+
+    def test_payg_malformed_aggregate_only_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg_gross"] = "about 120k"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "payg_gross")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+        evidence_numbers = {row["number"] for row in payload["evidence_items"]}
+        matching_rows = [row for row in payload["items"] if row["number"] == "payg_gross"]
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertEqual(1, len(matching_rows))
+        self.assertIn("numeric amount evidence", evidence)
+        self.assertNotIn("PAYG-EVID-2", evidence_numbers)
+        self.assertNotIn("itemized income statement rows conflict", evidence)
+
+    def test_payg_itemized_without_aggregate_has_no_fake_reconciliation(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"] for row in payload["items"]}
+
+        self.assertIn("PAYG-1", rows)
+        self.assertNotIn("PAYG-RECON", rows)
+        self.assertFalse(any(row["number"].startswith("PAYG-EVID") for row in payload["evidence_items"]))
+
+    def test_payg_itemized_conflict_stays_evidence_in_row_and_queue(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_gross"] = 119000
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("PAYG totals need corrected reconciliation", evidence)
+
+    def test_payg_nested_aggregate_conflict_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "gross": 119000,
+            "withheld": 31000,
+            "items": answers.pop("payg_income_statements"),
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("aggregate 119000.00", rows["PAYG-RECON"]["answer"])
+        self.assertIn("PAYG totals need corrected reconciliation", evidence)
+
+    def test_payg_nested_aggregate_alias_conflict_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "gross_salary_wages": 119000,
+            "tax_withheld": 31000,
+            "items": answers.pop("payg_income_statements"),
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("aggregate 119000.00", rows["PAYG-RECON"]["answer"])
+        self.assertIn("PAYG totals need corrected reconciliation", evidence)
+
+    def test_payg_nested_container_statement_conflict_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "statement": "income statement held",
+            "finalised": True,
+        }
+        answers["salary_wages"] = {
+            "gross": 9000,
+            "withheld": 900,
+            "statement": "statement not received",
+            "finalised": "pending",
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_nested_items_preferred_over_top_level_item_alias(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Stale Pty Ltd",
+                "abn": "99 999 999 999",
+                "gross": 1000,
+                "withheld": 100,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg"] = {
+            "gross": 9000,
+            "withheld": 900,
+            "items": [
+                {
+                    "payer": "Nested Pty Ltd",
+                    "abn": "12 345 678 901",
+                    "gross": 9000,
+                    "withheld": 900,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+        }
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertIn("Nested Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertNotIn("Stale Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_flat_nested_aggregate_conflicts_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg"] = {
+            "gross": 120000,
+            "withheld": 31000,
+            "items": answers.pop("payg_income_statements"),
+        }
+        answers["payg_gross"] = 119000
+        answers["payg_withheld"] = 31000
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("aggregate alias conflicts gross", rows["PAYG-RECON"]["answer"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_missing_statement_and_payer_detail_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "unknown",
+                "gross": 120000,
+                "withheld": 31000,
+                "statement": "income statement not received",
+                "finalised": "yes",
+            }
+        ]
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("payer name or ABN", evidence)
+        self.assertIn("income statement", evidence)
+
+    def test_payg_statement_placeholders_stay_evidence(self) -> None:
+        for statement in ("n/a", "not applicable"):
+            with self.subTest(statement=statement):
+                answers = taxmate_intake.sample_answers()
+                answers["payg_income_statements"] = [
+                    {
+                        "payer": "Example Pty Ltd",
+                        "abn": "12 345 678 901",
+                        "gross": 9000,
+                        "withheld": 900,
+                        "statement": statement,
+                        "finalised": True,
+                    }
+                ]
+                answers["payg_gross"] = 9000
+                answers["payg_withheld"] = 900
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", row["status"])
+                self.assertIn("income statement", evidence)
+
+    def test_payg_unfinalised_statement_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"][0]["finalised"] = "no"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("finalised false", row["answer"])
+
+    def test_payg_false_finalised_only_item_stays_evidence(self) -> None:
+        for key in ("finalised", "tax_ready"):
+            with self.subTest(key=key):
+                answers = taxmate_intake.sample_answers()
+                answers["payg_income_statements"] = [{key: False}]
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+                self.assertIn("finalised false", rows["PAYG-1"]["answer"])
+                self.assertIn("finalised/tax-ready status", evidence)
+
+    def test_payg_ambiguous_finalised_text_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"][0]["finalised"] = "pending"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("finalised pending", row["answer"])
+        self.assertIn("finalised/tax-ready status", evidence)
+
+    def test_payg_malformed_item_amount_poisons_total(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"][0]["gross"] = "about 110k"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("amount values", evidence)
+
+    def test_payg_preserves_falsey_amounts_and_flags(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Zero Withheld Pty Ltd",
+                "abn": "11 111 111 111",
+                "occupation": "Assistant",
+                "gross": 1000,
+                "withheld": 0,
+                "allowances": 0,
+                "rfba": 0,
+                "resc": 0,
+                "lump_sum_a": 0,
+                "statement": "income statement held",
+                "finalised": "1",
+            }
+        ]
+        answers["payg_gross"] = 1000
+        answers["payg_withheld"] = 0
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertIn("tax withheld 0.00", row["answer"])
+        self.assertIn("allowances 0.00", row["answer"])
+        self.assertIn("RFBA 0.00", row["answer"])
+        self.assertIn("RESC 0.00", row["answer"])
+        self.assertIn("finalised true", row["answer"])
+
+    def test_payg_optional_amount_placeholders_do_not_block_complete_item(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "occupation": "Assistant",
+                "gross": 1000,
+                "withheld": 100,
+                "allowances": "n/a",
+                "rfba": "not applicable",
+                "resc": "n/a",
+                "lump_sum_a": "not applicable",
+                "statement": "income statement held",
+                "finalised": "yes",
+            }
+        ]
+        answers["payg_gross"] = 1000
+        answers["payg_withheld"] = 100
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", row["status"])
+        self.assertNotIn("alias conflicts", row["answer"])
+        self.assertNotIn("amount values", evidence)
+
+    def test_payg_lump_sum_placeholder_does_not_block_complete_item(self) -> None:
+        for lump_sum in ("n/a", "not applicable"):
+            with self.subTest(lump_sum=lump_sum):
+                answers = taxmate_intake.sample_answers()
+                answers["payg_income_statements"] = [
+                    {
+                        "payer": "Example Pty Ltd",
+                        "abn": "12 345 678 901",
+                        "occupation": "Assistant",
+                        "gross": 1000,
+                        "withheld": 100,
+                        "lump_sum": lump_sum,
+                        "statement": "income statement held",
+                        "finalised": "yes",
+                    }
+                ]
+                answers["payg_gross"] = 1000
+                answers["payg_withheld"] = 100
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Accountant review", row["status"])
+                self.assertNotIn("lump sum labels", evidence)
+
+    def test_payg_flat_details_with_itemized_rows_render_supplemental_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+        answers["main_occupation"] = "Consultant"
+        answers["payg_allowances"] = 50
+        answers["payg_rfba"] = 0
+        answers["payg_resc"] = 100
+        answers["payg_lump_sum_a"] = 0
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["PAYG-SUPP"]["status"])
+        self.assertIn("occupation Consultant", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("allowances 50.00", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("RFBA 0.00", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("RESC 100.00", rows["PAYG-SUPP"]["answer"])
+        self.assertNotIn("payg_rfba", rows)
+
+    def test_payg_blank_occupation_falls_back_to_main_occupation_with_items(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+        answers["payg_occupation"] = ""
+        answers["main_occupation"] = "Consultant"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("PAYG-SUPP", rows)
+        self.assertIn("occupation Consultant", rows["PAYG-SUPP"]["answer"])
+        self.assertNotIn("main_occupation", rows)
+
+    def test_payg_aggregate_main_occupation_does_not_duplicate_normalized_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_occupation", None)
+        answers["main_occupation"] = "Consultant"
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = [row["number"] for row in payload["items"]]
+
+        self.assertIn("main_occupation", rows)
+        self.assertNotIn("payg_occupation", rows)
+
+    def test_payg_flat_details_with_itemized_rows_feed_evidence_queue(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+        answers["payg_rfba"] = "about 100"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("numeric amount evidence", evidence)
+
+    def test_payg_unknown_flat_details_with_itemized_rows_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+        answers["payg_employer_abn"] = "unknown"
+        answers["payg_rfba"] = "unknown"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("ABN unknown", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("RFBA unknown", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("numeric amount evidence", evidence)
+
+    def test_payg_raw_evidence_gaps_with_itemized_rows_stay_visible(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+        answers["payg_employer_name"] = "no PAYG"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("decline signals", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_flat_placeholder_does_not_hide_nested_aggregate_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg"] = {"gross": 9000, "withheld": 900}
+        answers["payg_gross"] = "n/a"
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("9000", rows["payg_gross"]["answer"])
+        self.assertEqual("Accountant review", rows["payg_gross"]["status"])
+
+    def test_payg_flat_unknown_does_not_hide_nested_aggregate_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg"] = {"gross": 9000, "withheld": 900}
+        answers["payg_gross"] = "unknown"
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("9000", rows["payg_gross"]["answer"])
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_nested_aggregate_placeholders_do_not_create_reconciliation(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "gross": "n/a",
+            "withheld": "not applicable",
+            "items": [
+                {
+                    "payer": "Example Pty Ltd",
+                    "abn": "12 345 678 901",
+                    "occupation": "Assistant",
+                    "gross": 9000,
+                    "withheld": 900,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", rows["PAYG-1"]["status"])
+        self.assertNotIn("PAYG-RECON", rows)
+        self.assertNotIn("PAYG totals need corrected reconciliation", evidence)
+
+    def test_payg_scalar_flat_field_renders_base_review(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg_rfba"] = 0
+        answers["payg_resc"] = "unknown"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["payg_rfba"]["status"])
+        self.assertEqual("Evidence", rows["payg_resc"]["status"])
+        self.assertEqual("0", rows["payg_rfba"]["answer"])
+
+    def test_payg_top_level_amount_aliases_render_base_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["gross_salary_wages"] = 9000
+        answers["tax_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("9000", rows["payg_gross"]["answer"])
+        self.assertEqual("900", rows["payg_withheld"]["answer"])
+
+    def test_payg_top_level_amount_aliases_with_no_payg_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = "no PAYG"
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["salary_wages"] = 9000
+        answers["amount_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_amount_withheld_decline_plus_facts_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        for key in (*taxmate_intake.REVIEWABLE_PAYG_FIELDS, "payg", "payg_income", "salary_wages"):
+            answers.pop(key, None)
+        answers["gross_salary_wages"] = 9000
+        answers["amount_withheld"] = "no PAYG"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_conflicting_flat_and_alias_aggregate_keeps_one_row_number(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        for key in (*taxmate_intake.REVIEWABLE_PAYG_FIELDS, "payg", "payg_income", "salary_wages"):
+            answers.pop(key, None)
+        answers["payg_gross"] = 9000
+        answers["salary_wages"] = 8000
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        gross_rows = [row for row in payload["items"] if row["number"] == "payg_gross"]
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual(1, len(gross_rows))
+        self.assertEqual("Evidence", gross_rows[0]["status"])
+        self.assertEqual("9000", gross_rows[0]["answer"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_nested_aliases_and_direct_conflicts_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = []
+        answers["payg"] = {
+            "items": [
+                {
+                    "employer_name": "Alias Pty Ltd",
+                    "payer": "Alias Pty Ltd",
+                    "employer_abn": "22 222 222 222",
+                    "job_title": "Analyst",
+                    "gross_salary_wages": 5000,
+                    "gross": 4000,
+                    "tax_withheld": 1000,
+                    "statement_evidence": "income statement held",
+                    "tax_ready": "true",
+                }
+            ]
+        }
+        answers["payg_gross"] = 5000
+        answers["payg_withheld"] = 1000
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("alias conflicts gross", row["answer"])
+
+    def test_payg_nested_item_alias_preferred_over_stale_top_level_alias(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Stale Pty Ltd",
+                "abn": "33 333 333 333",
+                "occupation": "Clerk",
+                "gross": 2000,
+                "withheld": 200,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg"] = {
+            "payg_items": [
+                {
+                    "payer": "Nested Alias Pty Ltd",
+                    "abn": "22 222 222 222",
+                    "occupation": "Assistant",
+                    "gross": 1000,
+                    "withheld": 100,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ]
+        }
+        answers["payg_gross"] = 1000
+        answers["payg_withheld"] = 100
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertIn("Nested Alias Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertNotIn("Stale Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertEqual("Evidence", rows["PAYG-RECON"]["status"])
+        self.assertIn("aggregate alias conflict", evidence)
+
+    def test_payg_statement_items_accept_flat_payg_keys(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payg_employer_name": "Flat Keys Pty Ltd",
+                "payg_employer_abn": "22 222 222 222",
+                "payg_occupation": "Assistant",
+                "payg_gross": 1000,
+                "payg_withheld": 100,
+                "payg_allowances": 0,
+                "payg_rfba": 0,
+                "payg_resc": 0,
+                "payg_lump_sum_a": 0,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 1000
+        answers["payg_withheld"] = 100
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Accountant review", rows["PAYG-1"]["status"])
+        self.assertIn("Flat Keys Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertIn("ABN 22 222 222 222", rows["PAYG-1"]["answer"])
+        self.assertIn("occupation Assistant", rows["PAYG-1"]["answer"])
+        self.assertIn("allowances 0.00", rows["PAYG-1"]["answer"])
+        self.assertIn("RFBA 0.00", rows["PAYG-1"]["answer"])
+        self.assertIn("RESC 0.00", rows["PAYG-1"]["answer"])
+        self.assertIn("lump sum A 0.00", rows["PAYG-1"]["answer"])
+
+    def test_payg_nested_direct_items_conflict_with_nested_item_alias(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "items": [
+                {
+                    "payer": "Direct Pty Ltd",
+                    "abn": "11 111 111 111",
+                    "occupation": "Assistant",
+                    "gross": 1000,
+                    "withheld": 100,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+            "payg_items": [
+                {
+                    "payer": "Alias Pty Ltd",
+                    "abn": "22 222 222 222",
+                    "occupation": "Clerk",
+                    "gross": 2000,
+                    "withheld": 200,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertIn("Direct Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertNotIn("Alias Pty Ltd", rows["PAYG-1"]["answer"])
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("aggregate alias conflicts items", rows["PAYG-SUPP"]["answer"])
+
+    def test_payg_salary_wages_nested_container_is_not_scalar_gross_alias(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["salary_wages"] = {
+            "items": [
+                {
+                    "payer": "Nested Pty Ltd",
+                    "abn": "22 222 222 222",
+                    "occupation": "Assistant",
+                    "gross": 1000,
+                    "withheld": 100,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+            "gross": 1000,
+            "withheld": 100,
+        }
+        answers["payg_gross"] = 1000
+        answers["payg_withheld"] = 100
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", rows["PAYG-1"]["status"])
+        self.assertEqual("Accountant review", rows["PAYG-RECON"]["status"])
+        self.assertNotIn("alias conflicts gross", rows["PAYG-RECON"]["answer"])
+        self.assertNotIn("alias conflicts", evidence)
+
+    def test_payg_multiple_nested_containers_merge_before_decline_decision(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {"statement": "no PAYG"}
+        answers["salary_wages"] = {
+            "items": [
+                {
+                    "payer": "Nested Pty Ltd",
+                    "abn": "22 222 222 222",
+                    "occupation": "Assistant",
+                    "gross": 1000,
+                    "withheld": 100,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ]
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertIn("PAYG-1", rows)
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_concrete_aliases_render_when_unknown_alias_comes_first(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "unknown",
+                "employer_name": "Known Pty Ltd",
+                "abn": "unknown",
+                "employer_abn": "22 222 222 222",
+                "gross": "unknown",
+                "gross_salary_wages": 5000,
+                "withheld": "unknown",
+                "tax_withheld": 1000,
+                "statement": "income statement held",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 5000
+        answers["payg_withheld"] = 1000
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("Payer Known Pty Ltd", row["answer"])
+        self.assertIn("ABN 22 222 222 222", row["answer"])
+        self.assertIn("gross 5000.00", row["answer"])
+        self.assertIn("tax withheld 1000.00", row["answer"])
+        self.assertIn("alias conflicts", row["answer"])
+        self.assertIn("alias conflicts", evidence)
+
+    def test_payg_no_answer_plus_facts_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Contradiction Pty Ltd",
+                "abn": "33 333 333 333",
+                "occupation": "Clerk",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "no PAYG",
+                "finalised": True,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_flat_no_answer_plus_facts_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg_employer_name"] = "no PAYG"
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_flat_amount_decline_without_facts_skips_workflow(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        for key in (*taxmate_intake.REVIEWABLE_PAYG_FIELDS, "payg", "payg_income", "salary_wages"):
+            answers.pop(key, None)
+        answers["payg_gross"] = "no PAYG"
+        answers["payg_withheld"] = "no PAYG"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertNotIn("payg_gross", rows)
+        self.assertNotIn("payg_withheld", rows)
+        self.assertNotIn("PAYG-EVID", evidence)
+        self.assertNotIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_flat_amount_decline_plus_facts_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        for key in (*taxmate_intake.REVIEWABLE_PAYG_FIELDS, "payg", "payg_income", "salary_wages"):
+            answers.pop(key, None)
+        answers["payg_gross"] = "no PAYG"
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertNotIn("payg_gross", rows)
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_scalar_item_alias_decline_plus_facts_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = "no PAYG"
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_placeholder_only_item_list_without_facts_skips_workflow(self) -> None:
+        cases = [
+            {"payg_income_statements": [{"payer": "no PAYG"}]},
+            {"payg": {"items": [{"payer": "no PAYG"}]}},
+        ]
+        for values in cases:
+            with self.subTest(values=values):
+                answers = taxmate_intake.sample_answers()
+                for key in (
+                    *taxmate_intake.REVIEWABLE_PAYG_FIELDS,
+                    "main_occupation",
+                    "payg",
+                    "payg_income",
+                    "salary_wages",
+                ):
+                    answers.pop(key, None)
+                answers.update(values)
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertNotIn("PAYG-1", rows)
+                self.assertNotIn("payg_income_statements", rows)
+                self.assertNotIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_scalar_statement_alias_missing_plus_facts_stays_evidence(self) -> None:
+        for value in ("payment summary not received", "no PAYG statements"):
+            with self.subTest(value=value):
+                answers = taxmate_intake.sample_answers()
+                answers["payg_income_statements"] = value
+                answers.pop("payg_employer_name", None)
+                answers["payg_gross"] = 9000
+                answers["payg_withheld"] = 900
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", rows["payg_gross"]["status"])
+                self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+                self.assertIn("income statement evidence", evidence)
+
+    def test_payg_nested_statement_decline_plus_aggregate_renders_base_rows(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+        answers["payg"] = {
+            "income_statement": "no PAYG",
+            "gross": 9000,
+            "withheld": 900,
+        }
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["payg_gross"]["status"])
+        self.assertEqual("Evidence", rows["payg_withheld"]["status"])
+        self.assertEqual("9000", rows["payg_gross"]["answer"])
+        self.assertIn("no-PAYG answer with PAYG facts", evidence)
+
+    def test_payg_nested_scalar_statement_gap_with_items_stays_visible(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers.pop("payg_income_statements")
+        answers["payg"] = {
+            "payg_statements": "statement not received",
+            "items": [
+                {
+                    "payer": "Example Pty Ltd",
+                    "abn": "12 345 678 901",
+                    "gross": 9000,
+                    "withheld": 900,
+                    "statement": "income statement held",
+                    "finalised": True,
+                }
+            ],
+        }
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-SUPP"]["status"])
+        self.assertIn("statement not received", rows["PAYG-SUPP"]["answer"])
+        self.assertIn("income statement evidence", evidence)
+
+    def test_payg_nested_aggregate_statement_gaps_feed_evidence_queue(self) -> None:
+        cases = [
+            ({"income_statement": "statement not received", "gross": 9000, "withheld": 900}, "income statement evidence"),
+            ({"finalised": "no", "gross": 9000, "withheld": 900}, "finalised/tax-ready status"),
+            ({"payer": "unknown", "gross": 9000, "withheld": 900}, "payer name or ABN"),
+        ]
+        for payg, expected in cases:
+            with self.subTest(expected=expected):
+                answers = taxmate_intake.sample_answers()
+                answers.pop("payg_income_statements")
+                answers.pop("payg_gross")
+                answers.pop("payg_withheld")
+                answers["payg"] = payg
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", rows["payg_gross"]["status"])
+                self.assertIn(expected, evidence)
+
+    def test_payg_statement_absence_aliases_stay_evidence(self) -> None:
+        for alias in ("income_statement", "payment_summary"):
+            with self.subTest(alias=alias):
+                answers = taxmate_intake.sample_answers()
+                answers.pop("payg_income_statements")
+                answers.pop("payg_gross")
+                answers.pop("payg_withheld")
+                answers["payg"] = {alias: "n/a", "gross": 9000, "withheld": 900}
+
+                payload = taxmate_intake.answers_to_pack_payload(answers)
+                rows = {row["number"]: row for row in payload["items"]}
+                evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+                self.assertEqual("Evidence", rows["payg_gross"]["status"])
+                self.assertIn("income statement evidence", evidence)
+
+    def test_payg_conflicting_finalised_aliases_stay_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = [
+            {
+                "payer": "Example Pty Ltd",
+                "abn": "12 345 678 901",
+                "gross": 9000,
+                "withheld": 900,
+                "statement": "income statement held",
+                "finalised": True,
+                "tax_ready": False,
+            }
+        ]
+        answers["payg_gross"] = 9000
+        answers["payg_withheld"] = 900
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"]: row for row in payload["items"]}
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", rows["PAYG-1"]["status"])
+        self.assertIn("alias conflicts finalised", rows["PAYG-1"]["answer"])
+        self.assertIn("alias conflicts", evidence)
+
+    def test_payg_ambiguous_lump_sum_label_stays_evidence(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"][0]["lump_sum"] = "label unknown; amount 500"
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        row = next(row for row in payload["items"] if row["number"] == "PAYG-1")
+        evidence = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", row["status"])
+        self.assertIn("lump sum labels", evidence)
+
+    def test_payg_empty_list_does_not_render_workflow_row(self) -> None:
+        answers = taxmate_intake.sample_answers()
+        answers["payg_income_statements"] = []
+        answers.pop("payg_gross")
+        answers.pop("payg_withheld")
+
+        payload = taxmate_intake.answers_to_pack_payload(answers)
+        rows = {row["number"] for row in payload["items"]}
+
+        self.assertNotIn("PAYG-1", rows)
+        self.assertNotIn("PAYG-RECON", rows)
+
+    def test_payg_html_pack_shows_provenance_and_review_queue(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
+        body = taxmate_taxpack.render_html(taxmate_taxpack.load_guide_payload(payload))
+
+        self.assertIn("PAYG income statement item", body)
+        self.assertIn("PAYG statement stays accountant review before manual copy.", body)
+        self.assertIn("https://www.ato.gov.au/individuals-and-families/income-deductions-offsets-and-records/income-you-must-declare/employment-income", body)
+        self.assertIn("PAYG statement totals reconcile to supplied aggregates", body)
+        self.assertNotIn("lodgment-ready", body)
+
+    def test_payg_sources_are_registered_and_covered(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        registry = json.loads((root / "data" / "ato_knowledge_base" / "source_registry.json").read_text())
+        coverage = json.loads((root / "data" / "ato_knowledge_base" / "source_coverage.json").read_text())
+        registry_urls = {item["url"] for item in registry["records"]}
+        covered = {item["canonical_url"]: item for item in coverage["sources"]}
+
+        for url in taxmate_intake.PAYG_SOURCES:
+            with self.subTest(url=url):
+                self.assertIn(url, registry_urls)
+                self.assertEqual("verified", covered[url]["status"])
+
+    def test_individual_return_portable_skill_covers_payg_statement_scope(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill = (root / "skills" / "individual-return" / "SKILL.md").read_text()
+        rules = (root / "skills" / "individual-return" / "references" / "rules.md").read_text()
+        docs = (root / "docs" / "INDIVIDUAL_RETURN_PREP.md").read_text()
+        readme = (root / "README.md").read_text()
+
+        self.assertIn("multi-employer income statements", skill)
+        self.assertIn("payer name, employer ABN", skill)
+        self.assertIn("lump sum A/B/D/E labels", skill)
+        self.assertIn("PAYG income statement rows", skill)
+        self.assertIn("No-PAYG plus facts", rules)
+        self.assertIn("`0` withheld", rules)
+        self.assertIn("direct alias conflicts", rules)
+        self.assertIn("PAYG income statement rows", docs)
+        self.assertIn("primary and secondary PAYG income statement rows", readme)
 
     def test_ess_review_row_appears_in_html_pack(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(taxmate_intake.sample_answers())
