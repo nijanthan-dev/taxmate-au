@@ -31,6 +31,27 @@ OUTPUT_DOCS_CONTRACT = "output_docs_contract"
 MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
+PUBLIC_OUTPUT_DOCS = [
+    "README.md",
+    "docs/INSTALLATION.md",
+    "docs/FULL_PLUGIN_INSTALL.md",
+    "docs/INDIVIDUAL_RETURN_PREP.md",
+]
+DEVELOPER_ONLY_PUBLIC_DOC_TERMS = [
+    "Screenshot refresh commands",
+    "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome",
+    "--headless",
+    "--screenshot=",
+    "python3 scripts/png_crop.py",
+    "taxmate-guide-full.png",
+    "Any PR that changes user-facing output",
+    "codex plugin marketplace add",
+    "codex plugin marketplace list",
+    "codex plugin list",
+]
+DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS = [
+    (re.compile(r"\bcodex\s+plugin\s+add\s+\S+"), "codex plugin add <target>"),
+]
 
 
 @dataclass
@@ -130,7 +151,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #79 output docs",
         OUTPUT_DOCS_CONTRACT,
-        "README and install docs must describe portable-vs-runtime output, HTML-only prep handoff sections, screenshot refresh commands, synthetic data, manual-copy boundaries, and the docs-update rule for user-facing output changes.",
+        "README and install docs must describe portable-vs-runtime output, HTML-only prep handoff sections, synthetic data, and manual-copy boundaries while developer docs carry screenshot refresh commands and the docs-update rule for user-facing output changes.",
     ),
     ReviewPattern(
         "Release guardrails",
@@ -179,6 +200,12 @@ def fail_if_missing(check: str, text: str, tokens: Iterable[str]) -> List[Findin
 
 def fail_if_file_missing(root: Path, check: str, rel: str, tokens: Iterable[str]) -> List[Finding]:
     return fail_if_missing(check, read(root, rel), tokens)
+
+
+def developer_only_public_doc_hits(text: str) -> List[str]:
+    hits = [term for term in DEVELOPER_ONLY_PUBLIC_DOC_TERMS if term in text]
+    hits.extend(label for pattern, label in DEVELOPER_ONLY_PUBLIC_DOC_PATTERNS if pattern.search(text))
+    return hits
 
 
 def command_lines(text: str) -> List[str]:
@@ -1644,7 +1671,7 @@ def check_environment_contract(root: Path) -> List[Finding]:
 
 def check_local_plugin_marketplace_contract(root: Path) -> List[Finding]:
     marketplace_path = root.joinpath(".agents", "plugins", "marketplace.json")
-    docs = read(root, "docs/FULL_PLUGIN_INSTALL.md")
+    docs = read(root, "docs/DEVELOPMENT.md")
     findings: List[Finding] = []
     try:
         marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
@@ -1777,15 +1804,21 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
                 "ABN prep section and BAS worksheet",
                 "missing facts queue, evidence queue, and accountant-review queue",
                 "source/provenance appendix",
-                "Screenshot refresh commands",
-                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
-                "--answers /tmp/taxmate-answers.json",
                 "The sample data is synthetic",
-                "Any PR that changes user-facing output",
-                "must update README/docs in the same PR, or state why no docs update is needed",
+                "Screenshot maintenance is a contributor task documented in [docs/DEVELOPMENT.md]",
             ],
         )
     )
+    public_docs = {rel: read(root, rel) for rel in PUBLIC_OUTPUT_DOCS}
+    for label, surface_text in public_docs.items():
+        developer_hits = developer_only_public_doc_hits(surface_text)
+        if developer_hits:
+            findings.append(
+                Finding(
+                    OUTPUT_DOCS_CONTRACT,
+                    f"{label} contains developer-only maintenance detail: " + ", ".join(developer_hits),
+                )
+            )
     required_output_surfaces = [
         (
             "docs/INSTALLATION.md",
@@ -1868,8 +1901,15 @@ def check_output_docs_contract(root: Path) -> List[Finding]:
             OUTPUT_DOCS_CONTRACT,
             development,
             [
+                "Screenshot refresh commands are developer-only",
                 "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
                 "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html",
+                "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome",
+                "--screenshot=assets/readme/taxmate-guide-john-doe.png",
+                "--screenshot=/tmp/taxmate-guide-full.png",
+                "python3 scripts/png_crop.py /tmp/taxmate-guide-full.png",
+                "Any PR that changes user-facing output",
+                "must update README/docs in the same PR, or state why no docs update is needed",
             ],
         )
     )

@@ -577,8 +577,6 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
         "Individual Return Prep",
         "docs/INDIVIDUAL_RETURN_PREP.md",
         "prep-only boundaries",
-        "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
-        "--answers /tmp/taxmate-answers.json",
     ]
     required_doc_terms = [
         "TaxMate is prep-only",
@@ -598,6 +596,8 @@ def individual_return_prep_docs_ready(root: str, readme_text: str) -> bool:
     return (
         all(term in readme_text for term in required_readme_terms)
         and all(term in doc for term in required_doc_terms)
+        and "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json" in full_install
+        and "--answers /tmp/taxmate-answers.json" in full_install
         and not any(term in readme_text or term in doc or term in full_install for term in stale_prep_commands)
     )
 

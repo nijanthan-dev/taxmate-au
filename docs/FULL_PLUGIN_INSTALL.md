@@ -1,12 +1,12 @@
 # Full Runtime Setup
 
-Use this runtime path for the print-first HTML handoff, workbook/taxpack outputs, live ATO source refresh, source coverage governance, calculator workflows, finance review, validation, and local plugin testing.
+Use this runtime path for the print-first HTML handoff, workbook/taxpack outputs, live ATO source refresh, calculator workflows, and finance review.
 
 If you only need quick agent prompts without a checkout, use [INSTALLATION.md](INSTALLATION.md) instead.
 
 Prerequisites:
 
-- Node.js 20+ for full-runtime bootstrap and packaging checks.
+- Node.js 20+ for full-runtime bootstrap.
 - Bash.
 - Python 3.9+.
 - Git.
@@ -25,7 +25,6 @@ Validate the checkout:
 
 ```bash
 ./scripts/taxmate validate
-./scripts/taxmate skills generate --check
 ```
 
 Run runtime commands through the bash launcher (python runtime under the hood):
@@ -47,38 +46,7 @@ The guide is a custom preparation aid, not an ATO form, not lodgment software, n
 
 The individual-return handoff includes the prep-only boundary, manual-copy warning, intake summary, AI extraction confirmation table, individual return field guide, ABN prep section, BAS worksheet, missing facts queue, evidence queue, accountant-review queue, and source/provenance appendix.
 
-Full validation:
-
-```bash
-PYTHONPYCACHEPREFIX=/tmp/taxmate-pycache python3 -m py_compile scripts/*.py
-./scripts/taxmate validate
-./scripts/taxmate skills validate
-./scripts/taxmate skills generate --check
-./scripts/taxmate skills audit --check
-./scripts/taxmate skills audit --format markdown --output /tmp/source-coverage.md
-scripts/check-publication-ready.sh
-gitleaks detect --source . --redact --no-banner
-```
-
 If you need local-speed, keep Python runtime wrappers and dependencies local and use the launcher directly.
 Bash + python execution is the supported default path.
 
-## Local Plugin Setup
-
-This repo includes `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json` for advanced local Codex plugin testing. Local marketplace configuration is development-only.
-
-From the repo root:
-
-```bash
-codex plugin marketplace add .
-codex plugin add taxmate-australia@taxmate-local-marketplace
-```
-
-Verify available plugins:
-
-```bash
-codex plugin marketplace list
-codex plugin list
-```
-
-Do not claim official plugin discovery unless a published listing has been verified.
+Contributor validation, CI, release checks, screenshot maintenance, and local plugin testing live in [DEVELOPMENT.md](DEVELOPMENT.md).
