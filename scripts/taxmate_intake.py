@@ -1869,7 +1869,7 @@ def investment_interest_row(index: int, item: Dict[str, Any], conflict: bool) ->
 
 
 def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) -> Dict[str, Any]:
-    amount_evidence = investment_amounts_need_evidence(
+    amount_evidence = dividend_amounts_need_evidence(item) or investment_amounts_need_evidence(
         item,
         INVESTMENT_DIVIDEND_AMOUNT_FIELDS,
         INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS,
@@ -2008,6 +2008,8 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
                 investment_required_amount_groups(group_label),
                 franked_key=franked_key,
             )
+            if group_label == "Dividend statement" and dividend_amounts_need_evidence(item):
+                amounts = True
             franking = group_label == "Dividend statement" and investment_franking_uncertain(item)
             if missing or amounts or franking:
                 rows.append(
@@ -2174,17 +2176,41 @@ def investment_franking_uncertain(item: Dict[str, Any]) -> bool:
     return any(phrase in lowered for phrase in INVESTMENT_FRANKING_UNCERTAIN_PHRASES)
 
 
+def dividend_amounts_need_evidence(item: Dict[str, Any]) -> bool:
+    return dividend_direct_component_conflict(item)
+
+
 def interest_item_total(items: List[Dict[str, Any]]) -> Optional[float]:
     return investment_itemized_total(investment_money_value(item.get("amount")) for item in items)
 
 
 def dividend_item_total(item: Dict[str, Any]) -> Optional[float]:
     direct = investment_direct_amount_value(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS)
+    component_total = dividend_component_total(item)
     if direct is not None:
+        if component_total is not None and investment_total_conflict(direct, component_total):
+            return None
         return direct
     if investment_has_direct_amount(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS):
         return None
-    return investment_total([investment_money_value(item.get("franked_amount")), investment_money_value(item.get("unfranked_amount"))])
+    return component_total
+
+
+def dividend_component_total(item: Dict[str, Any]) -> Optional[float]:
+    values = [
+        investment_money_value(item.get(key))
+        for key in ("franked_amount", "unfranked_amount")
+        if key in item and not is_missing(item.get(key))
+    ]
+    if not values:
+        return None
+    return investment_itemized_total(values)
+
+
+def dividend_direct_component_conflict(item: Dict[str, Any]) -> bool:
+    direct = investment_direct_amount_value(item, INVESTMENT_DIVIDEND_DIRECT_AMOUNT_FIELDS)
+    component_total = dividend_component_total(item)
+    return direct is not None and component_total is not None and investment_total_conflict(direct, component_total)
 
 
 def distribution_item_total(item: Dict[str, Any]) -> Optional[float]:

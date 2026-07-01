@@ -100,7 +100,7 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
     ReviewPattern(
         "Issue #69 investment income",
         INDIVIDUAL_INTAKE_CONTRACT,
-        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, zero-only withholding/franking/auxiliary components, unknown or malformed amounts, uncertain or negative-string franking confirmations, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, relevant aggregate-vs-item total conflicts, and supplied aggregates with any unknown relevant item total in Evidence or Accountant review while preserving aggregate-only base rows, zero withholding, zero franking credits, false foreign components, zero aggregate reconciliation for empty investment categories, source provenance, flat/nested item aliases, direct dividend/distribution amount aliases, and every accepted investment amount field in rendered rows.",
+        "Investment income intake must keep missing statements, common not-provided statement wording, absent core amount/component values, zero-only withholding/franking/auxiliary components, unknown or malformed amounts, direct-vs-component dividend conflicts, uncertain or negative-string franking confirmations, AMIT/cost-base adjustments, foreign components, trust distributions, scalar flat investment fields, relevant aggregate-vs-item total conflicts, and supplied aggregates with any unknown relevant item total in Evidence or Accountant review while preserving aggregate-only base rows, zero withholding, zero franking credits, false foreign components, zero aggregate reconciliation for empty investment categories, source provenance, flat/nested item aliases, direct dividend/distribution amount aliases, and every accepted investment amount field in rendered rows.",
     ),
     ReviewPattern(
         "Issue #51 PSI",
@@ -533,6 +533,12 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "\"distribution_amount\",",
                 "def investment_franking_uncertain(",
                 "if lowered in {\"no\", \"n\", \"false\", \"0\", \"not confirmed\", \"not held\", \"not available\", \"none\"}:",
+                "def dividend_amounts_need_evidence(",
+                "dividend_amounts_need_evidence(item)",
+                "def dividend_component_total(",
+                "return investment_itemized_total(values)",
+                "def dividend_direct_component_conflict(",
+                "dividend_direct_component_conflict(item)",
                 "def investment_total_conflict(",
                 "def investment_reconciliation_conflict(",
                 "def investment_category_total(",
