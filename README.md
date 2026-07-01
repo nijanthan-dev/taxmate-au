@@ -1,6 +1,6 @@
 # TaxMate Australia
 
-TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, ATO-aligned manual guide PDFs, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
+TaxMate Australia is an Australian tax prep skill pack and plugin linked to official ATO sources for conservative record review, GST/BAS and CGT triage, evidence gaps, accountant-ready workbook/taxpack handoff, print-first HTML guide handoffs, and treatment flags across Codex, Claude Code, Cowork, and OpenAgentSkill CLI.
 
 > [!WARNING]
 > **Not tax advice.** TaxMate Australia is a preparation aid, not professional advice or lodgment software. For complex situations, binding decisions, or lodgment, consult a registered tax agent or use the official ATO channel directly. See [DISCLAIMER.md](DISCLAIMER.md).
@@ -26,15 +26,55 @@ npx skills@1.5.13 add nijanthan-dev/taxmate-australia \
 Portable details: [docs/INSTALLATION.md](docs/INSTALLATION.md).
 Full runtime details: [docs/FULL_PLUGIN_INSTALL.md](docs/FULL_PLUGIN_INSTALL.md).
 
+## Output Handoff
+
+Portable skills produce source-backed guidance, missing-evidence prompts, and conservative `Accountant review` routing. They do not need a checkout and do not render files.
+
+The full runtime produces a print-first HTML handoff from reviewed or user-supplied facts. The handoff is a custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable. Users manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff after evidence and review queues are resolved.
+
+The current individual-return handoff includes:
+
+- prep-only boundary and manual-copy warning;
+- intake summary and AI extraction confirmation table;
+- individual return field guide;
+- ABN prep section and BAS worksheet;
+- missing facts queue, evidence queue, and accountant-review queue;
+- source/provenance appendix with source URLs and checked-at dates.
+
 ## Preview
 
 ![Example TaxMate Australia self-prepared guide output for synthetic John Doe data](assets/readme/taxmate-guide-john-doe.png)
 
-Example guide from synthetic John Doe data. Shows interview answers, source-backed evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
+Example guide from synthetic sample data. Shows the overview, prep boundary, manual-copy warning, AI extraction confirmation table, field guide rows, evidence prompts, and `Accountant review` flags. Not an ATO form. Not fileable.
 
 ![Example TaxMate Australia manual-copy worksheet for synthetic John Doe data](assets/readme/taxmate-guide-john-doe-worksheet.png)
 
-The worksheet page shows manual-copy rows, source provenance, evidence prompts, and `Accountant review` flags.
+The lower handoff preview shows the evidence queue, accountant-review queue, row-level provenance, and the source/provenance appendix. The generated HTML also includes ABN prep, BAS worksheet, and missing-facts sections above this section.
+
+Screenshot refresh commands:
+
+```bash
+./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
+./scripts/taxmate intake individual \
+  --answers /tmp/taxmate-answers.json \
+  --output /tmp/taxmate-guide.html
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
+  --disable-component-update --no-first-run --no-default-browser-check \
+  --user-data-dir=/tmp/taxmate-chrome-profile --window-size=1040,720 \
+  --screenshot=assets/readme/taxmate-guide-john-doe.png \
+  file:///tmp/taxmate-guide.html
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --headless --disable-gpu --hide-scrollbars --disable-background-networking \
+  --disable-component-update --no-first-run --no-default-browser-check \
+  --user-data-dir=/tmp/taxmate-chrome-profile-long --window-size=1120,10000 \
+  --screenshot=/tmp/taxmate-guide-full.png \
+  file:///tmp/taxmate-guide.html
+python3 scripts/png_crop.py /tmp/taxmate-guide-full.png \
+  assets/readme/taxmate-guide-john-doe-worksheet.png 0 6900 1120 760
+```
+
+The sample data is synthetic. Any PR that changes user-facing output, output sections, screenshots/images, install/use docs, or individual-return handoff expectations must update README/docs in the same PR, or state why no docs update is needed.
 
 ## What It Does
 
@@ -42,7 +82,7 @@ The worksheet page shows manual-copy rows, source provenance, evidence prompts, 
 - Keeps ATO source URLs, checked-at dates, source coverage checks, and generated topic skills visible.
 - Flags GST/BAS, PAYG, FBT, CGT, super guarantee, and stamp-duty source-routing items for conservative review.
 - Builds accountant-facing workbook and taxpack outputs from reviewed data.
-- Creates ATO-aligned manual guide PDFs that help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
+- Creates print-first HTML guides that help users manually copy reviewed answers into myTax, paper ATO forms, or an accountant handoff. TaxMate does not fill official ATO PDFs or create returns users can submit directly to the ATO.
 
 ## Full Runtime Quickstart
 

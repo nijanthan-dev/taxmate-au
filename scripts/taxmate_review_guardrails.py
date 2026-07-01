@@ -27,6 +27,7 @@ ENVIRONMENT_WORKTREE_CONTRACT = "environment_worktree_contract"
 LOCAL_PLUGIN_MARKETPLACE_CONTRACT = "local_plugin_marketplace_contract"
 PRE_COMMIT_CONTRACT = "pre_commit_contract"
 REVIEW_GUARDRAIL_DOCS = "review_guardrail_docs"
+OUTPUT_DOCS_CONTRACT = "output_docs_contract"
 MARKETPLACE_ADD_PREFIX = "codex plugin marketplace add "
 LOCAL_MARKETPLACE_ADD_COMMAND = "codex plugin marketplace add ."
 LOCAL_PLUGIN_ADD_COMMAND = "codex plugin add taxmate-australia@{name}"
@@ -115,6 +116,11 @@ REVIEW_PATTERNS: List[ReviewPattern] = [
         "PR #38",
         LOCAL_PLUGIN_MARKETPLACE_CONTRACT,
         "Local Codex plugin setup docs must point codex plugin marketplace add at the repo root when .agents/plugins/marketplace.json uses source.path ./.",
+    ),
+    ReviewPattern(
+        "Issue #79 output docs",
+        OUTPUT_DOCS_CONTRACT,
+        "README and install docs must describe portable-vs-runtime output, HTML-only prep handoff sections, screenshot refresh commands, synthetic data, manual-copy boundaries, and the docs-update rule for user-facing output changes.",
     ),
     ReviewPattern(
         "Release guardrails",
@@ -1495,6 +1501,171 @@ def check_review_guardrail_docs(root: Path) -> List[Finding]:
     return findings
 
 
+def check_output_docs_contract(root: Path) -> List[Finding]:
+    readme = read(root, "README.md")
+    install = read(root, "docs/INSTALLATION.md")
+    full_install = read(root, "docs/FULL_PLUGIN_INSTALL.md")
+    prep = read(root, "docs/INDIVIDUAL_RETURN_PREP.md")
+    development = read(root, "docs/DEVELOPMENT.md")
+    disclaimer = read(root, "DISCLAIMER.md")
+    public_metadata = read(root, "skill.json") + "\n" + read(root, ".codex-plugin/plugin.json")
+    packaged_output_surfaces = "\n".join(
+        [
+            read_optional(root, "skills/taxpack/SKILL.md"),
+            read_optional(root, "skills/taxpack/agents/openai.yaml"),
+            read_optional(root, "skills/taxpack/references/rules.md"),
+            read_optional(root, "skills/taxmate-australia/SKILL.md"),
+            read_optional(root, "skills/taxmate-australia/references/rules.md"),
+            read_optional(root, "skills/individual-return/SKILL.md"),
+            read_optional(root, "skills/individual-return/references/rules.md"),
+            read_optional(root, "wrappers/taxmate-australia-taxpack/SKILL.md"),
+            read_optional(root, "scripts/taxmate_taxpack.py"),
+        ]
+    )
+    docs = "\n".join([readme, install, full_install, prep])
+    findings: List[Finding] = []
+    findings.extend(
+        fail_if_missing(
+            OUTPUT_DOCS_CONTRACT,
+            readme,
+            [
+                "Portable skills produce source-backed guidance",
+                "full runtime produces a print-first HTML handoff",
+                "custom preparation aid, not an ATO form, not lodgment software, not final tax advice, and not fileable",
+                "manually copy reviewed values into myTax, paper ATO forms, or an accountant handoff",
+                "AI extraction confirmation table",
+                "individual return field guide",
+                "ABN prep section and BAS worksheet",
+                "missing facts queue, evidence queue, and accountant-review queue",
+                "source/provenance appendix",
+                "Screenshot refresh commands",
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
+                "--answers /tmp/taxmate-answers.json",
+                "The sample data is synthetic",
+                "Any PR that changes user-facing output",
+                "must update README/docs in the same PR, or state why no docs update is needed",
+            ],
+        )
+    )
+    required_output_surfaces = [
+        (
+            "docs/INSTALLATION.md",
+            install,
+            [
+                "Portable skills produce source-backed guidance",
+                "do not render the full runtime handoff",
+                "full runtime handoff is a custom preparation aid",
+                "not an ATO form",
+                "not lodgment software",
+                "not final tax advice",
+                "not fileable",
+                "manually copy reviewed values",
+            ],
+        ),
+        (
+            "docs/FULL_PLUGIN_INSTALL.md",
+            full_install,
+            [
+                "print-first HTML handoff",
+                "custom preparation aid",
+                "not an ATO form",
+                "not lodgment software",
+                "not final tax advice",
+                "not fileable",
+                "manually copy reviewed values",
+                "missing facts",
+                "evidence gaps",
+                "Accountant review",
+                "source/provenance appendix",
+            ],
+        ),
+        (
+            "docs/INDIVIDUAL_RETURN_PREP.md",
+            prep,
+            [
+                "prep-only",
+                "manual-copy handoff",
+                "does not lodge",
+                "Runtime Path",
+                "Open the HTML",
+                "prep-only boundary",
+                "manual-copy warning",
+                "AI extraction confirmation table",
+                "source/provenance appendix",
+            ],
+        ),
+        (
+            "DISCLAIMER.md",
+            disclaimer,
+            [
+                "custom print-first HTML handoffs",
+                "not official ATO PDFs",
+                "do not fill official ATO forms",
+                "must not be treated as a return",
+            ],
+        ),
+        (
+            "skills/taxpack/SKILL.md",
+            read_optional(root, "skills/taxpack/SKILL.md"),
+            ["manual-copy guidance", "not rendered files", "full runtime for print-first HTML handoff generation"],
+        ),
+        (
+            "skills/individual-return/SKILL.md",
+            read_optional(root, "skills/individual-return/SKILL.md"),
+            ["manual-copy handoff guidance", "full runtime for HTML handoff generation", "when a full runtime is available"],
+        ),
+        (
+            "skills/taxmate-australia/SKILL.md",
+            read_optional(root, "skills/taxmate-australia/SKILL.md"),
+            ["manual-copy handoff guidance", "full runtime for HTML handoff generation"],
+        ),
+    ]
+    for label, surface_text, tokens in required_output_surfaces:
+        missing = missing_tokens(surface_text, tokens)
+        if missing:
+            findings.append(Finding(OUTPUT_DOCS_CONTRACT, f"{label} missing: " + ", ".join(missing)))
+    findings.extend(
+        fail_if_missing(
+            OUTPUT_DOCS_CONTRACT,
+            development,
+            [
+                "./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json",
+                "./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html",
+            ],
+        )
+    )
+    for rel in [
+        "assets/readme/taxmate-guide-john-doe.png",
+        "assets/readme/taxmate-guide-john-doe-worksheet.png",
+    ]:
+        if not root.joinpath(rel).exists():
+            findings.append(Finding(OUTPUT_DOCS_CONTRACT, f"missing screenshot asset: {rel}"))
+    stale_terms = [
+        "ATO-aligned manual guide PDFs",
+        "ATO-aligned manual guide PDF outputs",
+        "ATO-aligned guide PDFs",
+        "guide PDFs",
+        "custom guide PDFs",
+        "future PDF/form drafts",
+        "Self-prepared guide PDF",
+        "custom manual-copy HTML guides",
+        "portable taxpack skill will render",
+        "and HTML handoff. Use when",
+        "dependants, and HTML handoff",
+        "HTML tax pack",
+        "The final handoff is HTML only. It must include",
+        "./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html",
+        "from PIL import Image",
+        "Image.open(",
+        "./scripts/taxmate.py refresh --help",
+    ]
+    stale_haystack = "\n".join([docs, development, disclaimer, public_metadata, packaged_output_surfaces])
+    stale_hits = [term for term in stale_terms if term in stale_haystack]
+    if stale_hits:
+        findings.append(Finding(OUTPUT_DOCS_CONTRACT, "stale output docs: " + ", ".join(stale_hits)))
+    return findings
+
+
 def review_patterns_payload() -> List[dict]:
     return [pattern.__dict__ for pattern in REVIEW_PATTERNS]
 
@@ -1525,6 +1696,7 @@ CHECKS: List[Callable[[Path], List[Finding]]] = [
     check_local_plugin_marketplace_contract,
     check_precommit_contract,
     check_review_guardrail_docs,
+    check_output_docs_contract,
 ]
 
 

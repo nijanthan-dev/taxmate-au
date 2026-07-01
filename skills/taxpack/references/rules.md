@@ -18,7 +18,7 @@
 - Guide rows with supplied source URLs or checked-at dates must keep that provenance visible in the worksheet.
 - Review queues and side tabs must keep review items visible even when explanatory text is missing.
 - Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
-- ATO-aligned guide PDFs must be custom manual guides, not filled or modified official ATO PDFs.
+- Manual-copy guidance must be custom preparation guidance, not rendered files or filled/modified official ATO PDFs. Use the full runtime for print-first HTML handoff generation.
 - Reference ATO labels only to help users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff.
 - Do not silently drop uncertain rows.
 

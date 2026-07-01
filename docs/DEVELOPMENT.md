@@ -100,7 +100,8 @@ Run runtime commands with the bash+python stack:
 ```bash
 ./scripts/taxmate refresh --help
 ./scripts/taxmate finance --help
-./scripts/taxmate taxpack guide-html --output /tmp/taxmate-guide.html
+./scripts/taxmate intake sample-json --output /tmp/taxmate-answers.json
+./scripts/taxmate intake individual --answers /tmp/taxmate-answers.json --output /tmp/taxmate-guide.html
 ./scripts/taxmate validate
 ```
 

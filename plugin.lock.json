@@ -84,7 +84,7 @@
         "type": "local",
         "path": "skills/individual-return"
       },
-      "integrity": "sha256:afb80bc2ff757ff82f40848db68d1c7fade55a4d9e95941cc1f4c82e6b5cfa2c"
+      "integrity": "sha256:00b0ecb1ff0ffd86d2e722d4225123b7b401c3ba442867754eaab91ccc376ef6"
     },
     {
       "id": "payg-employer",
@@ -147,7 +147,7 @@
         "type": "local",
         "path": "skills/taxmate-australia"
       },
-      "integrity": "sha256:93a1cafb4d2aef5baf03189a97871304c3f5b1b9559e4e1ce5d0508b1a3da964"
+      "integrity": "sha256:9a1ed62c1911e3f0ea6b2c29b1cac07c90ca235346335de1e4c882d3e95b284b"
     },
     {
       "id": "taxpack",
@@ -156,7 +156,7 @@
         "type": "local",
         "path": "skills/taxpack"
       },
-      "integrity": "sha256:ee2fb8f360d534d43b23561b01d1bb028bc534f89737a246c04603e87077990d"
+      "integrity": "sha256:bc86593d7a54d9f31b290c5fab79f8892ac849e44532bb44eeae3f08957ef31b"
     },
     {
       "id": "work-from-home",
