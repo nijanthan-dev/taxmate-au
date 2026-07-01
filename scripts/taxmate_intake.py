@@ -1918,7 +1918,7 @@ def investment_distribution_row(index: int, item: Dict[str, Any], conflict: bool
             f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
             f"franking credit {money_text(investment_money_value(item.get('franking_credit')))}; "
             f"TFN withholding {money_text(investment_money_value(item.get('tfn_withheld')))}; "
-            f"foreign components {display_value(item.get('foreign_components'))}"
+            f"foreign components {investment_foreign_components_text(item)}"
             f"{investment_review_flag_sentence(item)}"
         ),
         "Managed fund, ETF, and AMIT distributions need annual statement labels, component review, and cost-base follow-up where flagged.",
@@ -1950,7 +1950,7 @@ def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
             f"foreign income {money_text(investment_money_value(item.get('foreign_income')))}; "
             f"foreign tax offset {money_text(investment_money_value(item.get('foreign_tax_offset')))}; "
             f"non-assessable payment {money_text(investment_money_value(item.get('non_assessable_payment')))}; "
-            f"foreign components {display_value(item.get('foreign_components'))}"
+            f"foreign components {investment_foreign_components_text(item)}"
         ),
         "Individual beneficiary trust distributions are routed for accountant review only; TaxMate does not prepare a trust return.",
         status,
@@ -2357,7 +2357,7 @@ def investment_aggregate_needs_evidence(value: Any) -> bool:
 
 def investment_review_terms(item: Dict[str, Any], *, include_trust: bool) -> List[str]:
     terms: List[str] = []
-    if item.get("amit") is True or has_meaningful_value(item.get("amit_status")):
+    if investment_boolean_flag_value(item.get("amit")) is True or has_meaningful_value(item.get("amit_status")):
         terms.append("AMIT label mapping")
     if investment_review_amount_or_text(item.get("cost_base_adjustment")):
         terms.append("cost-base adjustment")
@@ -2383,22 +2383,51 @@ def investment_review_flag_sentence(item: Dict[str, Any]) -> str:
 
 
 def investment_review_flag_value(value: Any) -> str:
-    if is_missing(value) or contains_unknown(value) or value is False:
+    if is_missing(value) or contains_unknown(value):
         return ""
+    flag = investment_boolean_flag_value(value)
+    if flag is False:
+        return ""
+    if flag is True:
+        return display_value(value)
     amount = investment_money_value(value)
     if amount == 0:
         return ""
     return display_value(value)
 
 
+def investment_boolean_flag_value(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if not isinstance(value, str) or contains_unknown(value):
+        return None
+    lowered = value.strip().lower()
+    if lowered in {"yes", "y", "true", "1", "on", "checked"}:
+        return True
+    if lowered in {"no", "n", "false", "0", "off", "unchecked", "none", "not applicable", "n/a"}:
+        return False
+    return None
+
+
 def investment_has_foreign_components(item: Dict[str, Any]) -> bool:
-    if item.get("foreign_components") is True:
+    foreign_flag = investment_boolean_flag_value(item.get("foreign_components"))
+    if foreign_flag is True:
         return True
     for key in ("foreign_income", "foreign_tax_offset"):
         value = investment_money_value(item.get(key))
         if value is not None and value != 0:
             return True
     return False
+
+
+def investment_foreign_components_text(item: Dict[str, Any]) -> str:
+    value = item.get("foreign_components")
+    flag = investment_boolean_flag_value(value)
+    if flag is False:
+        return "false"
+    if is_missing(value):
+        return "unknown"
+    return display_value(value) or "unknown"
 
 
 def investment_review_amount_or_text(value: Any) -> bool:

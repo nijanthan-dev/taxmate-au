@@ -1046,6 +1046,53 @@ class IndividualIntakeTests(unittest.TestCase):
         self.assertNotIn("cost-base adjustment false", by_number["DIST-2"]["answer"])
         self.assertIn("foreign components false", by_number["DIST-2"]["answer"])
 
+    def test_investment_income_boolean_string_flags_are_normalized(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "distribution_items": [
+                        {
+                            "fund": "Example AMIT",
+                            "taxable_amount": 100,
+                            "statement": "statement held",
+                            "amit": "yes",
+                            "foreign_components": "yes",
+                        },
+                        {
+                            "fund": "Example ETF",
+                            "taxable_amount": 50,
+                            "statement": "statement held",
+                            "amit": "false",
+                            "foreign_components": "false",
+                        },
+                        {
+                            "fund": "Example Fund",
+                            "taxable_amount": 25,
+                            "statement": "statement held",
+                        },
+                    ],
+                    "trust_distribution_items": [
+                        {
+                            "trust": "Family Trust",
+                            "distribution_amount": 10,
+                            "statement": "statement held",
+                            "foreign_components": "false",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+
+        self.assertIn("AMIT label mapping", by_number["DIST-1"]["tab_text"])
+        self.assertIn("foreign components", by_number["DIST-1"]["tab_text"])
+        self.assertIn("AMIT yes", by_number["DIST-1"]["answer"])
+        self.assertIn("foreign components yes", by_number["DIST-1"]["answer"])
+        self.assertNotIn("AMIT false", by_number["DIST-2"]["answer"])
+        self.assertIn("foreign components false", by_number["DIST-2"]["answer"])
+        self.assertIn("foreign components unknown", by_number["DIST-3"]["answer"])
+        self.assertIn("foreign components false", by_number["TRUST-DIST-1"]["answer"])
+
     def test_investment_income_mismatched_totals_and_missing_statements_feed_evidence_queue(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
