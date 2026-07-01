@@ -1161,9 +1161,10 @@ class IndividualIntakeTests(unittest.TestCase):
         by_number = {row["number"]: row for row in payload["items"]}
 
         self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
-        self.assertIn("Interest items 0.00 vs aggregate 0.00", by_number["INVEST-RECON"]["answer"])
+        self.assertNotIn("Interest items", by_number["INVEST-RECON"]["answer"])
+        self.assertIn("dividend/distribution items 430.00 vs aggregate 430.00", by_number["INVEST-RECON"]["answer"])
 
-    def test_investment_income_empty_category_conflicts_nonzero_aggregate(self) -> None:
+    def test_investment_income_aggregate_only_category_stays_base_row(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {
                 "interest_income": 100,
@@ -1174,9 +1175,27 @@ class IndividualIntakeTests(unittest.TestCase):
             }
         )
         by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
 
-        self.assertEqual("Evidence", by_number["INVEST-RECON"]["status"])
-        self.assertIn("Investment totals need corrected reconciliation", by_number["INVEST-RECON"]["tab_text"])
+        self.assertEqual("Used", by_number["interest_income"]["status"])
+        self.assertEqual("Accountant review", by_number["INVEST-RECON"]["status"])
+        self.assertNotIn("Interest items", by_number["INVEST-RECON"]["answer"])
+        self.assertNotIn("corrected reconciliation", evidence_text)
+
+    def test_investment_income_aggregate_only_fields_do_not_add_reconciliation_evidence(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "interest_income": 100,
+                "dividend_income": 430,
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertNotIn("INVEST-RECON", by_number)
+        self.assertEqual("Used", by_number["interest_income"]["status"])
+        self.assertEqual("Used", by_number["dividend_income"]["status"])
+        self.assertNotIn("corrected reconciliation", evidence_text)
 
     def test_investment_income_scalar_flat_fields_are_review_first(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(

@@ -1792,12 +1792,19 @@ def investment_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[s
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
     trust_items = investment_item_values(raw.get("trust_distribution_items"))
+    has_interest_items = bool(interest_items)
+    has_dividend_distribution_items = bool(dividend_items or distribution_items)
     interest_total = interest_category_total(interest_items)
     dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
-    interest_conflict = investment_reconciliation_needs_evidence(answers.get("interest_income"), interest_total)
-    dividend_conflict = investment_reconciliation_needs_evidence(
+    interest_conflict = investment_reconciliation_conflict(
+        answers.get("interest_income"),
+        interest_total,
+        has_interest_items,
+    )
+    dividend_conflict = investment_reconciliation_conflict(
         answers.get("dividend_income"),
         dividend_total,
+        has_dividend_distribution_items,
     )
     for idx, item in enumerate(interest_items, start=1):
         rows.append(investment_interest_row(idx, item, interest_conflict))
@@ -1942,14 +1949,20 @@ def investment_reconciliation_row(
     interest_total = interest_category_total(interest_items)
     dividend_total = dividend_distribution_category_total(dividend_items, distribution_items)
     status = "Evidence" if interest_conflict or dividend_conflict else "Accountant review"
+    answers_text: List[str] = []
+    if interest_items:
+        answers_text.append(
+            f"Interest items {money_text(interest_total)} vs aggregate {money_text(investment_money_value(answers.get('interest_income')))}"
+        )
+    if dividend_items or distribution_items:
+        answers_text.append(
+            f"dividend/distribution items {money_text(dividend_total)} vs aggregate {money_text(investment_money_value(answers.get('dividend_income')))}"
+        )
     return guide_row(
         "INVEST-RECON",
         "10/11/13 Investment income",
         "Investment income item total reconciliation",
-        (
-            f"Interest items {money_text(interest_total)} vs aggregate {money_text(investment_money_value(answers.get('interest_income')))}; "
-            f"dividend/distribution items {money_text(dividend_total)} vs aggregate {money_text(investment_money_value(answers.get('dividend_income')))}"
-        ),
+        "; ".join(answers_text),
         "Itemized investment rows are reconciled to supplied aggregate totals before manual copy.",
         status,
         INVESTMENT_SOURCES,
@@ -1989,13 +2002,15 @@ def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> Li
     interest_items = investment_item_values(raw.get("interest_items"))
     dividend_items = investment_item_values(raw.get("dividend_items"))
     distribution_items = investment_item_values(raw.get("distribution_items"))
-    interest_conflict = investment_reconciliation_needs_evidence(
+    interest_conflict = investment_reconciliation_conflict(
         answers.get("interest_income"),
         interest_category_total(interest_items),
+        bool(interest_items),
     )
-    dividend_conflict = investment_reconciliation_needs_evidence(
+    dividend_conflict = investment_reconciliation_conflict(
         answers.get("dividend_income"),
         dividend_distribution_category_total(dividend_items, distribution_items),
+        bool(dividend_items or distribution_items),
     )
     if interest_conflict or dividend_conflict:
         rows.append(
@@ -2179,6 +2194,10 @@ def investment_total_conflict(aggregate_value: Any, item_total: Optional[float])
     if aggregate is None or item_total is None:
         return False
     return round(abs(aggregate - item_total), 2) >= 0.01
+
+
+def investment_reconciliation_conflict(aggregate_value: Any, item_total: Optional[float], has_items: bool) -> bool:
+    return has_items and investment_reconciliation_needs_evidence(aggregate_value, item_total)
 
 
 def investment_reconciliation_needs_evidence(aggregate_value: Any, item_total: Optional[float]) -> bool:
