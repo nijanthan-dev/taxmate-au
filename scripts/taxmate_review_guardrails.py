@@ -521,6 +521,8 @@ def check_individual_intake_contract(root: Path) -> List[Finding]:
                 "def investment_required_amount_missing(",
                 "def investment_amount_is_supplied(",
                 "if key in INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS and amount == 0:",
+                "def investment_franking_credit_missing(",
+                "investment_franking_credit_missing(item, franked_key)",
                 "def investment_has_direct_amount(",
                 "def investment_direct_amount_value(",
                 "\"dividend_amount\",",

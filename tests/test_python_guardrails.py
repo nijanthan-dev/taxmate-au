@@ -1214,6 +1214,73 @@ class IndividualIntakeTests(unittest.TestCase):
                 self.assertEqual("Evidence", by_number["DIV-1"]["status"])
                 self.assertIn("Dividend statement item 1: confirm franking confirmation", evidence_text)
 
+    def test_investment_income_franked_rows_require_franking_credit(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "franked_amount": 300,
+                            "unfranked_amount": 0,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                    "trust_distribution_items": [
+                        {
+                            "trust": "Family Trust",
+                            "franked_distribution": 200,
+                            "statement": "statement held",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Evidence", by_number["DIV-1"]["status"])
+        self.assertIn("franking credit unknown", by_number["DIV-1"]["answer"])
+        self.assertEqual("Evidence", by_number["TRUST-DIST-1"]["status"])
+        self.assertIn("franking credit unknown", by_number["TRUST-DIST-1"]["answer"])
+        self.assertIn("Dividend statement item 1: confirm amount/component values", evidence_text)
+        self.assertIn("Trust distribution statement item 1: confirm amount/component values", evidence_text)
+
+    def test_investment_income_explicit_zero_franking_credit_is_preserved(self) -> None:
+        payload = taxmate_intake.answers_to_pack_payload(
+            {
+                "investment_income": {
+                    "dividend_items": [
+                        {
+                            "company": "Example Ltd",
+                            "franked_amount": 300,
+                            "unfranked_amount": 0,
+                            "franking_credit": 0,
+                            "statement": "statement held",
+                            "franking_confirmed": True,
+                        }
+                    ],
+                    "trust_distribution_items": [
+                        {
+                            "trust": "Family Trust",
+                            "franked_distribution": 200,
+                            "franking_credit": 0,
+                            "statement": "statement held",
+                        }
+                    ],
+                },
+            }
+        )
+        by_number = {row["number"]: row for row in payload["items"]}
+        evidence_text = " ".join(row["answer"] for row in payload["evidence_items"])
+
+        self.assertEqual("Accountant review", by_number["DIV-1"]["status"])
+        self.assertIn("franking credit 0.00", by_number["DIV-1"]["answer"])
+        self.assertEqual("Accountant review", by_number["TRUST-DIST-1"]["status"])
+        self.assertIn("franking credit 0.00", by_number["TRUST-DIST-1"]["answer"])
+        self.assertNotIn("confirm amount/component values", evidence_text)
+
     def test_investment_income_trust_rows_render_all_accepted_amount_fields(self) -> None:
         payload = taxmate_intake.answers_to_pack_payload(
             {

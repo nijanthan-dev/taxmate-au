@@ -1873,6 +1873,7 @@ def investment_dividend_row(index: int, item: Dict[str, Any], conflict: bool) ->
         item,
         INVESTMENT_DIVIDEND_AMOUNT_FIELDS,
         INVESTMENT_DIVIDEND_REQUIRED_AMOUNT_GROUPS,
+        franked_key="franked_amount",
     )
     statement_evidence = investment_statement_missing(item.get("statement"))
     franking_evidence = investment_franking_uncertain(item)
@@ -1931,6 +1932,7 @@ def investment_trust_row(index: int, item: Dict[str, Any]) -> Dict[str, Any]:
         item,
         INVESTMENT_TRUST_AMOUNT_FIELDS,
         INVESTMENT_TRUST_REQUIRED_AMOUNT_GROUPS,
+        franked_key="franked_distribution",
     )
     statement_evidence = investment_statement_missing(item.get("statement"))
     status = "Evidence" if statement_evidence or amount_evidence else "Accountant review"
@@ -1991,18 +1993,19 @@ def investment_reconciliation_row(
 def investment_evidence_rows(raw: Dict[str, Any], answers: Dict[str, Any]) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     groups = (
-        ("Bank interest statement", "10 Gross interest", raw.get("interest_items"), INVESTMENT_INTEREST_AMOUNT_FIELDS),
-        ("Dividend statement", "11 Dividends", raw.get("dividend_items"), INVESTMENT_DIVIDEND_AMOUNT_FIELDS),
-        ("Managed fund/ETF annual tax statement", "13 Partnerships and trusts", raw.get("distribution_items"), INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS),
-        ("Trust distribution statement", "13 Partnerships and trusts", raw.get("trust_distribution_items"), INVESTMENT_TRUST_AMOUNT_FIELDS),
+        ("Bank interest statement", "10 Gross interest", raw.get("interest_items"), INVESTMENT_INTEREST_AMOUNT_FIELDS, ""),
+        ("Dividend statement", "11 Dividends", raw.get("dividend_items"), INVESTMENT_DIVIDEND_AMOUNT_FIELDS, "franked_amount"),
+        ("Managed fund/ETF annual tax statement", "13 Partnerships and trusts", raw.get("distribution_items"), INVESTMENT_DISTRIBUTION_AMOUNT_FIELDS, ""),
+        ("Trust distribution statement", "13 Partnerships and trusts", raw.get("trust_distribution_items"), INVESTMENT_TRUST_AMOUNT_FIELDS, "franked_distribution"),
     )
-    for group_label, area, raw_items, amount_fields in groups:
+    for group_label, area, raw_items, amount_fields, franked_key in groups:
         for idx, item in enumerate(investment_item_values(raw_items), start=1):
             missing = investment_statement_missing(item.get("statement"))
             amounts = investment_amounts_need_evidence(
                 item,
                 amount_fields,
                 investment_required_amount_groups(group_label),
+                franked_key=franked_key,
             )
             franking = group_label == "Dividend statement" and investment_franking_uncertain(item)
             if missing or amounts or franking:
@@ -2088,10 +2091,12 @@ def investment_amounts_need_evidence(
     item: Dict[str, Any],
     fields: tuple[str, ...],
     required_groups: tuple[tuple[str, ...], ...],
+    *,
+    franked_key: str = "",
 ) -> bool:
     return investment_required_amount_missing(item, required_groups) or any(
         investment_amount_needs_evidence(item.get(key)) for key in fields
-    )
+    ) or investment_franking_credit_missing(item, franked_key)
 
 
 def investment_required_amount_missing(item: Dict[str, Any], required_groups: tuple[tuple[str, ...], ...]) -> bool:
@@ -2107,6 +2112,15 @@ def investment_amount_is_supplied(value: Any, key: str = "") -> bool:
     if key in INVESTMENT_ZERO_COMPONENT_AMOUNT_FIELDS and amount == 0:
         return False
     return True
+
+
+def investment_franking_credit_missing(item: Dict[str, Any], franked_key: str = "") -> bool:
+    if not franked_key:
+        return False
+    franked_amount = investment_money_value(item.get(franked_key))
+    if franked_amount is None or franked_amount <= 0:
+        return False
+    return not investment_amount_is_supplied(item.get("franking_credit"))
 
 
 def investment_amount_needs_evidence(value: Any) -> bool:
