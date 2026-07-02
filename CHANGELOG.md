@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.11.0...v0.11.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* prefix public skill names ([07cd53a](https://github.com/nijanthan-dev/taxmate-australia/commit/07cd53a5c3d187cd1a402c1b592d34bc8510b1e9))
+
 ## [0.11.0](https://github.com/nijanthan-dev/taxmate-australia/compare/v0.10.0...v0.11.0) (2026-07-01)
 
 
