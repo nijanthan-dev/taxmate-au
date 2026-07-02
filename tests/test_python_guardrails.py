@@ -9907,7 +9907,9 @@ class SkillGenerationTests(unittest.TestCase):
         self.assertIsNotNone(frontmatter)
         self.assertEqual(frontmatter["name"], skillgen.publicSkillName(skillgen.Topics()[0].slug))
         self.assertIn("# TaxMate Australia", body)
-        self.assertIn("Use for", frontmatter["description"])
+        self.assertTrue(frontmatter["description"].startswith("Use when "))
+        self.assertIn("## Quick Reference", body)
+        self.assertIn("## Common Mistakes", body)
         self.assertIn("Claude Code", frontmatter["compatibility"])
         self.assertIn("Cowork", frontmatter["compatibility"])
 
@@ -9944,7 +9946,7 @@ class ValidatorAndCliTests(unittest.TestCase):
 
         self.assertTrue(any("name must match folder" in issue for issue in issues))
         self.assertTrue(any("name must be kebab-case" in issue for issue in issues))
-        self.assertTrue(any("description missing use trigger" in issue for issue in issues))
+        self.assertTrue(any("description must start with Use when" in issue for issue in issues))
 
     def test_public_skill_names_use_taxmate_prefix(self) -> None:
         self.assertTrue(taxmate_validate.public_skill_names_use_taxmate_prefix(str(ROOT)))

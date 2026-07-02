@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-taxpack
-description: Prepare accountant handoff packs, checklists, source bundles, and manual-copy guidance from reviewed TaxMate Australia data. Use for portable taxpack guidance that helps users copy reviewed answers into myTax, paper ATO forms, or an accountant handoff; use the full runtime for print-first HTML handoff generation.
+description: Use when the user needs TaxMate Australia accountant handoff packs, source bundles, manual-copy guidance, or print-first HTML handoff setup.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 3
@@ -29,6 +29,22 @@ Read `references/rules.md` before creating handoff packs.
 - Review queues and guide side tabs must not show blank review items; use row number/status fallback when explanation fields are missing.
 - Guide display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
 - Do not fill, modify, or present official ATO PDFs as completed returns.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Reviewed facts are available | Build handoff guidance with sources, evidence status, and review flags. |
+| HTML output is requested | Use the full runtime after reviewed input is supplied. |
+| Explanation fields are blank | Fall back to row number or status instead of blank review items. |
+| User asks to lodge or finalise | Refuse and keep the pack manual-copy only. |
+
+## Common Mistakes
+
+- Making independent tax treatment decisions in the output layer.
+- Dropping `Accountant review` when stale lower-risk fields conflict.
+- Hiding blank review items instead of rendering a fallback label.
+- Presenting custom handoff content as an official ATO form.
 
 ## Rules
 

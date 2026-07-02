@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-calculators
-description: Calculator wrapper for conservative PAYG, BAS, CGT, FBT, super, and stamp-duty estimate scaffolds. Use when a local helper must route calculator requests into the full TaxMate Australia runtime.
+description: Use when a local helper must route TaxMate Australia calculator requests into the full runtime.
 compatibility: Local wrapper for Claude Code, Cowork, and Codex. Requires repo checkout and the full TaxMate Australia runtime.
 metadata:
   internal: true
@@ -13,6 +13,22 @@ metadata:
 - Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not help bypass human review, remove `Accountant review` flags, fabricate evidence, hide income, overclaim, or convert preparation output into a lodged position.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Calculator request | Use `$taxmate-australia:calculators` when available. |
+| Runtime skill is unavailable | Read the source calculators skill from the repo root. |
+| Inputs are incomplete | Keep estimates review-first. |
+| User asks for final entitlement | Refuse final treatment. |
+
+## Common Mistakes
+
+- Treating this wrapper as the calculator rules source.
+- Presenting estimates as advice or entitlement confirmation.
+- Skipping the installed plugin skill when available.
+- Removing review flags from calculated output.
 
 Use the plugin skill `$taxmate-australia:calculators` when available.
 

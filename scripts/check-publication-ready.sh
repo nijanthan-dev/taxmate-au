@@ -159,10 +159,12 @@ function assertClaudeSkillFrontmatter(skillPath) {
   if (!skillNamePattern.test(data.name || "")) fail(`skill name must be kebab-case ${expectedName}`);
   if (/^(claude|anthropic)/.test(data.name || "")) fail(`reserved skill name prefix ${expectedName}`);
   if (!description || description.length > 1024) fail(`invalid description ${expectedName}`);
-  if (!/use (when|for|this)/i.test(description)) fail(`description missing trigger ${expectedName}`);
+  if (!description.startsWith("Use when ")) fail(`description must start with Use when ${expectedName}`);
   if (!compatibility || compatibility.length > 500) fail(`missing compatibility ${expectedName}`);
   if (/[<>]/.test(parsed.text)) fail(`frontmatter XML angle bracket ${expectedName}`);
   if (hasReadme(path.dirname(skillPath))) fail(`README.md inside skill folder ${expectedName}`);
+  if (!body.includes("## Quick Reference")) fail(`missing quick reference ${expectedName}`);
+  if (!body.includes("## Common Mistakes")) fail(`missing common mistakes ${expectedName}`);
   return body;
 }
 

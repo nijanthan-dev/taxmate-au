@@ -1,6 +1,6 @@
 ---
 name: taxmate-australia-individual-return
-description: Guide V1 Australian individual tax return intake, including PAYG, ESS, ETP, investment income distributions, lump sum in arrears, super income, foreign income, PSI deep, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance. Use when the user wants an individual return prep pack or a broad individual tax checklist; use the full runtime for HTML handoff generation.
+description: Use when the user wants a TaxMate Australia individual return prep pack, broad individual tax checklist, or full-runtime HTML handoff setup.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 4
@@ -39,7 +39,7 @@ metadata:
 
 # TaxMate Australia Individual Return
 
-Use this skill to orchestrate V1 individual tax-return preparation. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
+Use this skill to orchestrate V1 individual tax-return preparation, including PAYG, ESS, ETP, investment income, crypto, rental, ABN, BAS, WFH, and review queues. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
 Read `references/rules.md` before building an intake or handoff.
 
@@ -50,6 +50,23 @@ Read `references/rules.md` before building an intake or handoff.
 - Do not call any output file lodgment-ready, filing-ready, submit-ready, or final.
 - Keep `Accountant review` flags visible.
 - Do not auto-use AI-extracted values. Show the value, document, page or context, confidence, and target label; use it only after the user confirms it.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Broad individual return | Ask the full checklist before calculating or rendering. |
+| Topic-specific tax treatment | Route to the installed TaxMate Australia topic skill. |
+| Missing or unknown facts | Keep a missing-facts or evidence queue item visible. |
+| Full runtime is available | Use it only for deterministic handoff rendering after review. |
+| Manual-copy handoff | Use manual-copy handoff guidance; use full runtime for HTML handoff generation when a full runtime is available. |
+
+## Common Mistakes
+
+- Running a short interview and missing uncommon income, spouse, BAS, or review facts.
+- Treating AI-extracted values as confirmed before the user confirms them.
+- Letting generic evidence fields remove an `Accountant review` status.
+- Calling manual-copy output lodged, final, or advice.
 
 ## V1 Scope
 

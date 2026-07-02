@@ -647,11 +647,15 @@ def claude_skill_frontmatter_issues(root: str) -> List[str]:
         if len(description) > 1024:
             issues.append(f"{rel}: description too long")
         if not skill_description_has_trigger(description):
-            issues.append(f"{rel}: description missing use trigger")
+            issues.append(f"{rel}: description must start with Use when")
         if not compatibility or len(compatibility) > 500:
             issues.append(f"{rel}: compatibility missing or too long")
         if "<" in fm_text or ">" in fm_text:
             issues.append(f"{rel}: frontmatter contains XML angle bracket")
+        if "## Quick Reference" not in text:
+            issues.append(f"{rel}: missing quick reference section")
+        if "## Common Mistakes" not in text:
+            issues.append(f"{rel}: missing common mistakes section")
     return issues
 
 
@@ -699,8 +703,7 @@ def skill_doc_paths(root: str) -> List[str]:
 
 
 def skill_description_has_trigger(description: str) -> bool:
-    lower = description.lower()
-    return "use when" in lower or "use for" in lower or "use this" in lower
+    return description.startswith("Use when ")
 
 
 def frontmatter_text(text: str) -> str:
