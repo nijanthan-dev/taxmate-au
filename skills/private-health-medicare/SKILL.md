@@ -1,14 +1,30 @@
 ---
-name: private-health-medicare
-description: Private health rebate, Medicare levy, Medicare levy surcharge, and insurer statement records. Use for private health and Medicare levy questions.
+name: taxmate-australia-private-health-medicare
+description: Use when the user needs TaxMate Australia guidance for private health and Medicare levy questions.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Private Health Medicare
+# TaxMate Australia Private Health Medicare
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
 Use for private health and Medicare levy questions. Do not use for deductibility of business or employment expenses.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| User supplies records or facts | Read `references/rules.md` and `references/evidence.md` before classifying. |
+| Source support is missing or metadata-only | Keep the item in `Accountant review`. |
+| Values are volatile or income-year specific | Verify against the official source before relying on them. |
+| User asks to lodge or finalise | Refuse and keep the output prep-only. |
+
+## Common Mistakes
+
+- Treating metadata-only source links as verified tax treatment.
+- Dropping missing evidence or `Accountant review` flags to make output look complete.
+- Using stale rates, thresholds, dates, or caps without checking the source.
+- Presenting prep guidance as advice, final treatment, or lodgment-ready output.
 
 ## Source workflow
 

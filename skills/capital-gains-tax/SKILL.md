@@ -1,14 +1,30 @@
 ---
-name: capital-gains-tax
-description: General CGT events, dates, ownership, proceeds, cost base, losses, discounts, and complex review flags. Use for general CGT concepts and records.
+name: taxmate-australia-capital-gains-tax
+description: Use when the user needs TaxMate Australia guidance for general CGT concepts and records.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Capital Gains Tax
+# TaxMate Australia Capital Gains Tax
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
 Use for general CGT concepts and records. Do not use for routine employee deductions or GST credits.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| User supplies records or facts | Read `references/rules.md` and `references/evidence.md` before classifying. |
+| Source support is missing or metadata-only | Keep the item in `Accountant review`. |
+| Values are volatile or income-year specific | Verify against the official source before relying on them. |
+| User asks to lodge or finalise | Refuse and keep the output prep-only. |
+
+## Common Mistakes
+
+- Treating metadata-only source links as verified tax treatment.
+- Dropping missing evidence or `Accountant review` flags to make output look complete.
+- Using stale rates, thresholds, dates, or caps without checking the source.
+- Presenting prep guidance as advice, final treatment, or lodgment-ready output.
 
 ## Source workflow
 

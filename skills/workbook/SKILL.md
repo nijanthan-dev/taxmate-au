@@ -1,6 +1,6 @@
 ---
-name: workbook
-description: Create accountant-facing Excel workbook outputs from reviewed TaxMate Australia data. Use for taxpayer/spouse-separated and combined tax expense workbooks, BAS/GST summaries, ETF/super/private-health tabs, evidence checklists, and accountant-review queues.
+name: taxmate-australia-workbook
+description: Use when the user needs TaxMate Australia accountant-facing Excel workbook outputs from reviewed tax-prep data.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 4
@@ -28,6 +28,22 @@ Read `references/rules.md` before creating a workbook structure.
 - If input fields conflict, explicit or review-like `Accountant review` wins over stale evidence, used, ATO-label, skipped, status-kind, tab-kind, or styling fields.
 - Review queues must not show blank review items; use row number/status fallback when explanation fields are missing.
 - Workbook display fields must preserve valid falsey values such as numeric `0` and boolean `false`; do not drop them through truthy fallbacks or raw string conversion.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Reviewed rows are available | Preserve source, evidence, GST, claim, and review fields. |
+| Data spans people or entities | Separate taxpayer, spouse/partner, joint, ABN, BAS, and investment tabs. |
+| Status fields conflict | Keep `Accountant Review` visible. |
+| User asks to submit | Refuse and keep the workbook prep-only. |
+
+## Common Mistakes
+
+- Creating new tax treatment inside the workbook layer.
+- Dropping falsey values such as `0` or `false`.
+- Hiding rows or review flags to make totals look cleaner.
+- Marking BAS nil when GST collected or credits exist.
 
 ## Workbook Shape
 

@@ -1,14 +1,30 @@
 ---
-name: abn-business
-description: Sole trader and small business income, deductions, PSI, business-versus-hobby, losses, and evidence. Use for ABN and business income or expenses.
+name: taxmate-australia-abn-business
+description: Use when the user needs TaxMate Australia guidance for ABN and business income or expenses.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# ABN Business
+# TaxMate Australia ABN Business
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
 Use for ABN and business income or expenses. Do not use for employee-only expenses, GST/BAS lodgment, or CGT disposal calculations.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| User supplies records or facts | Read `references/rules.md` and `references/evidence.md` before classifying. |
+| Source support is missing or metadata-only | Keep the item in `Accountant review`. |
+| Values are volatile or income-year specific | Verify against the official source before relying on them. |
+| User asks to lodge or finalise | Refuse and keep the output prep-only. |
+
+## Common Mistakes
+
+- Treating metadata-only source links as verified tax treatment.
+- Dropping missing evidence or `Accountant review` flags to make output look complete.
+- Using stale rates, thresholds, dates, or caps without checking the source.
+- Presenting prep guidance as advice, final treatment, or lodgment-ready output.
 
 ## Source workflow
 

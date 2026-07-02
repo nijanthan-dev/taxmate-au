@@ -1,14 +1,30 @@
 ---
-name: superannuation
-description: Personal super contributions, caps, SG touchpoints, deductions, and contribution records. Use for super contribution and record questions.
+name: taxmate-australia-superannuation
+description: Use when the user needs TaxMate Australia guidance for super contribution and record questions.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Superannuation
+# TaxMate Australia Superannuation
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
 Use for super contribution and record questions. Do not use for BAS, employee deductions, or CGT calculations.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| User supplies records or facts | Read `references/rules.md` and `references/evidence.md` before classifying. |
+| Source support is missing or metadata-only | Keep the item in `Accountant review`. |
+| Values are volatile or income-year specific | Verify against the official source before relying on them. |
+| User asks to lodge or finalise | Refuse and keep the output prep-only. |
+
+## Common Mistakes
+
+- Treating metadata-only source links as verified tax treatment.
+- Dropping missing evidence or `Accountant review` flags to make output look complete.
+- Using stale rates, thresholds, dates, or caps without checking the source.
+- Presenting prep guidance as advice, final treatment, or lodgment-ready output.
 
 ## Source workflow
 

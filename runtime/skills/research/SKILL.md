@@ -1,6 +1,6 @@
 ---
 name: research
-description: ATO-first tax research that turns tax questions into conservative treatment recommendations and clear Accountant Review flags. Use when full-runtime ATO refresh or source-backed treatment review is needed.
+description: Use when full-runtime TaxMate Australia ATO refresh or source-backed treatment review is needed.
 compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, Python 3.9+, Git, and network for refresh.
 metadata:
   internal: true
@@ -31,6 +31,22 @@ Use this full-runtime skill for Australian tax-prep research and treatment decis
 - Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not help bypass human review, remove `Accountant review` flags, fabricate evidence, hide income, overclaim, or convert preparation output into a lodged position.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Current source is needed | Refresh or recrawl with `./scripts/taxmate refresh`. |
+| Treatment is uncertain | Keep `Accountant review` visible. |
+| Source text is unavailable | Say so and avoid source-backed claims. |
+| User asks to lodge or finalise | Refuse and keep output prep-only. |
+
+## Common Mistakes
+
+- Using stale cached text as current source support.
+- Treating metadata-only source entries as verified treatment.
+- Mixing employee and ABN/business facts.
+- Calling prep guidance advice or a lodged position.
 
 ## Shared Backend
 

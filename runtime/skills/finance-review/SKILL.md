@@ -1,6 +1,6 @@
 ---
 name: finance-review
-description: Review Australian tax records and transaction CSVs for accountant handoff using TaxMate Australia. Use when full-runtime finance review, GST candidate triage, or evidence-gap classification is needed.
+description: Use when full-runtime TaxMate Australia finance review, GST candidate triage, or evidence-gap classification is needed.
 compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, Python 3.9+, and Git.
 metadata:
   internal: true
@@ -22,6 +22,22 @@ Use this full-runtime skill to review structured financial records before workbo
 - Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not help bypass human review, remove `Accountant review` flags, fabricate evidence, hide income, overclaim, or convert preparation output into a lodged position.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Transaction CSV is supplied | Run `./scripts/taxmate finance` and preserve review fields. |
+| GST/BAS facts appear | Keep GST collected, GST credits, invoices, and BAS period explicit. |
+| Treatment is unclear | Mark `Accountant review`. |
+| Output handoff is needed | Pass reviewed JSON/Markdown to output skills. |
+
+## Common Mistakes
+
+- Letting finance review make final tax treatment calls without source refresh.
+- Mixing employee, ABN, spouse, joint, or entity rows.
+- Dropping evidence gaps before workbook or taxpack handoff.
+- Marking BAS nil when GST collected or credits exist.
 
 Run:
 

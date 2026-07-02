@@ -1,14 +1,30 @@
 ---
-name: property-rental-cgt
-description: Rental income, loan interest, repairs versus capital works, private use, depreciation, net rental loss, disposal, and property CGT review. Use for rental property worksheet records and property-related CGT.
+name: taxmate-australia-property-rental-cgt
+description: Use when the user needs TaxMate Australia guidance for rental property worksheet records and property-related CGT.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 ---
 
-# Property Rental CGT
+# TaxMate Australia Property Rental CGT
 
 Generated from TaxMate Australia source metadata. Verify volatile values before relying on them.
 
 Use for rental property worksheet records and property-related CGT. Do not use for non-property investments or routine employment expenses.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| User supplies records or facts | Read `references/rules.md` and `references/evidence.md` before classifying. |
+| Source support is missing or metadata-only | Keep the item in `Accountant review`. |
+| Values are volatile or income-year specific | Verify against the official source before relying on them. |
+| User asks to lodge or finalise | Refuse and keep the output prep-only. |
+
+## Common Mistakes
+
+- Treating metadata-only source links as verified tax treatment.
+- Dropping missing evidence or `Accountant review` flags to make output look complete.
+- Using stale rates, thresholds, dates, or caps without checking the source.
+- Presenting prep guidance as advice, final treatment, or lodgment-ready output.
 
 ## Source workflow
 

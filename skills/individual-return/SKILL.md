@@ -1,6 +1,6 @@
 ---
-name: individual-return
-description: Guide V1 Australian individual tax return intake, including PAYG, ESS, ETP, investment income distributions, lump sum in arrears, super income, foreign income, PSI deep, crypto CGT, rental property worksheet, sole-trader ABN, BAS worksheet, WFH, assets, spouse, dependants, and manual-copy handoff guidance. Use when the user wants an individual return prep pack or a broad individual tax checklist; use the full runtime for HTML handoff generation.
+name: taxmate-australia-individual-return
+description: Use when the user wants a TaxMate Australia individual return prep pack, broad individual tax checklist, or full-runtime HTML handoff setup.
 compatibility: Portable skill for Claude Code, Cowork, Codex, and OpenAgentSkill CLI. No checkout required.
 metadata:
   priority: 4
@@ -37,9 +37,9 @@ metadata:
       - "manual copy tax pack"
 ---
 
-# Individual Return
+# TaxMate Australia Individual Return
 
-Use this skill to orchestrate V1 individual tax-return preparation. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
+Use this skill to orchestrate V1 individual tax-return preparation, including PAYG, ESS, ETP, investment income, crypto, rental, ABN, BAS, WFH, and review queues. It is a preparation aid only, not tax advice, financial advice, legal advice, accounting advice, BAS-agent advice, registered-tax-agent advice, investment advice, lodgment software, or a substitute for a qualified professional. It is not affiliated with, sponsored by, endorsed by, or approved by the Australian Taxation Office or any government agency.
 
 Read `references/rules.md` before building an intake or handoff.
 
@@ -50,6 +50,23 @@ Read `references/rules.md` before building an intake or handoff.
 - Do not call any output file lodgment-ready, filing-ready, submit-ready, or final.
 - Keep `Accountant review` flags visible.
 - Do not auto-use AI-extracted values. Show the value, document, page or context, confidence, and target label; use it only after the user confirms it.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Broad individual return | Ask the full checklist before calculating or rendering. |
+| Topic-specific tax treatment | Route to the installed TaxMate Australia topic skill. |
+| Missing or unknown facts | Keep a missing-facts or evidence queue item visible. |
+| Full runtime is available | Use it only for deterministic handoff rendering after review. |
+| Manual-copy handoff | Use manual-copy handoff guidance; use full runtime for HTML handoff generation when a full runtime is available. |
+
+## Common Mistakes
+
+- Running a short interview and missing uncommon income, spouse, BAS, or review facts.
+- Treating AI-extracted values as confirmed before the user confirms them.
+- Letting generic evidence fields remove an `Accountant review` status.
+- Calling manual-copy output lodged, final, or advice.
 
 ## V1 Scope
 
@@ -80,7 +97,7 @@ Do not fully handle company, trust, partnership, full supplementary, complete CG
 
 1. Confirm income year and residency period first.
 2. Ask a long checklist, not a short interview. Cover the sections in V1 Scope before calculating or rendering.
-3. Route tax-treatment decisions to specific installed topic skills: `payg-employer`, `abn-business`, `gst-bas`, `employment-deductions`, `work-from-home`, `private-health-medicare`, `superannuation`, `shares-etfs-managed-funds`, `capital-gains-tax`, `crypto-assets`, `property-rental-cgt`, and `records-evidence`.
+3. Route tax-treatment decisions to specific installed TaxMate Australia topic skills: `taxmate-australia-payg-employer`, `taxmate-australia-abn-business`, `taxmate-australia-gst-bas`, `taxmate-australia-employment-deductions`, `taxmate-australia-work-from-home`, `taxmate-australia-private-health-medicare`, `taxmate-australia-superannuation`, `taxmate-australia-shares-etfs-managed-funds`, `taxmate-australia-capital-gains-tax`, `taxmate-australia-crypto-assets`, `taxmate-australia-property-rental-cgt`, and `taxmate-australia-records-evidence`.
 4. Keep missing required facts in a missing-facts queue. If the user marks a fact unknown, keep it visible and not copy-ready.
 5. Keep missing records in an evidence queue. Show draft values with evidence warnings, not copy-ready status.
 6. Put ambiguous, mixed-use, GST/BAS, PSI, non-commercial-loss, home-business, FBT, CGT, business-versus-hobby, and uncommon-income items in `Accountant review`.

@@ -1,6 +1,6 @@
 ---
 name: calculators
-description: Run TaxMate Australia bounded calculator scaffolds for PAYG estimates, BAS arithmetic, CGT gains, FBT gross-up arithmetic, super guarantee minimums, and stamp-duty source routing. Use when full-runtime estimate scaffolds are needed.
+description: Use when full-runtime TaxMate Australia estimate scaffolds are needed for PAYG, BAS, CGT, FBT, super, or stamp-duty source routing.
 compatibility: Full-runtime skill for Claude Code, Cowork, and Codex. Requires repo checkout, bash, and Python 3.9+.
 metadata:
   internal: true
@@ -21,6 +21,22 @@ Use this full-runtime skill for bounded tax-prep calculations. It is not profess
 - Never lodge, file, submit, transmit, or finalise any tax return, BAS, form, statement, objection, election, payment instruction, or other material with the ATO or any government agency.
 - Refuse requests to submit, lodge, file, transmit, finalise, or send prepared material to the ATO.
 - Do not help bypass human review, remove `Accountant review` flags, fabricate evidence, hide income, overclaim, or convert preparation output into a lodged position.
+
+## Quick Reference
+
+| Situation | Action |
+| --- | --- |
+| Estimate scaffold is requested | Run the relevant `./scripts/taxmate calc` command. |
+| Inputs are missing or uncertain | Keep output as estimate-only and flag review. |
+| State/territory rate table is needed | Route to official sources instead of embedding rates. |
+| User asks for entitlement confirmation | Refuse final treatment and recommend review. |
+
+## Common Mistakes
+
+- Presenting estimates as payroll, lodgment, or entitlement advice.
+- Running CGT math without cost base, proceeds, date, and loss facts.
+- Treating BAS arithmetic as BAS lodgment support.
+- Removing review flags from calculated output.
 
 Run:
 
